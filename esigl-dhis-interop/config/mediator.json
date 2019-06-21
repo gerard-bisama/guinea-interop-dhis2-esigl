@@ -1,0 +1,51 @@
+{
+  "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60b41c05c",
+  "version": "0.0.1",
+  "name": "DHIS2 orgUnits to FHIR Mediator",
+  "description": "Pull OrgUnits from DHIS2, convert them to Organization and push in HAPI Fhir",
+  "defaultChannelConfig": [
+    {
+      "name": "DHIS2 orgUnits to FHIR Mediator",
+      "urlPattern": "/syncfacility2fhir/.*",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "routes": [
+        {
+          "name": "DHIS2 orgUnits to FHIR Mediator Route",
+          "host": "127.0.0.1",
+          "port": "4000",
+          "primary": true,
+          "type": "http"
+        }
+      ],
+      "allow": ["exchange"],
+      "type": "http"
+    }
+  ],
+  "endpoints": [
+    {
+      "name": "DHIS2 orgUnits to FHIR Mediator Route",
+      "host": "127.0.0.1",
+      "path": "/",
+      "port": "4000",
+      "primary": true,
+      "type": "http"
+    }
+  ],
+  "configDefs": [
+    {
+      "param": "upstreamUrl",
+      "displayName": "Upstream URL",
+      "description": "The URL of the service upstream of the mediator",
+      "type": "string",
+      "template": []
+    }
+  ],
+  "config": {
+    "upstreamUrl": "http://sampleApplication:7001"
+  }
+}
