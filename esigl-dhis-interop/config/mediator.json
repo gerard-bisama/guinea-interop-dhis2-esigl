@@ -5,8 +5,8 @@
   "description": "Pull OrgUnits from DHIS2, convert them to Organization and push in HAPI Fhir",
   "defaultChannelConfig": [
     {
-      "name": "DHIS2 orgUnits to FHIR Mediator",
-      "urlPattern": "/syncfacility2fhir/.*",
+      "name": "Get DHIS2 OrgUnits channel",
+      "urlPattern": "/getdhis2orgUnit/.*",
       "alerts": [],
       "txRerunAcl": [],
       "txViewFullAcl": [],
@@ -15,11 +15,14 @@
       "matchContentTypes": [],
       "routes": [
         {
-          "name": "DHIS2 orgUnits to FHIR Mediator Route",
-          "host": "127.0.0.1",
-          "port": "4000",
+          "name": "Get DHIS2 OrgUnits channel",
+          "host": "192.168.1.148",
+          "port": "8082",
           "primary": true,
-          "type": "http"
+          "path": "/api/organisationUnits.json?fields=:all&paging=false",
+          "type": "http",
+          "username":"admin",
+          "password":"district"
         }
       ],
       "allow": ["exchange"],
@@ -43,9 +46,17 @@
       "description": "The URL of the service upstream of the mediator",
       "type": "string",
       "template": []
+    },
+    {
+      "param": "clientPassword",
+      "displayName": "OpenHIM console client password",
+      "description": "Client password as configured in openHIM console",
+      "type": "string",
+      "template": []
     }
   ],
   "config": {
-    "upstreamUrl": "http://sampleApplication:7001"
+    "upstreamUrl": "http://sampleApplication:7001",
+    "clientPassword":"ex2000"
   }
 }

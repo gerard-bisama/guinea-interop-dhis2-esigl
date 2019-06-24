@@ -2,9 +2,9 @@
   "name": "DHIS2-orgUnits-to-FHIR-Mediator",
   "version": "0.0.1",
   "description": "Pull OrgUnits from DHIS2, convert them to Organization and push in HAPI Fhir",
-  "main": "lib/index.js",
+  "main": "lib/start.js",
   "scripts": {
-    "start": "node lib/index.js",
+    "start": "node lib/start.js",
     "test": "export NODE_ENV=test && npm -s run test:code && npm -s run test:style",
     "test:code": "tap --cov --reporter=spec test/basic.js",
     "test:style": "standard -v | snazzy",
@@ -21,11 +21,16 @@
     "https://github.com/gerard-bisama"
   ],
   "dependencies": {
+    "async": "^3.0.1",
+    "btoa": "^1.2.1",
     "express": "^4.13.4",
+    "forever-monitor": "^1.7.1",
+    "moment": "^2.24.0",
     "needle": "^2.4.0",
     "openhim-mediator-utils": "^0.2.2",
     "request": "^2.71.0",
     "urijs": "^1.17.1",
+    "url": "^0.11.0",
     "xmldom": "^0.1.22",
     "xpath": "0.0.23"
   },

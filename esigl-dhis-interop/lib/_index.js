@@ -23,91 +23,77 @@ var port = process.env.NODE_ENV === 'test' ? 7001 : mediatorConfig.endpoints[0].
  *
  * @return {express.App}  the configured http server
  */
- function errorHandler(err, req, res, next) {
-		  if (res.headersSent) {
-			return next(err);
-		  }
-		  res.status(500);
-		  res.render('error', { error: err });
-	}
-
-
 function setupApp () {
-	
   const app = express()
-  app.use(errorHandler);
   var needle = require('needle');
-  var async = require('async');
-  var btoa = require('btoa');
-  
+
+  /*
+  app.all('*', (req, res) => {
+    winston.info(`Processing ${req.method} request on ${req.url}`)
+    var responseBody = 'Primary Route Reached'
+    var headers = { 'content-type': 'application/json' }
+
+    // add logic to alter the request here
+
+    // capture orchestration data
+    var orchestrationResponse = { statusCode: 200, headers: headers }
+    let orchestrations = []
+    orchestrations.push(utils.buildOrchestration('Primary Route', new Date().getTime(), req.method, req.url, req.headers, req.body, orchestrationResponse, responseBody))
+
+    // set content type header so that OpenHIM knows how to handle the response
+    res.set('Content-Type', 'application/json+openhim')
+
+    // construct return object
+    var properties = { property: 'Primary Route' }
+    res.send(utils.buildReturnObject(mediatorConfig.urn, 'Successful', 200, headers, responseBody, orchestrations, properties))
+  })
+  */
     
 	app.get('/syncfacility2fhir/:id', (req, res) => {
-	
-		const basicClientToken = `Basic ${btoa('exchange'+':'+mediatorConfig.config.clientPassword)}`;
-		//console.log(basicClientToken);
-		var orchestrations=[];
-		orchestrations = [{ 
-			ctxObjectRef: "OrgUnits",
-			name: "Get orgunits from dhis2", 
-			domain: "http://localhost:5001",
-			path: "/getdhis2orgUnit/1",
-			params: "",
-			body: "",
-			method: "GET",
-			headers: {'Authorization': basicClientToken}
-		  }];
-		var ctxObject = []; 
-		var orchestrationsResults=[]; 
-		async.each(orchestrations, function(orchestration, callback) {
-		// code to execute the orchestrations
-		// construct the URL to request
-		var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
-		var options={headers:orchestration.headers};
-		//console.log(options);
-		needle.get(orchUrl,options, function(err, resp) {
-		// if error occured
-		if ( err ){
-			callback(err);
-		}
-		console.log(orchestration.headers);
-	  // add new orchestration to object
-		orchestrationsResults.push({
-		name: orchestration.name,
-		request: {
-		  path : orchestration.path,
-		  headers: orchestration.headers,
-		  querystring: orchestration.params,
-		  body: orchestration.body.organisationUnits,
-		  method: orchestration.method,
-		  timestamp: new Date().getTime()
-		},
-		response: {
-		  status: resp.statusCode,
-		  body: JSON.stringify(resp.body.organisationUnits, null, 4),
-		  timestamp: new Date().getTime()
-		}
-		});
-		// add orchestration response to context object and return callback
-		ctxObject[orchestration.ctxObjectRef] = resp.body.organisationUnits;
-		callback();
-		});//end of needle orchUrl
-		}, function(err){
-
-			// This section will execute once all requests have been completed
+		 //needle.get('http://admin:district@192.168.1.148:8082/api/organisationUnits.json?fields=:all&paging=false', function(err, resp) {
+		 needle.get('http://exchange:ex2000@localhost:5001/getdhis2orgUnit/1', function(err, resp) {
+		 //needle.get('http://localhost:5001/getdhis2orgUnit/1', function(err, resp) {
+			// check if any errors occurred
+			if (err){
+			  console.log(err)
+			  return;
+			}
+			// context object to store json objects
+			var ctxObject = {};
+			ctxObject['orgunits'] = resp.body.organisationUnits;
+			//Capture 'encounter' orchestration data 
+			var orchestrationsResults = [];
+			orchestrationsResults.push({
+			  name: 'Get Orgunits',
+			  request: {
+				path : req.path,
+				headers: req.headers,
+				querystring: req.originalUrl.replace( req.path, "" ),
+				body: req.body,
+				method: req.method,
+				timestamp: new Date().getTime()
+			  },
+			  response: {
+				status: resp.statusCode,
+				body: JSON.stringify(resp.body.organisationUnits, null, 4),
+				timestamp: new Date().getTime()
+			  }
+			});//end of orchestrationsResults.push
+			
+			// ##### Construct Response Object  ##### 
 			var urn = mediatorConfig.urn;
 			var status = 'Successful';
-			//JSON.stringify(ctxObject.OrgUnits, null, 4) //This is the listof orgunit and we dont want to store it in the openhim transaction log
 			var response = {
-			  status: 200,
+			  status: resp.statusCode,
 			  headers: {
 				'content-type': 'application/json'
 			  },
-			  body: {'resquestResult':'success'},
+			  body: JSON.stringify(resp.body.organisationUnits, null, 4),
 			  timestamp: new Date().getTime()
 			};
 			// construct property data to be returned
 			var properties = {};
-			properties['Nombre orgunits extraites'] = ctxObject.OrgUnits.length;
+			properties['Nombre orgunits extraites'] = ctxObject.orgunits.length;
 			// construct returnObject to be returned
 			//orchestrationsResults,
 			var returnObject = {
@@ -120,14 +106,8 @@ function setupApp () {
 			// set content type header so that OpenHIM knows how to handle the response
 			res.set('Content-Type', 'application/json+openhim');
 			res.send(returnObject);
-			// if any errors occurred during a request the print out the error and stop processing
-			if (err){
-				console.log(err)
-			//return;
-			}
-		});//end of asyn.each orchestrations
-	
-	})//end of app.get
+		});//end of needle get
+	})
   return app
 }
 

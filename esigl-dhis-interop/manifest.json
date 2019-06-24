@@ -1,0 +1,10 @@
+{
+	"dhis2OrgUnitLevel":{
+		"1":"National",
+		"2":"Regional",
+		"3":"Prefectoral",
+		"4":"Soud Prefectoral",
+		"5":"Formations Sanitaires"
+		}
+	
+}
