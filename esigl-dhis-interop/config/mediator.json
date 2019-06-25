@@ -1,29 +1,30 @@
 {
   "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60b41c05c",
-  "version": "0.0.1",
+  "version": "0.2.1",
   "name": "DHIS2 orgUnits to FHIR Mediator",
   "description": "Pull OrgUnits from DHIS2, convert them to Organization and push in HAPI Fhir",
   "defaultChannelConfig": [
     {
-      "name": "Get DHIS2 OrgUnits channel",
-      "urlPattern": "/getdhis2orgUnit/.*",
+      "name": "Sync DHIS2 orgUnits to FHIR Server",
+      "urlPattern": "^/syncorgunit2fhir/$",
       "alerts": [],
       "txRerunAcl": [],
       "txViewFullAcl": [],
       "txViewAcl": [],
       "properties": [],
       "matchContentTypes": [],
+      "pollingSchedule": "0 0 1 * *",
+      "timeout":"600000",
       "routes": [
         {
-          "name": "Get DHIS2 OrgUnits channel",
-          "host": "192.168.1.148",
-          "port": "8082",
+          "name": "Sync DHIS2 orgUnits to FHIR Server",
+          "host": "localhost",
+          "port": "5021",
           "primary": true,
-          "path": "/api/organisationUnits.json?fields=:all&paging=false",
-          "type": "http",
-          "username":"admin",
-          "password":"district"
+          "path": "/syncorgunit2fhir",
+          "type": "http"
         }
+        
       ],
       "allow": ["exchange"],
       "type": "http"
@@ -31,10 +32,10 @@
   ],
   "endpoints": [
     {
-      "name": "DHIS2 orgUnits to FHIR Mediator Route",
-      "host": "127.0.0.1",
-      "path": "/",
-      "port": "4000",
+      "name": " Synnc DHIS2 orgUnits to FHIR Server",
+      "host": "localhost",
+      "path": "/syncorgunit2fhir",
+      "port": "5021",
       "primary": true,
       "type": "http"
     }
@@ -53,10 +54,66 @@
       "description": "Client password as configured in openHIM console",
       "type": "string",
       "template": []
+    },
+    {
+      "param": "dhis2Server",
+      "displayName": "dhis2 server parameters",
+      "description": "Description of the DHIS2 server parameters",
+      "type": "struct",
+      "template": [
+		{
+			"param": "url",
+			"displayName": "url",
+			"description": "The base URL (e.g. http://192.168.1.22:8082)",
+			"type": "string"
+		},
+		{
+			"param": "username",
+			"displayName": "username",
+			"description": "username",
+			"type": "string"
+		},
+		{
+			"param": "password",
+			"displayName": "password",
+			"description": "password",
+			"type": "string"
+		},
+		{
+			"param": "orgunitapipath",
+			"displayName": "orgunitapipath",
+			"description": "The API that to query orgunits from dhis2 (e.g: /api/organisationUnits.json?fields=:all&paging=false)",
+			"type": "string"
+		}
+		
+      ]
+    },
+    {
+      "param": "hapiServer",
+      "displayName": "hapi server params",
+      "description": "Description of the hapi server parameters",
+      "type": "struct",
+      "template": [
+		{
+			"param": "url",
+			"displayName": "URL",
+			"description": "The base URL (e.g. http://192.168.1.22:8083/hapi-fhir-jpaserver)",
+			"type": "string"
+		}
+      ]
     }
   ],
   "config": {
     "upstreamUrl": "http://sampleApplication:7001",
-    "clientPassword":"ex2000"
+    "clientPassword":"password",
+    "dhis2Server":{
+		"url":"https://localhost:8082",
+		"username":"admin",
+		"password":"district",
+		"orgunitapipath":"/dhis/api/organisationUnits.json?fields=:all&paging=false"
+		},
+	"hapiServer":{
+		"url":"http://192.168.1.2:8083/hapi-fhir-jpaserver"
+		}
   }
 }
