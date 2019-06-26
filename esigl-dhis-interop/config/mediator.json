@@ -1,6 +1,6 @@
 {
   "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60b41c05c",
-  "version": "0.2.1",
+  "version": "0.3.1",
   "name": "DHIS2 orgUnits to FHIR Mediator",
   "description": "Pull OrgUnits from DHIS2, convert them to Organization and push in HAPI Fhir",
   "defaultChannelConfig": [
@@ -28,6 +28,31 @@
       ],
       "allow": ["exchange"],
       "type": "http"
+    },
+    {
+      "name": "Map eSIGL facilies to Organization in Fhir",
+      "urlPattern": "^/mapfacility2fhir/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "0 0 1 * *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Map eSIGL facilies to Organization in Fhir",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/mapfacility2fhir",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "polling"
     }
   ],
   "endpoints": [
@@ -36,6 +61,14 @@
       "host": "localhost",
       "path": "/syncorgunit2fhir",
       "port": "5021",
+      "primary": true,
+      "type": "http"
+    },
+     {
+      "name": " Map eSIGL facilies to Organization in Fhir",
+      "host": "localhost",
+      "path": "/mapfacility2fhir",
+      "port": "5022",
       "primary": true,
       "type": "http"
     }
@@ -101,19 +134,66 @@
 			"type": "string"
 		}
       ]
+    },
+    {
+      "param": "esiglServer",
+      "displayName": "eSIGL server parameters",
+      "description": "Description of the eSIGL server parameters",
+      "type": "struct",
+      "template": [
+		{
+			"param": "url",
+			"displayName": "url",
+			"description": "The base URL (e.g. http://192.168.1.23:8082)",
+			"type": "string"
+		},
+		{
+			"param": "username",
+			"displayName": "username",
+			"description": "username",
+			"type": "string"
+		},
+		{
+			"param": "password",
+			"displayName": "password",
+			"description": "password",
+			"type": "string"
+		},
+		{
+			"param": "resourcespath",
+			"displayName": "resourcespath",
+			"description": "The API that to query resources from eSIGL (e.g: /rest-api/lookup)",
+			"type": "string"
+		}
+		
+      ]
+    },
+    {
+      "param": "mappingFile",
+      "displayName": "mappingFile ",
+      "description": "full path of the file name (e.g: /home/me/mappingfile/mapping.csv)",
+      "type": "string",
+      "template": []
     }
   ],
   "config": {
     "upstreamUrl": "http://sampleApplication:7001",
-    "clientPassword":"password",
+    "clientPassword":"mdp",
     "dhis2Server":{
-		"url":"https://localhost:8082",
-		"username":"admin",
-		"password":"district",
+		"url":"url",
+		"username":"usr",
+		"password":"pwd",
 		"orgunitapipath":"/dhis/api/organisationUnits.json?fields=:all&paging=false"
 		},
 	"hapiServer":{
-		"url":"http://192.168.1.2:8083/hapi-fhir-jpaserver"
-		}
+		"url":"http://192.168.1.18:8083/hapi-fhir-jpaserver"
+		},
+	"esiglServer":{
+		"url":"http://192.168.1.51:9091",
+		"username":"Admin123",
+		"password":"Admin123",
+		"resourcespath":"/rest-api/lookup"
+		},
+	"mappingFile":"/home/me/data/mappingstructure-esigl-dhis2.csv"
   }
 }

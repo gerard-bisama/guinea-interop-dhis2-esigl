@@ -2,6 +2,7 @@ const moment = require('moment');
 const url=require('url');
 const manifest = require('../config/manifest')
 const uuidv1 = require('uuid/v1');
+ var csvUtil = require('csv-util');
  
 //Return a bundle of Organization from the orgunit list
 exports.buildOrganizationHierarchy =function buildOrganizationHierarchy(orgUnitList)
@@ -125,6 +126,24 @@ exports.getOrganizationByLevel=function getOrganizationByLevel(level,organizatio
 	}
 	return organizationsFounded;
 }
+//Update organization from eSIGL Facility and factility-type
+exports.updateOrganizationFromeSIGL=function updateOrganizationFromeSIGL(eSIGLFacility,eSIGLFacilityType,oOrganization,hrefDomaineSIGL)
+{
+	var facilityTypeCodingSystem=hrefDomaineSIGL+"/facility-type";
+	var eSIGLType={coding:[{system:facilityTypeCodingSystem,code:"facility-type",display:eSIGLFacilityType.id}],text:eSIGLFacilityType.code};
+	var identifierCodingSystem=hrefDomaineSIGL+"/facility-code";
+	var identifier=[{
+				use:"official",
+				type:{coding:[{system:identifierCodingSystem,code:"code",display:"code"}],text:"code"},
+				value:eSIGLFacility.code},
+				{
+				use:"official",
+				type:{coding:[{system:identifierCodingSystem,code:"id",display:"id"}],text:"id"},
+				value:eSIGLFacility.id},
+			];
+	
+}
+
 //Format the string date ISO8601 from DHIS2 in Zform (Zulu time Zone) whikch is the format accepted by HAPI Fhir Server
 //The format looks like  yyyy-mm-ddThh:mm:ss+zz:zz ; the last part is the zone indicator
 function formatDateInZform(originalDate)
@@ -161,4 +180,20 @@ function formatDateInZform(originalDate)
 		* */
 	}
 	return formatedDate+manifest.typeZone;
+}
+//read CSV file as specified 
+//@@ _filename: full path of the file name
+exports.readCSVFile=function readCSVFile(_filename,callback)
+{
+	//var filename=path.resolve(path.join(manifest.source_directory, "/", _filename));
+	var filename=_filename;
+	var csvParser = csvUtil.csvParser;
+	var csvData = csvParser(filename,function(row){
+	  var newRow = row.map(function(value,index){
+		return value;
+	  })
+	  return newRow
+	}).then(function(csvData){
+  		return callback(csvData);
+	});
 }
