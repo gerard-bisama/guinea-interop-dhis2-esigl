@@ -122,7 +122,7 @@ function setupApp () {
 			//var organizationBundle=customLibrairy.buildOrganizationHierarchy( ctxObject.OrgUnits.slice(13,15));
 			var organizationBundle=customLibrairy.buildOrganizationHierarchy( ctxObject.OrgUnits);
 			console.log("Transform orgunit list to FHIR Bundle. Total entry :"+organizationBundle.entry.length);
-			var listOrganizationLevel1=customLibrairy.getOrganizationByLevel("1",organizationBundle.entry);
+			var listOrganizationLevel1=customLibrairy.getOrganizationByLevel("level_1",organizationBundle.entry);
 			console.log("Process Organization level 1. Nbr of entities :"+listOrganizationLevel1.length);
 			//console.log(JSON.stringify(listOrganizationLevel1));
 			//return;
@@ -211,7 +211,7 @@ function setupApp () {
 				};
 				var properties = {};
 				properties['Nombre organization maj'] =ctxObject2Fhir.length;
-				var listOrganizationLevel2=customLibrairy.getOrganizationByLevel("2",organizationBundle.entry);
+				var listOrganizationLevel2=customLibrairy.getOrganizationByLevel("level_2",organizationBundle.entry);
 				console.log("Process Organization level 2. Nbr of entities :"+listOrganizationLevel2.length);
 				//console.log("-------------------------------Org Level2---------------------------------------------");
 				//console.log(listOrganizationLevel2);
@@ -291,7 +291,7 @@ function setupApp () {
 					};
 					var properties = {};
 					properties['Nombre organization maj'] =ctxObject2FhirLevel2.length;
-					var listOrganizationLevel3=customLibrairy.getOrganizationByLevel("3",organizationBundle.entry);
+					var listOrganizationLevel3=customLibrairy.getOrganizationByLevel("level_3",organizationBundle.entry);
 					console.log("Process Organization level 3. Nbr of entities :"+listOrganizationLevel3.length);
 					//console.log("-------------------------------Org Level3---------------------------------------------");
 				    //console.log(listOrganizationLevel3);
@@ -365,7 +365,7 @@ function setupApp () {
 					};
 					var properties = {};
 					properties['Nombre organization maj'] =ctxObject2FhirLevel3.length;
-					var listOrganizationLevel4=customLibrairy.getOrganizationByLevel("4",organizationBundle.entry);
+					var listOrganizationLevel4=customLibrairy.getOrganizationByLevel("level_4",organizationBundle.entry);
 					console.log("Process Organization level 4. Nbr of entities :"+listOrganizationLevel4.length);
 					//console.log("-------------Breakpoint level4--------------");
 					//return;
@@ -438,7 +438,7 @@ function setupApp () {
 						};
 						var properties = {};
 						properties['Nombre organization maj'] =ctxObject2FhirLevel4.length;
-						var listOrganizationLevel5=customLibrairy.getOrganizationByLevel("5",organizationBundle.entry);
+						var listOrganizationLevel5=customLibrairy.getOrganizationByLevel("level_5",organizationBundle.entry);
 						console.log("Process Organization level 5. Nbr of entities :"+listOrganizationLevel5.length);
 						//console.log(JSON.stringify(listOrganizationLevel5));
 						//console.log("-------------Breakpoint level5--------------");
@@ -699,10 +699,11 @@ function setupApp () {
 							});
 							orchestrations2GetOrganization.push(
 								{ 
-								ctxObjectRef: "organization_"+iteratorLine,
+								//ctxObjectRef: "organization_"+iteratorLine,
+								ctxObjectRef: dataFile[iteratorLine][0].trim().replace(/\s/g,""),
 								name: "get organization from hapi", 
 								domain: mediatorConfig.config.hapiServer.url,
-								path: "/fhir/Organization/"+dataFile[iteratorLine][1],
+								path: "/fhir/Organization/"+dataFile[iteratorLine][1].trim().replace(/\s/g,""),
 								params: "",
 								body: "",
 								method: "GET",
@@ -719,6 +720,11 @@ function setupApp () {
 					asyncFhir.each(orchestrations2GetOrganization, function(orchestration2GetOrganisation, callbackGetFhir) {
 						var orchUrl = orchestration2GetOrganisation.domain + orchestration2GetOrganisation.path + orchestration2GetOrganisation.params;
 						needle.get(orchUrl, function(err, resp) {
+							if(err)
+							{
+								winston.error(error);
+								callbackGetFhir(error);
+							}
 							console.log(counter+"/"+orchestrations2GetOrganization.length);
 							console.log("...Getting  "+orchestration2GetOrganisation.path);
 							orchestrationsResultsOrgFhir.push({
@@ -737,7 +743,7 @@ function setupApp () {
 								  timestamp: new Date().getTime()
 								}
 								});
-							ctxObjectOrgFhir.push( resp.body.toString('utf8'));
+							ctxObjectOrgFhir.push( {eSIGLid:orchestration2GetOrganisation.ctxObjectRef,resource:JSON.parse(resp.body.toString('utf8'))});
 							//ctxObjectOrgFhir.push( resp.body);
 							counter++;
 							callbackGetFhir();
@@ -746,23 +752,149 @@ function setupApp () {
 						
 						
 					},function(err){
-						winston.info("Organization resolved from ids");
+						
 						if (err){
 							winston.error(err);
 						//return;
 						}
+						winston.info("Organization resolved from ids");
 						//console.log(ctxObjectOrgFhir);
 						//Put ctxObjectOrgFhir in a simple array
 						//console.log("Length :"+ctxObjectOrgFhir.length);
 						winston.info("Organization resolved :"+ctxObjectOrgFhir.length)
+						var listUpdatedOrganization=[];
+						//console.log(listFacilitiesFromeSIGL);
 						for(var iteratorOrg=0;iteratorOrg<ctxObjectOrgFhir.length;iteratorOrg++)
 						{
-							listResolvedOrganization.push(
-							ctxObjectOrgFhir[iteratorOrg]
-							);
-						}
-						//console.log(listResolvedOrganization);
+							
+							if(ctxObjectOrgFhir[iteratorOrg].resource.resourceType=="Organization")
+							{
+								if(customLibrairy.checkOrganizationAlreadyMapped(ctxObjectOrgFhir[iteratorOrg].resource))
+								{
+									winston.warn("Organisation/"+ctxObjectOrgFhir[iteratorOrg].resource.id+"has been already with eSIGL");
+									continue;
+								}
+								var eSIGLFacility=customLibrairy.getFacilityInTheListFromId(ctxObjectOrgFhir[iteratorOrg].eSIGLid,listFacilitiesFromeSIGL);
+								//now get the facility-type of the related eSIGL facility from the list
+								if(eSIGLFacility!=null)
+								{
+									var eSIGLType=customLibrairy.getFacilityTypeInTheListFromId(eSIGLFacility.typeId,listFacilityTypes);
+									if(eSIGLType!=null)
+									{
+										//Now update the organization
+										var newOrganization=customLibrairy.updateOrganizationFromeSIGL(eSIGLFacility,eSIGLType,ctxObjectOrgFhir[iteratorOrg].resource,mediatorConfig.config.esiglServer.url);
+										if(newOrganization!=null)
+										{
+											listUpdatedOrganization.push(newOrganization);
+										}
+										else
+										{
+											winston.error("Failed to update organization with eSIGL Facility");
+										}
+										
+									}
+									else
+									{
+										winston.error("eSIGL facility-type not found for the id: "+ eSIGLFacility.typeId);
+										continue;
+									}
+								}
+								else
+								{
+									winston.error("eSIGL Facility not found for the id: "+ ctxObjectOrgFhir[iteratorOrg].eSIGLid);
+									continue;
+								}
+							}
+							
+						}//end for iteratorOrg
+						winston.info("updated Organization :"+listUpdatedOrganization.length);
+						winston.info("Organization convertion done ");
+						winston.info("Building request to push updated Organization to FHIR ");
 						
+						//console.log(JSON.stringify(listUpdatedOrganization[0]));
+						//console.log(JSON.stringify(listUpdatedOrganization[0].type));
+						//console.log(listResolvedOrganization);
+						var orchestrations2FhirUpdate=[];
+						for(var i=0;i<listUpdatedOrganization.length;i++)
+						{
+							var oOrganization=listUpdatedOrganization[i];
+							orchestrations2FhirUpdate.push({ 
+							ctxObjectRef: "organisation_"+i,
+							name: "push orgnization for fhir ", 
+							domain: mediatorConfig.config.hapiServer.url,
+							path: "/fhir/Organization/"+oOrganization.id,
+							params: "?_format=json&_pretty=true",
+							body:  JSON.stringify(oOrganization),
+							method: "PUT",
+							headers: {'Content-Type': 'application/json'}
+							});
+						}
+						var asyncFhir2Update = require('async');
+						var ctxObject2Update = []; 
+						var orchestrationsResults2Update=[];
+						counter=1;
+						asyncFhir2Update.each(orchestrations2FhirUpdate, function(orchestration2FhirUpdate, callbackFhirUpdate) {
+								var orchUrl = orchestration2FhirUpdate.domain + orchestration2FhirUpdate.path + orchestration2FhirUpdate.params;
+								var options={headers:orchestration2FhirUpdate.headers};
+								var organizationToPush=orchestration2FhirUpdate.body;
+								needle.put(orchUrl,organizationToPush,{json:true}, function(err, resp) {
+									// if error occured
+									if ( err ){
+										winston.error("Needle: error when pushing data to hapi");
+										callbackFhirUpdate(err);
+									}
+									winston.info(counter+"/"+orchestrations2FhirUpdate.length);
+									winston.info("...Inserting "+orchestration2FhirUpdate.path);
+									orchestrationsResults2Update.push({
+									name: orchestration2FhirUpdate.name,
+									request: {
+									  path : orchestration2FhirUpdate.path,
+									  headers: orchestration2FhirUpdate.headers,
+									  querystring: orchestration2FhirUpdate.params,
+									  body: orchestration2FhirUpdate.body,
+									  method: orchestration2FhirUpdate.method,
+									  timestamp: new Date().getTime()
+									},
+									response: {
+									  status: resp.statusCode,
+									  body: JSON.stringify(resp.body.toString('utf8'), null, 4),
+									  timestamp: new Date().getTime()
+									}
+									});
+									// add orchestration response to context object and return callback
+									ctxObject2Update[orchestration2FhirUpdate.ctxObjectRef] = resp.body.toString('utf8');
+									counter++;
+									callbackFhirUpdate();
+								});//end of needle.put
+						},function(err){
+							if (err){
+								winston.error(err);
+								
+							}
+							var urn = mediatorConfig.urn;
+							var status = 'Successful';
+							var response = {
+							  status: 200,
+							  headers: {
+								'content-type': 'application/json'
+							  },
+							  body:JSON.stringify( {'Mapping operation':'success'}),
+							  timestamp: new Date().getTime()
+							};
+							var properties = {};
+							properties['Nombre organization maj'] =ctxObject2Update.length;
+							var returnObject = {
+							  "x-mediator-urn": urn,
+							  "status": status,
+							  "response": response,
+							  "orchestrations": orchestrationsResults2Update,
+							  "properties": properties
+							}
+							winston.info("End of eSIGL=>DHIS2 mapping orchestration");
+							res.set('Content-Type', 'application/json+openhim');
+							res.send(returnObject);
+							
+						});//end of asyncFhir2Update
 					  
 					  
 					});

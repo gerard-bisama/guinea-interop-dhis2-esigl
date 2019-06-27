@@ -3,7 +3,7 @@ const url=require('url');
 const manifest = require('../config/manifest')
 const uuidv1 = require('uuid/v1');
  var csvUtil = require('csv-util');
- 
+
 //Return a bundle of Organization from the orgunit list
 exports.buildOrganizationHierarchy =function buildOrganizationHierarchy(orgUnitList)
 {
@@ -14,7 +14,7 @@ exports.buildOrganizationHierarchy =function buildOrganizationHierarchy(orgUnitL
 	var fullUrl;
 	for(var i=0;i<orgUnitList.length;i++)
 	{
-		
+
 		var oOrgUnit=orgUnitList[i];
 		//console.log(oOrgUnit);
 		//fullUrl=oOrgUnit.href;
@@ -26,7 +26,7 @@ exports.buildOrganizationHierarchy =function buildOrganizationHierarchy(orgUnitL
 				use:"official",
 				type:{coding:[{system:identifierCodingSystem,code:"dhis2Id",display:"dhis2Id"}],text:"dhis2Id"},
 				value:oOrgUnit.id
-				
+
 			});
 		if(oOrgUnit.code!=null)
 		{
@@ -35,7 +35,7 @@ exports.buildOrganizationHierarchy =function buildOrganizationHierarchy(orgUnitL
 				use:"official",
 				type:{coding:[{system:identifierCodingSystem,code:"dhis2Code",display:"dhis2Code"}],text:"dhis2Code"},
 				value:oOrgUnit.code
-				
+
 			}
 			);
 		}
@@ -45,7 +45,7 @@ exports.buildOrganizationHierarchy =function buildOrganizationHierarchy(orgUnitL
 		if(orgUnitLevel!=null)
 		{
 			organizationType.push(
-			{coding:[{system:orgUnitTypeCodingSystem,code:"level",display:""+orgUnitLevel.id}],text:orgUnitLevel.text}
+			{coding:[{system:orgUnitTypeCodingSystem,code:"level_"+orgUnitLevel.id,display:"level_"+orgUnitLevel.id}],text:orgUnitLevel.text}
 			);
 		}
 		var isPartOf=null;
@@ -62,7 +62,7 @@ exports.buildOrganizationHierarchy =function buildOrganizationHierarchy(orgUnitL
 			type:organizationType,
 			name:oOrgUnit.displayName,
 			partOf:isPartOf
-			
+
 		}
 		//console.log(oOrganization);
 		var entryUUID=""+new Date().toJSON().replace(/:/g,"-");
@@ -89,7 +89,7 @@ exports.buildOrganizationHierarchy =function buildOrganizationHierarchy(orgUnitL
 	//console.log(JSON.stringify(oBundle));
 	return oBundle;
 }
-//Return the id and the text of orgunit Level 
+//Return the id and the text of orgunit Level
 //@param OrgUnitLevel
 function getOrgUnitLevelInformation(orgUnitLevel)
 {
@@ -108,7 +108,7 @@ function getOrgUnitLevelInformation(orgUnitLevel)
 	}
 	return oUnitLevel;
 }
-//Return the list of Organization by level as specified in the 
+//Return the list of Organization by level as specified in the
 exports.getOrganizationByLevel=function getOrganizationByLevel(level,organizationsList)
 {
 	var organizationsFounded=[];
@@ -118,7 +118,8 @@ exports.getOrganizationByLevel=function getOrganizationByLevel(level,organizatio
 		//console.log(organizationsList[indexOrganization]);
 		for(var indexType=0;indexType<typeList.length;indexType++)
 		{
-			if(typeList[indexType].coding[0].code=="level" && typeList[indexType].coding[0].display==level)
+			//if(typeList[indexType].coding[0].code=="level" && typeList[indexType].coding[0].display==level)
+			if(typeList[indexType].coding[0].code==level)
 			{
 				organizationsFounded.push(organizationsList[indexOrganization].resource);
 			}
@@ -129,19 +130,86 @@ exports.getOrganizationByLevel=function getOrganizationByLevel(level,organizatio
 //Update organization from eSIGL Facility and factility-type
 exports.updateOrganizationFromeSIGL=function updateOrganizationFromeSIGL(eSIGLFacility,eSIGLFacilityType,oOrganization,hrefDomaineSIGL)
 {
+	var currentDate=moment().format(new Date().toJSON());
+	var currentZFormatDate=formatDateInZform(currentDate);
 	var facilityTypeCodingSystem=hrefDomaineSIGL+"/facility-type";
-	var eSIGLType={coding:[{system:facilityTypeCodingSystem,code:"facility-type",display:eSIGLFacilityType.id}],text:eSIGLFacilityType.code};
+	//var eSIGLType={coding:[{system:facilityTypeCodingSystem,code:"facility-type",display:eSIGLFacilityType.id}],text:eSIGLFacilityType.code};
+	var eSIGLType={coding:[{system:facilityTypeCodingSystem,code:eSIGLFacilityType.code,display:eSIGLFacilityType.code}],text:eSIGLFacilityType.code};
 	var identifierCodingSystem=hrefDomaineSIGL+"/facility-code";
 	var identifier=[{
 				use:"official",
-				type:{coding:[{system:identifierCodingSystem,code:"code",display:"code"}],text:"code"},
+				type:{coding:[{system:identifierCodingSystem,code:"siglcode",display:"siglcode"}],text:"siglcode"},
 				value:eSIGLFacility.code},
 				{
 				use:"official",
-				type:{coding:[{system:identifierCodingSystem,code:"id",display:"id"}],text:"id"},
-				value:eSIGLFacility.id},
+				type:{coding:[{system:identifierCodingSystem,code:"siglid",display:"siglid"}],text:"siglid"},
+				value:eSIGLFacility.id}
 			];
-	
+	var oIdentifier=[];
+	oIdentifier=oOrganization.identifier;
+	oIdentifier.push(identifier[0]);
+	oIdentifier.push(identifier[1]);
+
+	var organizationType=[];
+	var organizationType=oOrganization.type;
+	organizationType.push(eSIGLType);
+	var updatedOrganization={
+		resourceType:"Organization",
+		id:oOrganization.id,
+		meta:{lastUpdated:currentZFormatDate},
+		identifier:oIdentifier,
+		type:organizationType,
+		name:oOrganization.name,
+		partOf:oOrganization.partOf
+			
+	};
+	return updatedOrganization;
+	//updatedOrganization.
+}
+//check if the eSIGL-Organizatin mapping has been done already
+exports.checkOrganizationAlreadyMapped=function checkOrganizationAlreadyMapped(organization)
+{
+	var found=false;
+	var listIdentifier=organization.identifier;
+	for(var i=0;i<listIdentifier.length;i++)
+	{
+		var oIdentifier=listIdentifier[i];
+		if(oIdentifier.type.coding[0].code=="siglcode" || oIdentifier.type.coding[0].code=="siglid")
+		{
+			found=true;
+			break;
+		}
+	}
+	return found;
+}
+//return eSIGL facility matches the id
+exports.getFacilityInTheListFromId=function getFacilityInTheListFromId(idToSearch,listOfFacility)
+{
+	var found=null;
+	for(var i=0;i<listOfFacility.length;i++)
+	{
+		//console.log(""+listOfFacility[i].id+"==""+idToSearch);
+		if(""+listOfFacility[i].id==""+idToSearch)
+		{
+			found=listOfFacility[i];
+			break;
+		}
+	}
+	return found;
+}
+//return eSIGL facility-type matches the id
+exports.getFacilityTypeInTheListFromId=function getFacilityTypeInTheListFromId(idToSearch,listOfFacilityTypes)
+{
+	var found=null;
+	for(var i=0;i<listOfFacilityTypes.length;i++)
+	{
+		if(""+listOfFacilityTypes[i].id==""+idToSearch)
+		{
+			found=listOfFacilityTypes[i];
+			break;
+		}
+	}
+	return found;
 }
 
 //Format the string date ISO8601 from DHIS2 in Zform (Zulu time Zone) whikch is the format accepted by HAPI Fhir Server
@@ -154,8 +222,8 @@ function formatDateInZform(originalDate)
 	var dateCorrected="";
 	if(originalDate.includes("T")==false)
 	{
-		dateCorrected=originalDate.replace(" ","T");    
-		//console.log("date: "+originalDate);                 
+		dateCorrected=originalDate.replace(" ","T");
+		//console.log("date: "+originalDate);
 	}
 	else
 	{
@@ -181,7 +249,7 @@ function formatDateInZform(originalDate)
 	}
 	return formatedDate+manifest.typeZone;
 }
-//read CSV file as specified 
+//read CSV file as specified
 //@@ _filename: full path of the file name
 exports.readCSVFile=function readCSVFile(_filename,callback)
 {
