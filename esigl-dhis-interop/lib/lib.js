@@ -2,7 +2,11 @@ const moment = require('moment');
 const url=require('url');
 const manifest = require('../config/manifest')
 const uuidv1 = require('uuid/v1');
- var csvUtil = require('csv-util');
+var csvUtil = require('csv-util');
+var mongoose = require('mongoose');
+mongoose.connect('mongodb://localhost:27017/interopmediator');
+var Schema=mongoose.Schema;
+
 
 //Return a bundle of Organization from the orgunit list
 exports.buildOrganizationHierarchy =function buildOrganizationHierarchy(orgUnitList)
@@ -166,6 +170,145 @@ exports.updateOrganizationFromeSIGL=function updateOrganizationFromeSIGL(eSIGLFa
 	return updatedOrganization;
 	//updatedOrganization.
 }
+//Build list of products:Basics extension from the eSIGL products and related list informations
+exports.buildProductFhirResources=function buildProductFhirResources(listProducts,listProductCategories,listDosageUnits,hrefDomaineSIGL,hrefDomainFhir)
+{
+	var listProductsFhir=[];
+	var identifierCodingSystem=hrefDomaineSIGL+"/product-id";
+	var productExtensionCodingSystem=hrefDomainFhir+"/fhir/StructureDefinition/Product";
+	var productCode={coding:[{system:productExtensionCodingSystem,code:"product",display:"product"}],text:"product"};
+	for(var i=0;i<listProducts.length;i++)
+	{
+		var oProduct=listProducts[i];
+		var oDosageUnit=getDosageUnit(oProduct.dosageUnitId,listDosageUnits);
+		var productDosageUnit={};
+		if(oDosageUnit!=null)
+		{
+			//console.log(oProduct);
+			productDosageUnit= {coding:[{system:productExtensionCodingSystem,code:oDosageUnit.code,display:oDosageUnit.code}],text:oDosageUnit.id};
+		}
+		var identifier=[{
+		use:"official",
+		type:{coding:[{system:identifierCodingSystem,code:"productid",display:"productid"}],text:"productid"},
+		value:oProduct.id
+		},
+		{
+		use:"official",
+		type:{coding:[{system:identifierCodingSystem,code:"productcode",display:"productcode"}],text:"productcode"},
+		value:oProduct.code
+		}
+		];
+		var oProduct={
+			resourceType:"Basic",
+			id:oProduct.code,
+			identifier:identifier,
+			code:productCode,
+			extension:[
+					{
+						url:hrefDomainFhir+"/fhir/ProductDetail/primaryName",
+						valueString:oProduct.primaryName
+					},
+					{
+						url:hrefDomainFhir+"/fhir/ProductDetail/fullName",
+						valueString:oProduct.fullName
+					},
+					{
+						url:hrefDomainFhir+"/fhir/ProductDetail/dosageUnit",
+						valueCodeableConcept:productDosageUnit
+					},
+					{
+						url:hrefDomainFhir+"/fhir/ProductDetail/dispensingUnit",
+						valueString:oProduct.dispensingUnit
+					},
+					{
+						url:hrefDomainFhir+"/fhir/ProductDetail/dosePerDispensingUnit",
+						valueInteger:oProduct.dosesPerDispensingUnit
+					},
+					{
+						url:hrefDomainFhir+"/fhir/ProductDetail/packSize",
+						valueInteger:oProduct.packSize
+					},
+					{
+						url:hrefDomainFhir+"/fhir/ProductDetail/tracer",
+						valueInteger:oProduct.tracer==false?0:1
+					}
+				]
+		}
+		listProductsFhir.push(oProduct);
+	}//end of for
+	return listProductsFhir;
+}
+exports.buildProgramFhirResources=function buildProgramFhirResources(listPrograms,hrefDomaineSIGL,hrefDomainFhir)
+{
+	var listProgramsFhir=[];
+	var identifierCodingSystem=hrefDomaineSIGL+"/program-id";
+	var programExtensionCodingSystem=hrefDomainFhir+"/fhir/StructureDefinition/Program";
+	var programCode={coding:[{system:programExtensionCodingSystem,code:"program",display:"program"}],text:"program"};
+	for(var i=0;i<listPrograms.length;i++)
+	{
+		var oProgram=listPrograms[i];
+		var identifier=[{
+			use:"official",
+			type:{coding:[{system:identifierCodingSystem,code:"programid",display:"programid"}],text:"programid"},
+			value:oProgram.id
+		},
+		{
+			use:"official",
+			type:{coding:[{system:identifierCodingSystem,code:"programcode",display:"programcode"}],text:"programcode"},
+			value:oProgram.code
+		}];
+		var oProgram={
+			resourceType:"OrganizationAffiliation",
+			id:oProgram.code,
+			identifier:identifier,
+			code:programCode,
+			extension:[
+				{
+					url:hrefDomainFhir+"/fhir/ProgramDetails/name",
+					valueString:oProgram.name
+				},
+				{
+					url:hrefDomainFhir+"/fhir/ProgramDetails/description",
+					valueString:oProgram.description
+				}
+			]
+		}
+		listProgramsFhir.push(oProgram);
+		
+	}//end for
+	return listProgramsFhir;
+	
+}
+//return a dosage unit form the list by id
+//@@dosageUnitId, the id of the dosage unit
+function getDosageUnit(dosageUnitId,listDosageUnits)
+{
+	var oDosageUnit=null;
+	for(var i=0;i<listDosageUnits.length;i++)
+	{
+		if (listDosageUnits[i].id==dosageUnitId)
+		{
+			oDosageUnit=listDosageUnits[i];
+			break
+		}
+	}
+	return oDosageUnit;
+}
+//return a product-category form the list by id
+//@@productCategoryId, the id of the productCategory
+function getProductCategory(productCategoryId,listProductCategories)
+{
+	var oProductCategory=null;
+	for(var i=0;i<listProductCategories.length;i++)
+	{
+		if (listProductCategories[i].id==productCategoryId)
+		{
+			oProductCategory=listProductCategories[i];
+			break
+		}
+	}
+	return oProductCategory;
+}
 //check if the eSIGL-Organizatin mapping has been done already
 exports.checkOrganizationAlreadyMapped=function checkOrganizationAlreadyMapped(organization)
 {
@@ -265,3 +408,89 @@ exports.readCSVFile=function readCSVFile(_filename,callback)
   		return callback(csvData);
 	});
 }
+
+//---------------------------------Mongodb part to manage http load to push requisition to fhir server--------------------------
+var organizationSchema=Schema({
+	code: String,
+	lastDateOfRequisitionSync:Date
+});
+var synchedOrganizationDefinition=mongoose.model('synchedOrganization',organizationSchema);
+//return the list of organization which requisition has been already synched
+var getAllSynchedOrganization=function (callback)
+{
+	var requestResult=synchedOrganizationDefinition.find({}).exec(function(error,synchedOrganizationsList){
+		if(error) return handleError(err);
+		return callback(synchedOrganizationsList);
+		});
+}
+var upsertSynchedOrganization=function(synchedOrganization,callback)
+{
+	synchedOrganizationDefinition.findOne({
+			code:synchedOrganization.code,
+			}).exec(function(error,foundSynchedOrganization){
+				if(error) {
+					console.log(error);
+					callback(false)
+				}
+				else
+				{
+					if(!foundSynchedOrganization)
+					{
+						var orgToUpdate= new synchedOrganizationDefinition({code:synchedOrganization.code,
+							lastDateOfRequisitionSync:synchedOrganization.date});
+						requestResult=orgToUpdate.save(function(err,result){
+							if(err)
+							{
+								console.log(err);
+								callback(false);
+							}
+							else
+							{
+								callback(true);
+							}
+						});
+					}
+				}
+			})//end of exec
+}
+
+var saveAllSynchedOrganizations=function (synchedOrganizationList,callBackReturn)
+{
+	const async = require("async"); 
+	var result=false;
+	
+	async.each(synchedOrganizationList,function(synchedOrganization,callback)
+	{
+		upsertSynchedOrganization(synchedOrganization,function(response)
+		{
+			result=response;
+			if(response)
+			{
+				console.log(synchedOrganization.code +"inserted with success.");
+			}
+			else
+			{
+				console.log(synchedOrganization.code +"failed to be inserted!");
+			}
+			callback(response);
+		})
+	},function(err)
+	{
+		if(err)
+		{
+			console.log(err);
+			callBackReturn(false);
+		}
+		if(response)
+		{
+			callBackReturn(true);
+		}
+		else
+		{
+			callBackReturn(false);
+		}
+		
+	});//end of asynch
+}
+exports.getAllSynchedOrganization=getAllSynchedOrganization;
+exports.saveAllSynchedOrganizations=saveAllSynchedOrganizations;

@@ -1,6 +1,6 @@
 {
   "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60b41c05c",
-  "version": "0.3.1",
+  "version": "0.3.3",
   "name": "DHIS2 orgUnits to FHIR Mediator",
   "description": "Pull OrgUnits from DHIS2, convert them to Organization and push in HAPI Fhir",
   "defaultChannelConfig": [
@@ -53,6 +53,81 @@
       ],
       "allow": ["exchange"],
       "type": "polling"
+    },
+    {
+      "name": "Get Products list from eSIGL and push it to Fhir Server",
+      "urlPattern": "^/syncproduct2fhir/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "0 0 1 * *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Sync eSIGL product to FHIR ",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/syncproduct2fhir",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "polling"
+    },
+    {
+      "name": "Get program list from eSIGL and push it to Fhir Server",
+      "urlPattern": "^/syncprogram2fhir/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "0 0 1 * *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Sync eSIGL program to FHIR ",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/syncprogram2fhir",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "polling"
+    },
+    {
+      "name": "Get requisition  list from eSIGL and push it to Fhir Server",
+      "urlPattern": "^/syncrequisition2fhir/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "*/5 1-3 30 * *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Sync eSIGL requisitions to FHIR ",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/syncrequisition2fhir",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "polling"
     }
   ],
   "endpoints": [
@@ -61,14 +136,6 @@
       "host": "localhost",
       "path": "/syncorgunit2fhir",
       "port": "5021",
-      "primary": true,
-      "type": "http"
-    },
-     {
-      "name": " Map eSIGL facilies to Organization in Fhir",
-      "host": "localhost",
-      "path": "/mapfacility2fhir",
-      "port": "5022",
       "primary": true,
       "type": "http"
     }
@@ -174,26 +241,35 @@
       "description": "full path of the file name (e.g: /home/me/mappingfile/mapping.csv)",
       "type": "string",
       "template": []
+    },
+    {
+      "param": "batchSizeRequisitionFacilities",
+      "displayName": "batchSizeRequisitionFacilities ",
+      "description": "numbre of facility to process within each poll to get requisitions information (Starting from 20)",
+      "type": "integer",
+      "template": []
     }
+    
   ],
   "config": {
     "upstreamUrl": "http://sampleApplication:7001",
     "clientPassword":"mdp",
     "dhis2Server":{
-		"url":"url",
-		"username":"usr",
+		"url":"http://192.168.1.148:8082",
+		"username":"user",
 		"password":"pwd",
 		"orgunitapipath":"/dhis/api/organisationUnits.json?fields=:all&paging=false"
 		},
 	"hapiServer":{
-		"url":"http://192.168.1.18:8083/hapi-fhir-jpaserver"
+		"url":"http://192.168.1.148:8083/hapi-fhir-jpaserver"
 		},
 	"esiglServer":{
 		"url":"http://192.168.1.51:9091",
-		"username":"Admin123",
-		"password":"Admin123",
+		"username":"user",
+		"password":"pwd",
 		"resourcespath":"/rest-api/lookup"
 		},
-	"mappingFile":"/home/me/data/mappingstructure-esigl-dhis2.csv"
+	"mappingFile":"/home/exchange-server/guinea-interop-dhis2-esigl/esigl-dhis-interop/data/mappingstructure-esigl-dhis2_final.csv",
+	"batchSizeRequisitionFacilities":20
   }
 }
