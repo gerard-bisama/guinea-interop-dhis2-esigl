@@ -279,6 +279,21 @@ exports.buildProgramFhirResources=function buildProgramFhirResources(listProgram
 	return listProgramsFhir;
 	
 }
+exports.getFacilityeSiGLCode=function getFacilityeSiGLCode(organization)
+{
+	var eSigleCode=null;
+	//console.log(organization.identifier);
+	for(var i=0;i<organization.identifier.length;i++)
+	{
+		var oIdentifier=organization.identifier[i];
+		if(oIdentifier.type.coding[0].code=="siglcode")
+		{
+			eSigleCode=oIdentifier.value;
+			break;
+		}
+	}
+	return eSigleCode;
+}
 //return a dosage unit form the list by id
 //@@dosageUnitId, the id of the dosage unit
 function getDosageUnit(dosageUnitId,listDosageUnits)
@@ -353,6 +368,55 @@ exports.getFacilityTypeInTheListFromId=function getFacilityTypeInTheListFromId(i
 		}
 	}
 	return found;
+}
+//return the list of organization from fhir not synched in mongodb log
+//@@ batchSize : the limit size of the returned result
+//@@ listSynchedOrganizations the list of {code,date} from mongodb log
+//@@ listOrganizations of all organization from fhir
+exports.getOrganizationsNotSynched=function getOrganizationsNotSynched(batchSize,listSynchedOrganizations,listOrganizations)
+{
+	var listSelectedOrganizations=[];
+	if(listSynchedOrganizations.length>0)
+	{
+		for(var iteratorOrg=0;iteratorOrg<listOrganizations.length;iteratorOrg++)
+		{
+			var organization=listOrganizations[iteratorOrg];
+			var found=false;
+			for(var iteratorsync=0;iteratorsync<listSynchedOrganizations.length;iteratorsync++)
+			{
+				if (listSynchedOrganizations[iteratorsync].code==organization.id)
+				{
+					found=true;
+					break;
+				}
+			}
+			if(found)
+			{
+				continue;
+			}
+			else
+			{
+				listSelectedOrganizations.push(organization)
+				if(listSelectedOrganizations.length>=batchSize)
+				{
+					break;
+				}
+			}
+		}
+	}
+	else
+	{
+		for(var iteratorOrg=0;iteratorOrg<listOrganizations.length;iteratorOrg++)
+		{
+			listSelectedOrganizations.push(listOrganizations[iteratorOrg]);
+			if(listSelectedOrganizations.length>=batchSize)
+			{
+				break;
+			}
+		}
+	}
+	
+	return listSelectedOrganizations;
 }
 
 //Format the string date ISO8601 from DHIS2 in Zform (Zulu time Zone) whikch is the format accepted by HAPI Fhir Server
@@ -437,7 +501,7 @@ var upsertSynchedOrganization=function(synchedOrganization,callback)
 					if(!foundSynchedOrganization)
 					{
 						var orgToUpdate= new synchedOrganizationDefinition({code:synchedOrganization.code,
-							lastDateOfRequisitionSync:synchedOrganization.date});
+							lastDateOfRequisitionSync:synchedOrganization.lastDateOfRequisitionSync});
 						requestResult=orgToUpdate.save(function(err,result){
 							if(err)
 							{
@@ -481,7 +545,7 @@ var saveAllSynchedOrganizations=function (synchedOrganizationList,callBackReturn
 			console.log(err);
 			callBackReturn(false);
 		}
-		if(response)
+		if(result)
 		{
 			callBackReturn(true);
 		}

@@ -246,17 +246,24 @@
       "param": "batchSizeRequisitionFacilities",
       "displayName": "batchSizeRequisitionFacilities ",
       "description": "numbre of facility to process within each poll to get requisitions information (Starting from 20)",
-      "type": "integer",
+      "type": "string",
+      "template": []
+    } ,
+    {
+      "param": "facilityLevesForRequisitions",
+      "displayName": "facilityLevesForRequisitions ",
+      "description": "Levels of facility (comma separated) to take into account for requisition based onorganization.type (level_4,level_5)",
+      "type": "string",
       "template": []
     }
     
   ],
   "config": {
     "upstreamUrl": "http://sampleApplication:7001",
-    "clientPassword":"mdp",
+    "clientPassword":"pwd",
     "dhis2Server":{
 		"url":"http://192.168.1.148:8082",
-		"username":"user",
+		"username":"username",
 		"password":"pwd",
 		"orgunitapipath":"/dhis/api/organisationUnits.json?fields=:all&paging=false"
 		},
@@ -270,6 +277,7 @@
 		"resourcespath":"/rest-api/lookup"
 		},
 	"mappingFile":"/home/exchange-server/guinea-interop-dhis2-esigl/esigl-dhis-interop/data/mappingstructure-esigl-dhis2_final.csv",
-	"batchSizeRequisitionFacilities":20
+	"batchSizeRequisitionFacilities":"50",
+	"facilityLevesForRequisitions":"level_4,level_5"
   }
 }

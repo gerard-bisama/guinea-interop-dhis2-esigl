@@ -1285,12 +1285,143 @@ function setupApp () {
 		{
 			open_timeout: 600000
 		});
+		const basicClientToken = `Basic ${btoa(mediatorConfig.config.esiglServer.username+':'+mediatorConfig.config.esiglServer.password)}`;
 		var globalSharedOrganisation=[];
 		winston.info("Start extraction of requisitions from eSIGL...!");
-		getAllOrganizations("","level_5",globalSharedOrganisation,function(listOrganizations)
+		//Only facility with the set levele and which the boby contains siglcode will be considered
+		var levelOrganizationCode=mediatorConfig.config.facilityLevesForRequisitions;
+		var filter="identifier:text=siglcode&_sort=type&_pretty=true&_count=100";
+		getAllOrganizations("",filter,globalSharedOrganisation,function(listOrganizations)
 		{
-			console.log("Nombre of orgunit retreived: "+listOrganizations.length);
-			console.log(JSON.stringify(listOrganizations[600]));
+			winston.info("Number of orgunit of having siglcode: "+listOrganizations.length);
+			//now  get all synchedOrganization from mongodb log db
+			customLibrairy.getAllSynchedOrganization(function (listSynchedOrganizations)
+			{
+				//console.log(listSynchedOrganizations);
+				var listOrganizationToSync=[];
+				var batchSize=parseInt(mediatorConfig.config.batchSizeRequisitionFacilities);
+				if(listSynchedOrganizations.length>0)
+				{
+					//console.log("Synched organization "+listSynchedOrganizations.length);
+					winston.info("Section of batch on the organization based on the previous sync...");
+					listOrganizationToSync=customLibrairy.getOrganizationsNotSynched(batchSize,listSynchedOrganizations,listOrganizations);
+				}
+				else //first time or no requisition synched, then take the firstbatch
+				{
+					winston.info("First batch of organization.... ");
+					listOrganizationToSync=customLibrairy.getOrganizationsNotSynched(batchSize,listSynchedOrganizations,listOrganizations);
+					
+				}
+				//console.log(listOrganizationToSync);
+				//Now build orchestrator to get requisition by facility
+				var orchestrations=[];
+				for(var i=0;i<listOrganizationToSync.length;i++)
+				{
+					var organization=listOrganizationToSync[i];
+					var eSiglCode=customLibrairy.getFacilityeSiGLCode(organization);
+					
+					orchestrations.push(
+						{ 
+						ctxObjectRef: "requisitions/"+eSiglCode,
+						name: "requisitions/"+eSiglCode, 
+						domain: mediatorConfig.config.esiglServer.url,
+						path: "/rest-api/requisitions",
+						params:"?facilityCode="+eSiglCode,
+						body: "",
+						method: "GET",
+						headers: {'Authorization': basicClientToken}
+					  });
+					
+				}
+				var ctxObject = []; 
+				var orchestrationsResults=[]; 
+				var listRequisitionsFromeSIGL=[];
+				
+				async.each(orchestrations, function(orchestration, callback) {
+					var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
+					//console.log(orchUrl);
+					var options={headers:orchestration.headers};
+					winston.info("Querying "+orchestration.ctxObjectRef+" from eSIGL....");
+					needle.get(orchUrl,options, function(err, resp) {
+						if ( err ){
+							callback(err);
+						}
+						orchestrationsResults.push({
+						name: orchestration.name,
+						request: {
+						  path : orchestration.path,
+						  headers: orchestration.headers,
+						  querystring: orchestration.params,
+						  body: orchestration.body.requisitions,
+						  method: orchestration.method,
+						  timestamp: new Date().getTime()
+						},
+						response: {
+						  status: resp.statusCode,
+						  body: JSON.stringify(resp.body, null, 4),
+						  timestamp: new Date().getTime()
+						}
+						});
+						ctxObject[orchestration.ctxObjectRef] = resp.body;
+						callback();
+					});//end of needle
+					
+				},function(err)
+				{
+					if(err)
+					{
+						winston.error(err);
+						
+					}
+					var status = 'Successful';
+					var response = {
+					  status: 200,
+					  headers: {
+						'content-type': 'application/json'
+					  },
+					  body:JSON.stringify( {'resquestResult':'success'}),
+					  timestamp: new Date().getTime()
+					};
+					//listFromeSIGL=ctxObject.products.products;
+					var listRequitions=[]
+					console.log("Orchestration processed :"+orchestrationsResults.length);
+					console.log("-------------------------------------------------------");
+					console.log(listOrganizationToSync);
+					//now save the list of facility synched in mongod log
+					//var lastSynchedDate=new Date().toJSON();
+					var lastSynchedDate=new Date();
+					var listSynchedOrganizations=[];
+					for(var i=0;i<listOrganizationToSync.length;i++)
+					{
+						var facilityCode=customLibrairy.getFacilityeSiGLCode(listOrganizationToSync[i]);
+						listSynchedOrganizations.push({
+								code:facilityCode,
+								lastDateOfRequisitionSync:lastSynchedDate
+							});
+					}
+					customLibrairy.saveAllSynchedOrganizations(listSynchedOrganizations,function(resultOperation)
+					{
+						if(resultOperation)
+						{
+							winston.info("Batch of facilities "+listSynchedOrganizations.length+" synched in the log");
+						}
+						else
+						{
+							winston.error("Failed to save the batch of "+listSynchedOrganizations.length+" facilities");
+						}
+					});
+					//console.log(listSynchedOrganizations);
+					/*
+					for(var iteratorResult=0;iteratorResult<orchestrationsResults.length;iteratorResult++)
+					{
+						
+					}*/
+					
+				});//end of async
+			});
+			
+			//console.log("Nombre of orgunit retreived: "+listOrganizations.length);
+			//console.log(JSON.stringify(listOrganizations[600]));
 		});
 		
 		/*
@@ -1307,14 +1438,20 @@ function setupApp () {
 	});//end app.get syncrequisition2fhir
   return app
 }
-function getAllOrganizations(bundleParam,level,globalStoredList,callback)
+//return the list of Organization from fhir based on the filter content
+//@@ bundleParam callback parameter for recursive call
+//@@filter based on the body contains, using _content=siglcode
+//@@ globalStoredList store list of entries in every iterations
+function getAllOrganizations(bundleParam,filter,globalStoredList,callback)
 {
 	
 	
 	var urlRequest="";
 	if(bundleParam=="")
 	{
-		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Organization?type=${level}`;
+		//urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Organization?type=${level}`;
+		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Organization?${filter}`;
+		
 		winston.info("First iteration!")
 	}
 	else
@@ -1346,7 +1483,7 @@ function getAllOrganizations(bundleParam,level,globalStoredList,callback)
 			{
 				for(var iterator=0;iterator<responseBundle.entry.length;iterator++)
 				{
-					globalStoredList.push(responseBundle.entry[iterator]);
+					globalStoredList.push(responseBundle.entry[iterator].resource);
 				}
 				if(responseBundle.link.length>0)
 				{
@@ -1367,7 +1504,7 @@ function getAllOrganizations(bundleParam,level,globalStoredList,callback)
 					{
 						console.log();
 						console.log("---------------------------------");
-						getAllOrganizations(responseBundle.link[iterator].url,level,globalStoredList,callback);
+						getAllOrganizations(responseBundle.link[iterator].url,filter,globalStoredList,callback);
 					}
 					else
 					{
