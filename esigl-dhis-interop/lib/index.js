@@ -1386,29 +1386,32 @@ function setupApp () {
 					var listRequitions=[]
 					console.log("Orchestration processed :"+orchestrationsResults.length);
 					console.log("-------------------------------------------------------");
-					console.log(listOrganizationToSync);
+					//console.log(listOrganizationToSync);
 					//now save the list of facility synched in mongod log
 					//var lastSynchedDate=new Date().toJSON();
 					var lastSynchedDate=new Date();
-					var listSynchedOrganizations=[];
+					//var listSynchedOrganizations=[];
+					var listOrganizationToLog=[];
 					for(var i=0;i<listOrganizationToSync.length;i++)
 					{
 						var facilityCode=customLibrairy.getFacilityeSiGLCode(listOrganizationToSync[i]);
-						listSynchedOrganizations.push({
+						listOrganizationToLog.push({
 								code:facilityCode,
 								lastDateOfRequisitionSync:lastSynchedDate
 							});
 					}
-					customLibrairy.saveAllSynchedOrganizations(listSynchedOrganizations,function(resultOperation)
+					console.log("Organization built to be logged :"+listOrganizationToLog.length);
+					customLibrairy.saveAllSynchedOrganizations(listOrganizationToLog,function(resultOperation)
 					{
 						if(resultOperation)
 						{
-							winston.info("Batch of facilities "+listSynchedOrganizations.length+" synched in the log");
+							winston.info("Batch of facilities "+listOrganizationToLog.length+" synched in the log");
 						}
 						else
 						{
-							winston.error("Failed to save the batch of "+listSynchedOrganizations.length+" facilities");
+							winston.error("Failed to save the batch of "+listOrganizationToLog.length+" facilities");
 						}
+						
 					});
 					//console.log(listSynchedOrganizations);
 					/*

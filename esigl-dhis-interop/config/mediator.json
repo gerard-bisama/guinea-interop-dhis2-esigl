@@ -262,8 +262,8 @@
     "upstreamUrl": "http://sampleApplication:7001",
     "clientPassword":"pwd",
     "dhis2Server":{
-		"url":"http://192.168.1.148:8082",
-		"username":"username",
+		"url":"http://192.168.1.48:8080",
+		"username":"user",
 		"password":"pwd",
 		"orgunitapipath":"/dhis/api/organisationUnits.json?fields=:all&paging=false"
 		},
@@ -271,7 +271,7 @@
 		"url":"http://192.168.1.148:8083/hapi-fhir-jpaserver"
 		},
 	"esiglServer":{
-		"url":"http://192.168.1.51:9091",
+		"url":"http://192.168.1.50:9091",
 		"username":"user",
 		"password":"pwd",
 		"resourcespath":"/rest-api/lookup"

@@ -279,7 +279,7 @@ exports.buildProgramFhirResources=function buildProgramFhirResources(listProgram
 	return listProgramsFhir;
 	
 }
-exports.getFacilityeSiGLCode=function getFacilityeSiGLCode(organization)
+var getFacilityeSiGLCode=function (organization)
 {
 	var eSigleCode=null;
 	//console.log(organization.identifier);
@@ -376,6 +376,7 @@ exports.getFacilityTypeInTheListFromId=function getFacilityTypeInTheListFromId(i
 exports.getOrganizationsNotSynched=function getOrganizationsNotSynched(batchSize,listSynchedOrganizations,listOrganizations)
 {
 	var listSelectedOrganizations=[];
+	//console.log("Size list synched org :"+listSynchedOrganizations.length);
 	if(listSynchedOrganizations.length>0)
 	{
 		for(var iteratorOrg=0;iteratorOrg<listOrganizations.length;iteratorOrg++)
@@ -384,7 +385,8 @@ exports.getOrganizationsNotSynched=function getOrganizationsNotSynched(batchSize
 			var found=false;
 			for(var iteratorsync=0;iteratorsync<listSynchedOrganizations.length;iteratorsync++)
 			{
-				if (listSynchedOrganizations[iteratorsync].code==organization.id)
+				var organizationCode=getFacilityeSiGLCode(organization);
+				if (listSynchedOrganizations[iteratorsync].code==organizationCode)
 				{
 					found=true;
 					break;
@@ -514,6 +516,10 @@ var upsertSynchedOrganization=function(synchedOrganization,callback)
 							}
 						});
 					}
+					else
+					{
+						console.log("Organisation already logged!");
+					}
 				}
 			})//end of exec
 }
@@ -558,3 +564,4 @@ var saveAllSynchedOrganizations=function (synchedOrganizationList,callBackReturn
 }
 exports.getAllSynchedOrganization=getAllSynchedOrganization;
 exports.saveAllSynchedOrganizations=saveAllSynchedOrganizations;
+exports.getFacilityeSiGLCode=getFacilityeSiGLCode;
