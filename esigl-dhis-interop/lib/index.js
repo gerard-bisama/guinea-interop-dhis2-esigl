@@ -1281,6 +1281,7 @@ function setupApp () {
 		
 	})//end of app.get syncproduct2fhir
 	app.get('/syncrequisition2fhir', (req, res) => {
+		winston.info("***********************Channel for getting requisition triggered*******************************");
 		needle.defaults(
 		{
 			open_timeout: 600000
@@ -1323,7 +1324,7 @@ function setupApp () {
 					orchestrations.push(
 						{ 
 						ctxObjectRef: "requisitions/"+eSiglCode,
-						name: "requisitions/"+eSiglCode, 
+						name: eSiglCode, 
 						domain: mediatorConfig.config.esiglServer.url,
 						path: "/rest-api/requisitions",
 						params:"?facilityCode="+eSiglCode,
@@ -1358,7 +1359,7 @@ function setupApp () {
 						},
 						response: {
 						  status: resp.statusCode,
-						  body: JSON.stringify(resp.body, null, 4),
+						  body: JSON.stringify(resp.body.requisitions, null, 4),
 						  timestamp: new Date().getTime()
 						}
 						});
@@ -1373,6 +1374,7 @@ function setupApp () {
 						winston.error(err);
 						
 					}
+					winston.info("Requisitions extracted from eSIGL...");
 					var status = 'Successful';
 					var response = {
 					  status: 200,
@@ -1384,8 +1386,25 @@ function setupApp () {
 					};
 					//listFromeSIGL=ctxObject.products.products;
 					var listRequitions=[]
-					console.log("Orchestration processed :"+orchestrationsResults.length);
-					console.log("-------------------------------------------------------");
+					//console.log(orchestrationsResults[0]);
+					//console.log("-------------------------------------------------------");
+					//Now loop through orchestration results to build fhirResources
+					for(var iteratorRes=0;iteratorRes<orchestrationsResults.length;iteratorRes++)
+					{
+						var oResultOrchestration=orchestrationsResults[iteratorRes];
+						var responseBody=JSON.parse(oResultOrchestration.response.body);
+						//console.log(oResultOrchestration);
+						var listRequisitions=customLibrairy.buildRequisitionFhirResources(oResultOrchestration.name,responseBody,
+							mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
+						//console.log(listRequisitions[0]);
+						break;
+							
+						
+					}
+					console.log(JSON.stringify(listRequisitions[0]));
+					return;
+					
+					
 					//console.log(listOrganizationToSync);
 					//now save the list of facility synched in mongod log
 					//var lastSynchedDate=new Date().toJSON();
@@ -1400,6 +1419,7 @@ function setupApp () {
 								lastDateOfRequisitionSync:lastSynchedDate
 							});
 					}
+					
 					console.log("Organization built to be logged :"+listOrganizationToLog.length);
 					customLibrairy.saveAllSynchedOrganizations(listOrganizationToLog,function(resultOperation)
 					{

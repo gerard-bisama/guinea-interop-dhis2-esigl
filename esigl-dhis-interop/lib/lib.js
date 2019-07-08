@@ -279,6 +279,88 @@ exports.buildProgramFhirResources=function buildProgramFhirResources(listProgram
 	return listProgramsFhir;
 	
 }
+exports.buildRequisitionFhirResources=function buildRequisitionFhirResources(facilityCode,listRequisitions,hrefDomaineSIGL,hrefDomainFhir)
+{
+	var listRequisitionFhir=[];
+	var identifierCodingSystem=hrefDomaineSIGL+"/requisition-id";
+	var requisitionExtensionCodingSystem=hrefDomainFhir+"/fhir/StructureDefinition/Requisition";
+	var requisitionCode={coding:[{system:requisitionExtensionCodingSystem,code:"requisition",display:"requisition"}],text:"requisition"};
+	for(var iteratorReq=0;iteratorReq<listRequisitions.length;iteratorReq++)
+	{
+		var idRequisition=listRequisitions[iteratorReq].periodStartDate+"-"+listRequisitions[iteratorReq].programCode;
+		var dateTime=date=new Date(listRequisitions[iteratorReq].periodStartDate).toJSON();
+		var dateRequisition=dateTime.split("T")[0];
+		var identifier=[{
+			use:"official",
+			type:{coding:[{system:identifierCodingSystem,code:"requisitioncode",display:"requisitioncode"}],text:"requisitioncode"},
+			value:idRequisition
+		}];
+		//now loop through the product list to build requisitionDetail
+		var requisitionDetails=[];
+		for(var iteratorProduct=0;iteratorProduct<listRequisitions[iteratorReq].products.length;iteratorProduct++)
+		{
+			oProduct=listRequisitions[iteratorReq].products[iteratorProduct];
+			requisitionDetails.push(
+			//[
+				{
+					url: hrefDomainFhir+"/fhir/requisitionDetail";
+					extension:[{
+					url:hrefDomainFhir+"/fhir/requisitionDetail/product",
+					valueReference:{reference:"Product/"+oProduct.productCode}
+				},
+				{
+					url:hrefDomainFhir+"/fhir/requisitionDetail/program",
+					valueReference:{reference:"Program/"+listRequisitions[iteratorReq].programCode}
+				}
+				,
+				{
+					url:hrefDomainFhir+"/fhir/requisitionDetail/organization",
+					valueReference:{reference:"Organization/"+facilityCode}
+				}
+				,
+				{
+					url:hrefDomainFhir+"/fhir/requisitionDetail/initialStock",
+					valueDecimal:oProduct.beginningBalance
+				}
+				,
+				{
+					url:hrefDomainFhir+"/fhir/requisitionDetail/receivedQuantity",
+					valueDecimal:oProduct.quantityReceived
+				}
+				,
+				{
+					url:hrefDomainFhir+"/fhir/requisitionDetail/consumedQuantity",
+					valueDecimal:oProduct.quantityDispensed
+				}
+				,
+				{
+					url:hrefDomainFhir+"/fhir/requisitionDetail/losses",
+					valueDecimal:oProduct.totalLossesAndAdjustments
+				}
+				,
+				{
+					url:hrefDomainFhir+"/fhir/requisitionDetail/stockOnHand",
+					valueDecimal:oProduct.stockInHand
+				}
+				,
+				{
+					url:hrefDomainFhir+"/fhir/requisitionDetail/startDate",
+					valueDate:formatDateInZform(dateRequisition)
+				}]}
+			//]
+			);
+			break;
+		}//end for products
+		var oRequisition={
+			resourceType:"Basic",
+			id:idRequisition,
+			identifier:identifier,
+			code:requisitionCode,
+			extension:requisitionDetails};
+		listRequisitionFhir.push(oRequisition);
+	}//end for requisition
+	return listRequisitionFhir;
+}
 var getFacilityeSiGLCode=function (organization)
 {
 	var eSigleCode=null;
@@ -438,24 +520,29 @@ function formatDateInZform(originalDate)
 	{
 		dateCorrected=originalDate;
 	}
-	var dateComponants=dateCorrected.split("+");
-	if(dateComponants.length>0)
+	
+	//console.log("Date :"+dateCorrected);
+	if(dateCorrected.includes("+"))
 	{
-		formatedDate=dateComponants[0];//+"+00:00"
-		//formatedDate+="+00:00";
-		if(formatedDate.includes("Z")||formatedDate.includes("z"))
+		var dateComponants=dateCorrected.split("+");
+		if(dateComponants.length>0)
 		{
-			var dateComponant2=formatedDate.split("Z");
-			formatedDate=dateComponant2[0];
-		}
-		/*
-		else
-		{
+			formatedDate=dateComponants[0];//+"+00:00"
 			//formatedDate+="+00:00";
-			formatedDate+="Z";
+			if(formatedDate.includes("Z")||formatedDate.includes("z"))
+			{
+				var dateComponant2=formatedDate.split("Z");
+				formatedDate=dateComponant2[0];
+			}
 		}
-		* */
 	}
+	else
+	{
+		//add the timestamp part 
+		//console.log(dateCorrected+"T00:00:00.000+01:00");
+		formatedDate=dateCorrected+"T00:00:00.000";
+	}
+	
 	return formatedDate+manifest.typeZone;
 }
 //read CSV file as specified
