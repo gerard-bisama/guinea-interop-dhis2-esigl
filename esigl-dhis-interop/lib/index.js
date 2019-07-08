@@ -1323,8 +1323,8 @@ function setupApp () {
 					
 					orchestrations.push(
 						{ 
-						ctxObjectRef: "requisitions/"+eSiglCode,
-						name: eSiglCode, 
+						ctxObjectRef: eSiglCode,
+						name: organization.id, 
 						domain: mediatorConfig.config.esiglServer.url,
 						path: "/rest-api/requisitions",
 						params:"?facilityCode="+eSiglCode,
@@ -1342,13 +1342,14 @@ function setupApp () {
 					var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
 					//console.log(orchUrl);
 					var options={headers:orchestration.headers};
-					winston.info("Querying "+orchestration.ctxObjectRef+" from eSIGL....");
+					winston.info("Querying requisitions/"+orchestration.ctxObjectRef+" from eSIGL....");
 					needle.get(orchUrl,options, function(err, resp) {
 						if ( err ){
 							callback(err);
 						}
 						orchestrationsResults.push({
 						name: orchestration.name,
+						ctxObjectRef:orchestration.ctxObjectRef,
 						request: {
 						  path : orchestration.path,
 						  headers: orchestration.headers,
@@ -1385,7 +1386,7 @@ function setupApp () {
 					  timestamp: new Date().getTime()
 					};
 					//listFromeSIGL=ctxObject.products.products;
-					var listRequitions=[]
+					var listRequisitions=[]
 					//console.log(orchestrationsResults[0]);
 					//console.log("-------------------------------------------------------");
 					//Now loop through orchestration results to build fhirResources
@@ -1393,10 +1394,14 @@ function setupApp () {
 					{
 						var oResultOrchestration=orchestrationsResults[iteratorRes];
 						var responseBody=JSON.parse(oResultOrchestration.response.body);
+						console.log("Total found :"+responseBody.length);
+						//remove requisition where periodStartDate < definedConfDate
+						var listRequisition2Process=customLibrairy.geRequisitionsFromStartDate(mediatorConfig.config.periodStartDate,responseBody);
 						//console.log(oResultOrchestration);
-						var listRequisitions=customLibrairy.buildRequisitionFhirResources(oResultOrchestration.name,responseBody,
+						listRequisitions=customLibrairy.buildRequisitionFhirResources(oResultOrchestration.name,oResultOrchestration.ctxObjectRef,listRequisition2Process,
 							mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
 						//console.log(listRequisitions[0]);
+						console.log("Total retained :"+listRequisitions.length);
 						break;
 							
 						

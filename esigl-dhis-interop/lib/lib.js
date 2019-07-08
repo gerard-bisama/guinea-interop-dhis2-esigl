@@ -204,34 +204,39 @@ exports.buildProductFhirResources=function buildProductFhirResources(listProduct
 			identifier:identifier,
 			code:productCode,
 			extension:[
-					{
-						url:hrefDomainFhir+"/fhir/ProductDetail/primaryName",
-						valueString:oProduct.primaryName
-					},
-					{
-						url:hrefDomainFhir+"/fhir/ProductDetail/fullName",
-						valueString:oProduct.fullName
-					},
-					{
-						url:hrefDomainFhir+"/fhir/ProductDetail/dosageUnit",
-						valueCodeableConcept:productDosageUnit
-					},
-					{
-						url:hrefDomainFhir+"/fhir/ProductDetail/dispensingUnit",
-						valueString:oProduct.dispensingUnit
-					},
-					{
-						url:hrefDomainFhir+"/fhir/ProductDetail/dosePerDispensingUnit",
-						valueInteger:oProduct.dosesPerDispensingUnit
-					},
-					{
-						url:hrefDomainFhir+"/fhir/ProductDetail/packSize",
-						valueInteger:oProduct.packSize
-					},
-					{
-						url:hrefDomainFhir+"/fhir/ProductDetail/tracer",
-						valueInteger:oProduct.tracer==false?0:1
-					}
+				{
+					url:hrefDomainFhir+"/fhir/ProductDetail",
+					extension:
+					[
+						{
+							url:"primaryName",
+							valueString:oProduct.primaryName
+						},
+						{
+							url:"fullName",
+							valueString:oProduct.fullName
+						},
+						{
+							url:"dosageUnit",
+							valueCodeableConcept:productDosageUnit
+						},
+						{
+							url:"dispensingUnit",
+							valueString:oProduct.dispensingUnit
+						},
+						{
+							url:"dosePerDispensingUnit",
+							valueInteger:oProduct.dosesPerDispensingUnit
+						},
+						{
+							url:"packSize",
+							valueInteger:oProduct.packSize
+						},
+						{
+							url:"tracer",
+							valueInteger:oProduct.tracer==false?0:1
+						}]
+				}
 				]
 		}
 		listProductsFhir.push(oProduct);
@@ -263,15 +268,19 @@ exports.buildProgramFhirResources=function buildProgramFhirResources(listProgram
 			identifier:identifier,
 			code:programCode,
 			extension:[
-				{
-					url:hrefDomainFhir+"/fhir/ProgramDetails/name",
-					valueString:oProgram.name
-				},
-				{
-					url:hrefDomainFhir+"/fhir/ProgramDetails/description",
-					valueString:oProgram.description
-				}
-			]
+			{
+				url:hrefDomainFhir+"/fhir/ProgramDetails",
+				extension:
+				[
+					{
+						url:"name",
+						valueString:oProgram.name
+					},
+					{
+						url:"description",
+						valueString:oProgram.description
+					}]
+			}]
 		}
 		listProgramsFhir.push(oProgram);
 		
@@ -279,7 +288,7 @@ exports.buildProgramFhirResources=function buildProgramFhirResources(listProgram
 	return listProgramsFhir;
 	
 }
-exports.buildRequisitionFhirResources=function buildRequisitionFhirResources(facilityCode,listRequisitions,hrefDomaineSIGL,hrefDomainFhir)
+exports.buildRequisitionFhirResources=function buildRequisitionFhirResources(facilityId,facilityCode,listRequisitions,hrefDomaineSIGL,hrefDomainFhir)
 {
 	var listRequisitionFhir=[];
 	var identifierCodingSystem=hrefDomaineSIGL+"/requisition-id";
@@ -287,8 +296,8 @@ exports.buildRequisitionFhirResources=function buildRequisitionFhirResources(fac
 	var requisitionCode={coding:[{system:requisitionExtensionCodingSystem,code:"requisition",display:"requisition"}],text:"requisition"};
 	for(var iteratorReq=0;iteratorReq<listRequisitions.length;iteratorReq++)
 	{
-		var idRequisition=listRequisitions[iteratorReq].periodStartDate+"-"+listRequisitions[iteratorReq].programCode;
-		var dateTime=date=new Date(listRequisitions[iteratorReq].periodStartDate).toJSON();
+		var idRequisition=facilityCode+"-"+listRequisitions[iteratorReq].periodStartDate+"-"+listRequisitions[iteratorReq].programCode;
+		var dateTime=new Date(listRequisitions[iteratorReq].periodStartDate).toJSON();
 		var dateRequisition=dateTime.split("T")[0];
 		var identifier=[{
 			use:"official",
@@ -303,53 +312,90 @@ exports.buildRequisitionFhirResources=function buildRequisitionFhirResources(fac
 			requisitionDetails.push(
 			//[
 				{
-					url: hrefDomainFhir+"/fhir/requisitionDetail";
+					url: hrefDomainFhir+"/fhir/requisitionDetail",
 					extension:[{
-					url:hrefDomainFhir+"/fhir/requisitionDetail/product",
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/product",
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/product",
+					url:"product",
 					valueReference:{reference:"Product/"+oProduct.productCode}
 				},
 				{
-					url:hrefDomainFhir+"/fhir/requisitionDetail/program",
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/program",
+					url:"program",
 					valueReference:{reference:"Program/"+listRequisitions[iteratorReq].programCode}
 				}
 				,
 				{
-					url:hrefDomainFhir+"/fhir/requisitionDetail/organization",
-					valueReference:{reference:"Organization/"+facilityCode}
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/organization",
+					url:"organization",
+					valueReference:{reference:"Organization/"+facilityId}
 				}
 				,
 				{
-					url:hrefDomainFhir+"/fhir/requisitionDetail/initialStock",
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/initialStock",
+					url:"initialStock",
 					valueDecimal:oProduct.beginningBalance
 				}
 				,
 				{
-					url:hrefDomainFhir+"/fhir/requisitionDetail/receivedQuantity",
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/receivedQuantity",
+					url:"receivedQuantity",
 					valueDecimal:oProduct.quantityReceived
 				}
 				,
 				{
-					url:hrefDomainFhir+"/fhir/requisitionDetail/consumedQuantity",
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/consumedQuantity",
+					url:"consumedQuantity",
 					valueDecimal:oProduct.quantityDispensed
 				}
 				,
 				{
-					url:hrefDomainFhir+"/fhir/requisitionDetail/losses",
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/losses",
+					url:"losses",
 					valueDecimal:oProduct.totalLossesAndAdjustments
 				}
 				,
 				{
-					url:hrefDomainFhir+"/fhir/requisitionDetail/stockOnHand",
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/losses",
+					url:"positiveAdjustment",
+					valueDecimal:0
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/losses",
+					url:"negativeAdjustment",
+					valueDecimal:0
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/stockOnHand",
+					url:"stockOnHand",
 					valueDecimal:oProduct.stockInHand
 				}
 				,
 				{
-					url:hrefDomainFhir+"/fhir/requisitionDetail/startDate",
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/stockOnHand",
+					url:"averageMonthConsumption",
+					valueDecimal:0
+				},
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/stockOnHand",
+					url:"stockOutDay",
+					valueDecimal:0
+				}
+				,
+				{
+					url:"startDate",
 					valueDate:formatDateInZform(dateRequisition)
+				}
+				,
+				{
+					url:"endDate",
+					valueDate:""
 				}]}
 			//]
 			);
-			break;
+			//break;
 		}//end for products
 		var oRequisition={
 			resourceType:"Basic",
@@ -360,6 +406,28 @@ exports.buildRequisitionFhirResources=function buildRequisitionFhirResources(fac
 		listRequisitionFhir.push(oRequisition);
 	}//end for requisition
 	return listRequisitionFhir;
+}
+//returns the list of requisition filtered by the @startDate
+//@stardate: datestring in format "yyyy-mm-dd"
+//@list Requisitions by facility
+exports.geRequisitionsFromStartDate=function(startDate,listRequisitions)
+{
+	//convert the date string in date
+	var definedStartDate=new Date(startDate);
+	//console.log(`${startDate} to ${definedStartDate}`)
+	var listSelectedRequisitions=[];
+	for(var iterator=0;iterator<listRequisitions.length;iterator++)
+	{
+		var dateRequisition=new Date(listRequisitions[iterator].periodStartDate);
+		//console.log(`${dateRequisition}>=${definedStartDate}`)
+		if(dateRequisition>=definedStartDate)
+		{
+			
+			listSelectedRequisitions.push(listRequisitions[iterator]);
+		}
+		
+	}
+	return listSelectedRequisitions;
 }
 var getFacilityeSiGLCode=function (organization)
 {
