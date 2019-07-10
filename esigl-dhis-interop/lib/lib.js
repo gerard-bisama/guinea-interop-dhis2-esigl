@@ -288,6 +288,65 @@ exports.buildProgramFhirResources=function buildProgramFhirResources(listProgram
 	return listProgramsFhir;
 	
 }
+exports.buildProgramProductsFhirResources=function buildProgramProductsFhirResources(mainProgram,listProgramsProduct,hrefDomaineSIGL,hrefDomainFhir)
+{
+	var listProgramsFhir=[];
+	var identifierCodingSystem=hrefDomaineSIGL+"/program-id";
+	var programProductCodingSystem=hrefDomaineSIGL+"/program-category";
+	var programExtensionCodingSystem=hrefDomainFhir+"/fhir/StructureDefinition/Program";
+	var programCode={coding:[{system:programExtensionCodingSystem,code:"program",display:"program"}],text:"program"};
+	//var oProgram=mainProgram;
+		var identifier=[{
+			use:"official",
+			type:{coding:[{system:identifierCodingSystem,code:"programid",display:"programid"}],text:"programid"},
+			value:mainProgram.id
+		},
+		{
+			use:"official",
+			type:{coding:[{system:identifierCodingSystem,code:"programcode",display:"programcode"}],text:"programcode"},
+			value:mainProgram.code
+		}];
+	var productCategory={coding:[{system:programProductCodingSystem,code:listProgramsProduct[0].category,display:listProgramsProduct[0].category}],text:listProgramsProduct[0].category};
+	var oProgram={
+			resourceType:"OrganizationAffiliation",
+			id:mainProgram.code,
+			identifier:identifier,
+			type:programCode,
+			productCategory:productCategory,
+			extension:[
+			{
+				url:hrefDomainFhir+"/fhir/ProgramDetails",
+				extension:
+				[
+					{
+						url:"name",
+						valueString:mainProgram.name
+					},
+					{
+						url:"description",
+						valueString:mainProgram.description
+					},
+					{
+						url:"productCategory",
+						valueCodeableConcept:productCategory
+					}
+					
+				]
+			}]
+		};
+	var listProvidedProducts=[]
+	for(var i=0;i<listProgramsProduct.length;i++)
+	{
+		oProgram.extension[0].extension.push({
+			url:"providedProducts",
+			valueReference:{reference:"Basic/"+listProgramsProduct[i].productCode}
+		});
+	}//end for
+	//oProgram.extension[0].extension.push()
+	listProgramsFhir.push(oProgram);
+	return listProgramsFhir;
+}
+
 exports.buildRequisitionFhirResources=function buildRequisitionFhirResources(facilityId,facilityCode,listRequisitions,hrefDomaineSIGL,hrefDomainFhir)
 {
 	var listRequisitionFhir=[];
@@ -317,12 +376,12 @@ exports.buildRequisitionFhirResources=function buildRequisitionFhirResources(fac
 					//url:hrefDomainFhir+"/fhir/requisitionDetail/product",
 					//url:hrefDomainFhir+"/fhir/requisitionDetail/product",
 					url:"product",
-					valueReference:{reference:"Product/"+oProduct.productCode}
+					valueReference:{reference:"Basic/"+oProduct.productCode}
 				},
 				{
 					//url:hrefDomainFhir+"/fhir/requisitionDetail/program",
 					url:"program",
-					valueReference:{reference:"Program/"+listRequisitions[iteratorReq].programCode}
+					valueReference:{reference:"OrganizationAffiliation/"+listRequisitions[iteratorReq].programCode}
 				}
 				,
 				{
@@ -425,6 +484,10 @@ exports.geRequisitionsFromStartDate=function(startDate,listRequisitions)
 			
 			listSelectedRequisitions.push(listRequisitions[iterator]);
 		}
+		else //Not selected requisition
+		{
+			console.log(`Requisition not retained since the periodStartDate is ${dateRequisition}`);
+		}
 		
 	}
 	return listSelectedRequisitions;
@@ -474,6 +537,22 @@ function getProductCategory(productCategoryId,listProductCategories)
 	}
 	return oProductCategory;
 }
+//return a program form the list by programCode
+//@@programCode, the code of the program
+exports.getProgramFromList=function (programCode,listPrograms)
+{
+	var oProgram=null;
+	for(var i=0;i<listPrograms.length;i++)
+	{
+		if (listPrograms[i].code==programCode)
+		{
+			oProgram=listPrograms[i];
+			break
+		}
+	}
+	return oProgram;
+}
+
 //check if the eSIGL-Organizatin mapping has been done already
 exports.checkOrganizationAlreadyMapped=function checkOrganizationAlreadyMapped(organization)
 {
@@ -635,7 +714,12 @@ var organizationSchema=Schema({
 	code: String,
 	lastDateOfRequisitionSync:Date
 });
+var requisitionSyncSchema=Schema({
+	code:String, //by default 1
+	lastDateSynched:Date
+});
 var synchedOrganizationDefinition=mongoose.model('synchedOrganization',organizationSchema);
+var synchedRequisitionDefinition=mongoose.model('synchedRequisition',requisitionSyncSchema);
 //return the list of organization which requisition has been already synched
 var getAllSynchedOrganization=function (callback)
 {
@@ -643,6 +727,23 @@ var getAllSynchedOrganization=function (callback)
 		if(error) return handleError(err);
 		return callback(synchedOrganizationsList);
 		});
+}
+var getLastSynchedRequisitionDate=function (callback)
+{
+	var requestResult=synchedOrganizationDefinition.findOne({"code":1}).exec(function(error,lastSynchedRequisitionDate){
+		if(error) return handleError(err);
+		return callback(lastSynchedRequisitionDate);
+		});
+}
+var updateSynchedRequisitionDate=function (_lastSynchedDate,callback)
+{
+	synchedRequisitionDefinition.findOneAndUpdate({code:"1"},{$set:{lastDateSynched:_lastSynchedDate}},{upsert:true},(err, doc) => {
+		if (err) {
+			console.log("Error: Failed to update the record!");
+		}
+		console.log(true)
+	}
+	)
 }
 var upsertSynchedOrganization=function(synchedOrganization,callback)
 {

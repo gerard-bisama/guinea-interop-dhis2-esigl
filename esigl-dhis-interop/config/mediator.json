@@ -255,6 +255,29 @@
       "description": "Levels of facility (comma separated) to take into account for requisition based onorganization.type (level_4,level_5)",
       "type": "string",
       "template": []
+    },
+    {
+      "param": "periodStartDate",
+      "displayName": "periodStartDate ",
+      "description": "Date from which to select requisitions to process :>= (format:2019-01-01)",
+      "type": "string",
+      "template": []
+    }
+    ,
+    {
+      "param": "maxNumberDayRequisitionsToPull",
+      "displayName": "maxNumberDayRequisitionsToPull ",
+      "description": "Interval of date in days based on the periodStartDate to pull requisition (ex. 5 means pull each five days and to to the next 5)",
+      "type": "string",
+      "template": []
+    }
+    ,
+    {
+      "param": "pgStringConnection",
+      "displayName": "pgStringConnection ",
+      "description": "string connection to the db (ex. postgresql://<usr>:<password>@<IP>:<PORT>/<DB>)",
+      "type": "string",
+      "template": []
     }
     
   ],
@@ -262,22 +285,25 @@
     "upstreamUrl": "http://sampleApplication:7001",
     "clientPassword":"pwd",
     "dhis2Server":{
-		"url":"http://192.168.1.48:8080",
+		"url":"https://url.org",
 		"username":"user",
 		"password":"pwd",
 		"orgunitapipath":"/dhis/api/organisationUnits.json?fields=:all&paging=false"
 		},
 	"hapiServer":{
-		"url":"http://192.168.1.148:8083/hapi-fhir-jpaserver"
+		"url":"http://ip:8083/hapi-fhir-jpaserver"
 		},
 	"esiglServer":{
-		"url":"http://192.168.1.50:9091",
+		"url":"https://url.org",
 		"username":"user",
 		"password":"pwd",
-		"resourcespath":"/rest-api/lookup"
+		"resourcespath":"/rest-api"
 		},
 	"mappingFile":"/home/exchange-server/guinea-interop-dhis2-esigl/esigl-dhis-interop/data/mappingstructure-esigl-dhis2_final.csv",
-	"batchSizeRequisitionFacilities":"50",
-	"facilityLevesForRequisitions":"level_4,level_5"
+	"batchSizeRequisitionFacilities":"5",
+	"facilityLevesForRequisitions":"level_4,level_5",
+	"periodStartDate":"2018-12-01",
+	"maxNumberDayRequisitionsToPull":"5",
+	"pgStringConnection":"postgresql://usr:pwdd@localhost:port/db"
   }
 }

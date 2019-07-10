@@ -613,7 +613,7 @@ function setupApp () {
 			ctxObjectRef: "facilities",
 			name: "Get facilities from eSIGL", 
 			domain: mediatorConfig.config.esiglServer.url,
-			path: mediatorConfig.config.esiglServer.resourcespath+"/facilities?paging=false",
+			path: mediatorConfig.config.esiglServer.resourcespath+"/lookup/facilities?paging=false",
 			params: "",
 			body: "",
 			method: "GET",
@@ -623,7 +623,7 @@ function setupApp () {
 		  ctxObjectRef: "facilityTypes",
 			name: "Get facility types from eSIGL", 
 			domain: mediatorConfig.config.esiglServer.url,
-			path: mediatorConfig.config.esiglServer.resourcespath+"/facility-types",
+			path: mediatorConfig.config.esiglServer.resourcespath+"/lookup/facility-types",
 			params: "",
 			body: "",
 			method: "GET",
@@ -959,7 +959,7 @@ function setupApp () {
 			ctxObjectRef: "products",
 			name: "Get products from eSIGL", 
 			domain: mediatorConfig.config.esiglServer.url,
-			path: mediatorConfig.config.esiglServer.resourcespath+"/products?paging=false",
+			path: mediatorConfig.config.esiglServer.resourcespath+"/lookup/products?paging=false",
 			params: "",
 			body: "",
 			method: "GET",
@@ -969,7 +969,7 @@ function setupApp () {
 		  ctxObjectRef: "productCategories",
 			name: "Get product categories from eSIGL", 
 			domain: mediatorConfig.config.esiglServer.url,
-			path: mediatorConfig.config.esiglServer.resourcespath+"/product-categories",
+			path: mediatorConfig.config.esiglServer.resourcespath+"/lookup/product-categories",
 			params: "",
 			body: "",
 			method: "GET",
@@ -979,7 +979,7 @@ function setupApp () {
 		  ctxObjectRef: "dosageUnits",
 			name: "Get dosage unit from eSIGL", 
 			domain: mediatorConfig.config.esiglServer.url,
-			path: mediatorConfig.config.esiglServer.resourcespath+"/dosage-units",
+			path: mediatorConfig.config.esiglServer.resourcespath+"/lookup/dosage-units",
 			params: "",
 			body: "",
 			method: "GET",
@@ -1138,20 +1138,21 @@ function setupApp () {
 			ctxObjectRef: "programs",
 			name: "Get programs from eSIGL", 
 			domain: mediatorConfig.config.esiglServer.url,
-			path: mediatorConfig.config.esiglServer.resourcespath+"/programs",
+			path: mediatorConfig.config.esiglServer.resourcespath+"/lookup/programs",
 			params: "",
 			body: "",
 			method: "GET",
 			headers: {'Authorization': basicClientToken}
 		  }
 		  ];
-		var ctxObject = []; 
+		var ctxObject=[]; 
 		var orchestrationsResults=[]; 
 		var listProgramsFromeSIGL=[];
 		async.each(orchestrations, function(orchestration, callback) {
 			var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
 			//console.log(orchUrl);
 			var options={headers:orchestration.headers};
+			
 			winston.info("Querying "+orchestration.ctxObjectRef+"from eSIGL....");
 			needle.get(orchUrl,options, function(err, resp) {
 				if ( err ){
@@ -1174,6 +1175,7 @@ function setupApp () {
 				}
 				});
 				ctxObject[orchestration.ctxObjectRef] = resp.body;
+				//console.log(ctxObject);
 				callback();
 			});//end of needle
 			
@@ -1192,91 +1194,263 @@ function setupApp () {
 			  body:JSON.stringify( {'resquestResult':'success'}),
 			  timestamp: new Date().getTime()
 			};
+			//console.log(ctx);
 			listProgramsFromeSIGL=ctxObject.programs.programs;
-			var listProgramsFhir=customLibrairy.buildProgramFhirResources(listProgramsFromeSIGL,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
+			//var listProgramsFhir=customLibrairy.buildProgramFhirResources(listProgramsFromeSIGL,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
 			
-			winston.info("Transformation of program to Fhir Program extension done!");
-			var orchestrations2FhirUpdate=[];
-			for(var i=0;i<listProgramsFhir.length;i++)
+			//foreacdh program get now the category code and the list of supported products
+			
+			winston.info("Start extraction of programs-products information from eSIGL...!");
+			var orchestrationProgramProducts=[];
+			for(var iteratorProgram=0;iteratorProgram<listProgramsFromeSIGL.length;iteratorProgram++)
 			{
-				var oProgram=listProgramsFhir[i];
-				orchestrations2FhirUpdate.push({ 
-				ctxObjectRef: "program_"+i,
-				name: "push program for fhir ", 
-				domain: mediatorConfig.config.hapiServer.url,
-				path: "/fhir/OrganizationAffiliation/"+oProgram.id,
-				params: "",
-				body:  JSON.stringify(oProgram),
-				method: "PUT",
-				headers: {'Content-Type': 'application/json'}
-				});
+				var oProgramCode=listProgramsFromeSIGL[iteratorProgram].code;
+				orchestrationProgramProducts.push(
+				{ 
+					ctxObjectRef: oProgramCode,
+					name: oProgramCode, 
+					domain: mediatorConfig.config.esiglServer.url,
+					path: mediatorConfig.config.esiglServer.resourcespath+"/program-products",
+					params: "?programCode="+oProgramCode,
+					body: "",
+					method: "GET",
+					headers: {'Authorization': basicClientToken}
+				}
+				);
+				
 			}
-			var asyncFhir2Update = require('async');
-			var ctxObject2Update = []; 
-			var orchestrationsResults2Update=[];
+			var ctxObjectProgramProduct = []; 
+			var orchestrationsResultsProgramProducts=[]; 
+			var listProgramProductsFromeSIGL=[];
 			var counter=1;
-			asyncFhir2Update.each(orchestrations2FhirUpdate, function(orchestration2FhirUpdate, callbackFhirUpdate) {
-				var orchUrl = orchestration2FhirUpdate.domain + orchestration2FhirUpdate.path + orchestration2FhirUpdate.params;
-				var options={headers:orchestration2FhirUpdate.headers};
-				var productToPush=orchestration2FhirUpdate.body;
-				needle.put(orchUrl,productToPush,{json:true}, function(err, resp) {
-					// if error occured
+			async.each(orchestrationProgramProducts, function(orchestration, callbackProgramProduct) {
+				var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
+				var options={headers:orchestration.headers};
+				winston.info(counter+"/"+orchestrationProgramProducts.length);
+				winston.info("Querying program-products/"+orchestration.ctxObjectRef+"from eSIGL....");
+				needle.get(orchUrl,options, function(err, resp) {
 					if ( err ){
-						winston.error("Needle: error when pushing program data to hapi");
-						callbackFhirUpdate(err);
+						callbackProgramProduct(err);
 					}
-					winston.info(counter+"/"+orchestrations2FhirUpdate.length);
-					winston.info("...Inserting "+orchestration2FhirUpdate.path);
-					orchestrationsResults2Update.push({
-					name: orchestration2FhirUpdate.name,
+					orchestrationsResultsProgramProducts.push({
+					name: orchestration.name,
 					request: {
-					  path : orchestration2FhirUpdate.path,
-					  headers: orchestration2FhirUpdate.headers,
-					  querystring: orchestration2FhirUpdate.params,
-					  body: orchestration2FhirUpdate.body,
-					  method: orchestration2FhirUpdate.method,
+					  path : orchestration.path,
+					  headers: orchestration.headers,
+					  querystring: orchestration.params,
+					  body: orchestration.body,
+					  method: orchestration.method,
 					  timestamp: new Date().getTime()
 					},
 					response: {
 					  status: resp.statusCode,
-					  body: JSON.stringify(resp.body.toString('utf8'), null, 4),
+					  //body: JSON.stringify(resp.body, null, 4),
+					  body: resp.body,
 					  timestamp: new Date().getTime()
 					}
 					});
-					// add orchestration response to context object and return callback
-					ctxObject2Update[orchestration2FhirUpdate.ctxObjectRef] = resp.body.toString('utf8');
-					counter++;
-					callbackFhirUpdate();
-				});//end of needle.put
-			},function(err){
-				if (err){
-					winston.error(err);
+					ctxObjectProgramProduct[orchestration.ctxObjectRef] = resp.body;
+					//counter++;
+					callbackProgramProduct();
+				});//end needle get
+				counter++;
+			},function(error)
+			{
+				if(err)
+				{
+					winston.error("err");
 				}
-				var urn = mediatorConfig.urn;
-				var status = 'Successful';
-				var response = {
-				  status: 200,
-				  headers: {
-					'content-type': 'application/json'
-				  },
-				  body:JSON.stringify( {'Program_sync_operationd':'success'}),
-				  timestamp: new Date().getTime()
-				};
-				var properties = {};
-				properties['Nombre program maj'] =orchestrationsResults2Update.length;
-				var returnObject = {
-				  "x-mediator-urn": urn,
-				  "status": status,
-				  "response": response,
-				  "orchestrations": orchestrationsResults2Update,
-				  "properties": properties
+				var listAssociatedProgramFhirResources=[];
+				for (var iteratorResultProgramProduct=0;iteratorResultProgramProduct<orchestrationsResultsProgramProducts.length;iteratorResultProgramProduct++)
+				{
+					var programCode=orchestrationsResultsProgramProducts[iteratorResultProgramProduct].response.body.programProductList[0].programCode;
+					var oProgramToProcess=customLibrairy.getProgramFromList(programCode,listProgramsFromeSIGL);
+					var itemLists=orchestrationsResultsProgramProducts[iteratorResultProgramProduct].response.body.programProductList;
+					winston.info(orchestrationsResultsProgramProducts[iteratorResultProgramProduct].response.body.programProductList[0].programCode+" extracted program-products list: "+itemLists.length);
+					var itemListProgramProductsByCode=customLibrairy.buildProgramProductsFhirResources(oProgramToProcess,itemLists,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
+					for(var iteratorProgramResource=0;iteratorProgramResource<itemListProgramProductsByCode.length;iteratorProgramResource++)
+					{
+						listAssociatedProgramFhirResources.push(itemListProgramProductsByCode[iteratorProgramResource]);
+					}
+					
 				}
-				winston.info("End of eSIGL=>Fhir programs orchestration");
-				res.set('Content-Type', 'application/json+openhim');
-				res.send(returnObject);
-			})//end of asyncFhir2Update
+				winston.info("Total number of Program-Product Fhir resources extracted :"+listAssociatedProgramFhirResources.length);
+				winston.info("**************Transformation of program to Fhir Program extension done!************************");
+				//console.log(JSON.stringify(listAssociatedProgramFhirResources[0]));
+				//return;
+				var orchestrations2FhirUpdate=[];
+				for(var i=0;i<listAssociatedProgramFhirResources.length;i++)
+				{
+					var oProgram=listAssociatedProgramFhirResources[i];
+					orchestrations2FhirUpdate.push({ 
+					ctxObjectRef: "program_"+i,
+					name: "push program for fhir ", 
+					domain: mediatorConfig.config.hapiServer.url,
+					path: "/fhir/OrganizationAffiliation/"+oProgram.id,
+					params: "",
+					body:  JSON.stringify(oProgram),
+					method: "PUT",
+					headers: {'Content-Type': 'application/json'}
+					});
+				}
+				var asyncFhir2Update = require('async');
+				var ctxObject2Update = []; 
+				var orchestrationsResults2Update=[];
+				var counter=1;
+				var asyncFhir2Update = require('async');
+				var ctxObject2Update = []; 
+				var orchestrationsResults2Update=[];
+				var counter=1;
+				asyncFhir2Update.each(orchestrations2FhirUpdate, function(orchestration2FhirUpdate, callbackFhirUpdate) {
+					var orchUrl = orchestration2FhirUpdate.domain + orchestration2FhirUpdate.path + orchestration2FhirUpdate.params;
+					var options={headers:orchestration2FhirUpdate.headers};
+					var productToPush=orchestration2FhirUpdate.body;
+					needle.put(orchUrl,productToPush,{json:true}, function(err, resp) {
+						// if error occured
+						if ( err ){
+							winston.error("Needle: error when pushing program data to hapi");
+							callbackFhirUpdate(err);
+						}
+						winston.info(counter+"/"+orchestrations2FhirUpdate.length);
+						winston.info("...Inserting "+orchestration2FhirUpdate.path);
+						orchestrationsResults2Update.push({
+						name: orchestration2FhirUpdate.name,
+						request: {
+						  path : orchestration2FhirUpdate.path,
+						  headers: orchestration2FhirUpdate.headers,
+						  querystring: orchestration2FhirUpdate.params,
+						  body: orchestration2FhirUpdate.body,
+						  method: orchestration2FhirUpdate.method,
+						  timestamp: new Date().getTime()
+						},
+						response: {
+						  status: resp.statusCode,
+						  body: JSON.stringify(resp.body.toString('utf8'), null, 4),
+						  timestamp: new Date().getTime()
+						}
+						});
+						// add orchestration response to context object and return callback
+						ctxObject2Update[orchestration2FhirUpdate.ctxObjectRef] = resp.body.toString('utf8');
+						
+						callbackFhirUpdate();
+						});//end of needle.put
+						counter++;
+				}, function(err)
+				{
+					if(err)
+					{
+						winston.error(err);
+					}
+					var urn = mediatorConfig.urn;
+					var status = 'Successful';
+					var response = {
+					  status: 200,
+					  headers: {
+						'content-type': 'application/json'
+					  },
+					  body:JSON.stringify( {'Program_sync_operationd':'success'}),
+					  timestamp: new Date().getTime()
+					};
+					var properties = {};
+					properties['Nombre program maj'] =orchestrationsResults2Update.length;
+					var returnObject = {
+					  "x-mediator-urn": urn,
+					  "status": status,
+					  "response": response,
+					  "orchestrations": orchestrationsResults2Update,
+					  "properties": properties
+					}
+					winston.info("End of eSIGL=>Fhir programs orchestration");
+					res.set('Content-Type', 'application/json+openhim');
+					res.send(returnObject);
+					});
+				
+				/*
+				winston.info("Transformation of program to Fhir Program extension done!");
+				var orchestrations2FhirUpdate=[];
+				for(var i=0;i<listProgramsFhir.length;i++)
+				{
+					var oProgram=listProgramsFhir[i];
+					orchestrations2FhirUpdate.push({ 
+					ctxObjectRef: "program_"+i,
+					name: "push program for fhir ", 
+					domain: mediatorConfig.config.hapiServer.url,
+					path: "/fhir/OrganizationAffiliation/"+oProgram.id,
+					params: "",
+					body:  JSON.stringify(oProgram),
+					method: "PUT",
+					headers: {'Content-Type': 'application/json'}
+					});
+				}
+				var asyncFhir2Update = require('async');
+				var ctxObject2Update = []; 
+				var orchestrationsResults2Update=[];
+				var counter=1;
+				asyncFhir2Update.each(orchestrations2FhirUpdate, function(orchestration2FhirUpdate, callbackFhirUpdate) {
+					var orchUrl = orchestration2FhirUpdate.domain + orchestration2FhirUpdate.path + orchestration2FhirUpdate.params;
+					var options={headers:orchestration2FhirUpdate.headers};
+					var productToPush=orchestration2FhirUpdate.body;
+					needle.put(orchUrl,productToPush,{json:true}, function(err, resp) {
+						// if error occured
+						if ( err ){
+							winston.error("Needle: error when pushing program data to hapi");
+							callbackFhirUpdate(err);
+						}
+						winston.info(counter+"/"+orchestrations2FhirUpdate.length);
+						winston.info("...Inserting "+orchestration2FhirUpdate.path);
+						orchestrationsResults2Update.push({
+						name: orchestration2FhirUpdate.name,
+						request: {
+						  path : orchestration2FhirUpdate.path,
+						  headers: orchestration2FhirUpdate.headers,
+						  querystring: orchestration2FhirUpdate.params,
+						  body: orchestration2FhirUpdate.body,
+						  method: orchestration2FhirUpdate.method,
+						  timestamp: new Date().getTime()
+						},
+						response: {
+						  status: resp.statusCode,
+						  body: JSON.stringify(resp.body.toString('utf8'), null, 4),
+						  timestamp: new Date().getTime()
+						}
+						});
+						// add orchestration response to context object and return callback
+						ctxObject2Update[orchestration2FhirUpdate.ctxObjectRef] = resp.body.toString('utf8');
+						counter++;
+						callbackFhirUpdate();
+					});//end of needle.put
+				},function(err){
+					if (err){
+						winston.error(err);
+					}
+					var urn = mediatorConfig.urn;
+					var status = 'Successful';
+					var response = {
+					  status: 200,
+					  headers: {
+						'content-type': 'application/json'
+					  },
+					  body:JSON.stringify( {'Program_sync_operationd':'success'}),
+					  timestamp: new Date().getTime()
+					};
+					var properties = {};
+					properties['Nombre program maj'] =orchestrationsResults2Update.length;
+					var returnObject = {
+					  "x-mediator-urn": urn,
+					  "status": status,
+					  "response": response,
+					  "orchestrations": orchestrationsResults2Update,
+					  "properties": properties
+					}
+					winston.info("End of eSIGL=>Fhir programs orchestration");
+					res.set('Content-Type', 'application/json+openhim');
+					res.send(returnObject);
+				})//end of asyncFhir2Update
+				
+				*/
 			
-			//
+			});//end async. orchestrationProgramProducts
+			
 		})//end of async.orchestrations
 		
 	})//end of app.get syncproduct2fhir
@@ -1292,6 +1466,7 @@ function setupApp () {
 		//Only facility with the set levele and which the boby contains siglcode will be considered
 		var levelOrganizationCode=mediatorConfig.config.facilityLevesForRequisitions;
 		var filter="identifier:text=siglcode&_sort=type&_pretty=true&_count=100";
+		var operationType=0 //0 to get requisition from API and one to get requisition from dbs
 		getAllOrganizations("",filter,globalSharedOrganisation,function(listOrganizations)
 		{
 			winston.info("Number of orgunit of having siglcode: "+listOrganizations.length);
@@ -1315,137 +1490,224 @@ function setupApp () {
 				}
 				//console.log(listOrganizationToSync);
 				//Now build orchestrator to get requisition by facility
-				var orchestrations=[];
-				for(var i=0;i<listOrganizationToSync.length;i++)
+				if(operationType==0)
 				{
-					var organization=listOrganizationToSync[i];
-					var eSiglCode=customLibrairy.getFacilityeSiGLCode(organization);
 					
-					orchestrations.push(
-						{ 
-						ctxObjectRef: eSiglCode,
-						name: organization.id, 
-						domain: mediatorConfig.config.esiglServer.url,
-						path: "/rest-api/requisitions",
-						params:"?facilityCode="+eSiglCode,
-						body: "",
-						method: "GET",
-						headers: {'Authorization': basicClientToken}
-					  });
-					
-				}
-				var ctxObject = []; 
-				var orchestrationsResults=[]; 
-				var listRequisitionsFromeSIGL=[];
-				
-				async.each(orchestrations, function(orchestration, callback) {
-					var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
-					//console.log(orchUrl);
-					var options={headers:orchestration.headers};
-					winston.info("Querying requisitions/"+orchestration.ctxObjectRef+" from eSIGL....");
-					needle.get(orchUrl,options, function(err, resp) {
-						if ( err ){
-							callback(err);
-						}
-						orchestrationsResults.push({
-						name: orchestration.name,
-						ctxObjectRef:orchestration.ctxObjectRef,
-						request: {
-						  path : orchestration.path,
-						  headers: orchestration.headers,
-						  querystring: orchestration.params,
-						  body: orchestration.body.requisitions,
-						  method: orchestration.method,
-						  timestamp: new Date().getTime()
-						},
-						response: {
-						  status: resp.statusCode,
-						  body: JSON.stringify(resp.body.requisitions, null, 4),
-						  timestamp: new Date().getTime()
-						}
-						});
-						ctxObject[orchestration.ctxObjectRef] = resp.body;
-						callback();
-					});//end of needle
-					
-				},function(err)
-				{
-					if(err)
-					{
-						winston.error(err);
-						
-					}
-					winston.info("Requisitions extracted from eSIGL...");
-					var status = 'Successful';
-					var response = {
-					  status: 200,
-					  headers: {
-						'content-type': 'application/json'
-					  },
-					  body:JSON.stringify( {'resquestResult':'success'}),
-					  timestamp: new Date().getTime()
-					};
-					//listFromeSIGL=ctxObject.products.products;
-					var listRequisitions=[]
-					//console.log(orchestrationsResults[0]);
-					//console.log("-------------------------------------------------------");
-					//Now loop through orchestration results to build fhirResources
-					for(var iteratorRes=0;iteratorRes<orchestrationsResults.length;iteratorRes++)
-					{
-						var oResultOrchestration=orchestrationsResults[iteratorRes];
-						var responseBody=JSON.parse(oResultOrchestration.response.body);
-						console.log("Total found :"+responseBody.length);
-						//remove requisition where periodStartDate < definedConfDate
-						var listRequisition2Process=customLibrairy.geRequisitionsFromStartDate(mediatorConfig.config.periodStartDate,responseBody);
-						//console.log(oResultOrchestration);
-						listRequisitions=customLibrairy.buildRequisitionFhirResources(oResultOrchestration.name,oResultOrchestration.ctxObjectRef,listRequisition2Process,
-							mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
-						//console.log(listRequisitions[0]);
-						console.log("Total retained :"+listRequisitions.length);
-						break;
-							
-						
-					}
-					console.log(JSON.stringify(listRequisitions[0]));
-					return;
-					
-					
-					//console.log(listOrganizationToSync);
-					//now save the list of facility synched in mongod log
-					//var lastSynchedDate=new Date().toJSON();
-					var lastSynchedDate=new Date();
-					//var listSynchedOrganizations=[];
-					var listOrganizationToLog=[];
+					var orchestrations=[];
 					for(var i=0;i<listOrganizationToSync.length;i++)
 					{
-						var facilityCode=customLibrairy.getFacilityeSiGLCode(listOrganizationToSync[i]);
-						listOrganizationToLog.push({
-								code:facilityCode,
-								lastDateOfRequisitionSync:lastSynchedDate
-							});
+						var organization=listOrganizationToSync[i];
+						var eSiglCode=customLibrairy.getFacilityeSiGLCode(organization);
+						
+						orchestrations.push(
+							{ 
+							ctxObjectRef: eSiglCode,
+							name: organization.id, 
+							domain: mediatorConfig.config.esiglServer.url,
+							path: "/rest-api/requisitions",
+							params:"?facilityCode="+eSiglCode,
+							body: "",
+							method: "GET",
+							headers: {'Authorization': basicClientToken}
+						  });
+						
 					}
+					var ctxObject = []; 
+					var orchestrationsResults=[]; 
+					var listRequisitionsFromeSIGL=[];
+				
+					async.each(orchestrations, function(orchestration, callback) {
+						var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
+						//console.log(orchUrl);
+						var options={headers:orchestration.headers};
+						winston.info("Querying requisitions/"+orchestration.ctxObjectRef+" from eSIGL....");
+						needle.get(orchUrl,options, function(err, resp) {
+							if ( err ){
+								callback(err);
+							}
+							orchestrationsResults.push({
+							name: orchestration.name,
+							ctxObjectRef:orchestration.ctxObjectRef,
+							request: {
+							  path : orchestration.path,
+							  headers: orchestration.headers,
+							  querystring: orchestration.params,
+							  body: orchestration.body.requisitions,
+							  method: orchestration.method,
+							  timestamp: new Date().getTime()
+							},
+							response: {
+							  status: resp.statusCode,
+							  body: JSON.stringify(resp.body.requisitions, null, 4),
+							  timestamp: new Date().getTime()
+							}
+							});
+							ctxObject[orchestration.ctxObjectRef] = resp.body;
+							callback();
+						});//end of needle
 					
-					console.log("Organization built to be logged :"+listOrganizationToLog.length);
-					customLibrairy.saveAllSynchedOrganizations(listOrganizationToLog,function(resultOperation)
+					},function(err)
 					{
-						if(resultOperation)
+						if(err)
 						{
-							winston.info("Batch of facilities "+listOrganizationToLog.length+" synched in the log");
+							winston.error(err);
+							
 						}
-						else
+						winston.info("Requisitions extracted from eSIGL...");
+						var status = 'Successful';
+						var response = {
+						  status: 200,
+						  headers: {
+							'content-type': 'application/json'
+						  },
+						  body:JSON.stringify( {'resquestResult':'success'}),
+						  timestamp: new Date().getTime()
+						};
+						//listFromeSIGL=ctxObject.products.products;
+						var listRequisitions=[]
+						//console.log(orchestrationsResults[0]);
+						//console.log("-------------------------------------------------------");
+						//Now loop through orchestration results to build fhirResources
+						for(var iteratorRes=0;iteratorRes<orchestrationsResults.length;iteratorRes++)
 						{
-							winston.error("Failed to save the batch of "+listOrganizationToLog.length+" facilities");
+							var oResultOrchestration=orchestrationsResults[iteratorRes];
+							var responseBody=JSON.parse(oResultOrchestration.response.body);
+							console.log("Total found :"+responseBody.length);
+							//remove requisition where periodStartDate < definedConfDate
+							var listRequisition2Process=customLibrairy.geRequisitionsFromStartDate(mediatorConfig.config.periodStartDate,responseBody);
+							//console.log(oResultOrchestration);
+							listRequisitions=customLibrairy.buildRequisitionFhirResources(oResultOrchestration.name,oResultOrchestration.ctxObjectRef,listRequisition2Process,
+								mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
+							//console.log(listRequisitions[0]);
+							console.log("Total retained based on date :"+listRequisitions.length);
+							//break;
 						}
-						
-					});
-					//console.log(listSynchedOrganizations);
-					/*
-					for(var iteratorResult=0;iteratorResult<orchestrationsResults.length;iteratorResult++)
-					{
-						
-					}*/
+						//console.log(JSON.stringify(listRequisitions[0]));
+						//return;
+						//Nom build the request to push transformed requisition to hapi server
+						var orchestrationsRequistition2Push=[];
+						for(var iteratorReq=0;iteratorReq<listRequisitions.length;iteratorReq++)
+						{
+							var oRequisition=listRequisitions[iteratorReq];
+							
+							orchestrationsRequistition2Push.push(
+								{ 
+								ctxObjectRef: oRequisition.id,
+								name: oRequisition.id, 
+								domain: mediatorConfig.config.hapiServer.url,
+								path: "/fhir/Basic/"+oRequisition.id,
+								params: "",
+								body:  JSON.stringify(oRequisition),
+								method: "PUT",
+								headers: {'Content-Type': 'application/json'}
+							  });
+							
+						}
+						var asyncFhir2Update = require('async');
+						var ctxObject2Update = []; 
+						var orchestrationsResults2Update=[];
+						var counter=1;
+						asyncFhir2Update.each(orchestrationsRequistition2Push, function(orchestration2FhirUpdate, callbackFhirUpdate) {
+							var orchUrl = orchestration2FhirUpdate.domain + orchestration2FhirUpdate.path + orchestration2FhirUpdate.params;
+							var options={headers:orchestration2FhirUpdate.headers};
+							var requisition2Push=orchestration2FhirUpdate.body;
+							needle.put(orchUrl,requisition2Push,{json:true}, function(err, resp) {
+								// if error occured
+								if ( err ){
+									winston.error("Needle: error when pushing program data to hapi");
+									callbackFhirUpdate(err);
+								}
+								winston.info(counter+"/"+orchestrationsRequistition2Push.length);
+								winston.info("...Inserting "+orchestration2FhirUpdate.path);
+								orchestrationsResults2Update.push({
+								name: orchestration2FhirUpdate.name,
+								request: {
+								  path : orchestration2FhirUpdate.path,
+								  headers: orchestration2FhirUpdate.headers,
+								  querystring: orchestration2FhirUpdate.params,
+								  body: orchestration2FhirUpdate.body,
+								  method: orchestration2FhirUpdate.method,
+								  timestamp: new Date().getTime()
+								},
+								response: {
+								  status: resp.statusCode,
+								  body: JSON.stringify(resp.body.toString('utf8'), null, 4),
+								  timestamp: new Date().getTime()
+								}
+								});
+								// add orchestration response to context object and return callback
+								ctxObject2Update[orchestration2FhirUpdate.ctxObjectRef] = resp.body.toString('utf8');
+								counter++;
+								callbackFhirUpdate();
+							});//end of needle
+						},function(err)
+						{
+							if(err)
+							{
+								winston.error(err);
+							}
+							var urn = mediatorConfig.urn;
+							var status = 'Successful';
+							var response = {
+							  status: 200,
+							  headers: {
+								'content-type': 'application/json'
+							  },
+							  body:JSON.stringify( {'Requisition_sync_operationd':'success'}),
+							  timestamp: new Date().getTime()
+							};
+							var properties = {};
+							properties['Nombre requisitions maj'] =orchestrationsResults2Update.length;
+							var returnObject = {
+							  "x-mediator-urn": urn,
+							  "status": status,
+							  "response": response,
+							  "orchestrations": orchestrationsResults2Update,
+							  "properties": properties
+							}
+							winston.info("End of eSIGL=>Fhir requisition orchestration");
+							var lastSynchedDate=new Date();
+							var listOrganizationToLog=[];
+							for(var i=0;i<listOrganizationToSync.length;i++)
+							{
+								var facilityCode=customLibrairy.getFacilityeSiGLCode(listOrganizationToSync[i]);
+								listOrganizationToLog.push({
+										code:facilityCode,
+										lastDateOfRequisitionSync:lastSynchedDate
+									});
+							}//end for 
+							console.log("Organization built to be logged :"+listOrganizationToLog.length);
+							customLibrairy.saveAllSynchedOrganizations(listOrganizationToLog,function(resultOperation)
+							{
+								if(resultOperation)
+								{
+									winston.info("Batch of facilities "+listOrganizationToLog.length+" synched in the log");
+								}
+								else
+								{
+									winston.error("Failed to save the batch of "+listOrganizationToLog.length+" facilities");
+								}
+								
+							});//end saveAllSynchedOrganizations
+							res.set('Content-Type', 'application/json+openhim');
+							res.send(returnObject);
+							
+						});
+					
+					
 					
 				});//end of async
+			
+					
+				}
+				else if (operationType==1)
+				{
+					//build request to get the list of requisition and related information from the db
+					var dayToIncrement=parseInt(mediatorConfig.config.maxNumberDayRequisitionsToPull);
+					
+					
+					
+				}
 			});
 			
 			//console.log("Nombre of orgunit retreived: "+listOrganizations.length);
