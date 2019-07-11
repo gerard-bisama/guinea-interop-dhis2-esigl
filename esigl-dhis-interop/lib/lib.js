@@ -466,6 +466,164 @@ exports.buildRequisitionFhirResources=function buildRequisitionFhirResources(fac
 	}//end for requisition
 	return listRequisitionFhir;
 }
+
+exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourcesNewApi(listFacility,listRequisitionDetails,listRequisitions,hrefDomaineSIGL,hrefDomainFhir)
+{
+	var listRequisitionFhir=[];
+	var identifierCodingSystem=hrefDomaineSIGL+"/requisition-id";
+	var requisitionExtensionCodingSystem=hrefDomainFhir+"/fhir/StructureDefinition/Requisition";
+	var requisitionCode={coding:[{system:requisitionExtensionCodingSystem,code:"requisition",display:"requisition"}],text:"requisition"};
+	
+	for(var iteratorReq=0;iteratorReq<listRequisitions.length;iteratorReq++)
+	{
+		var idRequisition=listRequisitions[iteratorReq].id;
+		var requisitionDetails=getRequisitionDetailsById(idRequisition);
+		var dateTimeStartDate=new Date(requisitionDetails.periodStartDate).toJSON();
+		var dateTimeEndDate=new Date(requisitionDetails.periodEndDate).toJSON();
+		var startDate=dateTime.split("T")[0];
+		var endDate=dateTime.split("T")[0];
+		var OrganizationId=getOrganizationIdFromCode(requisitionDetails.agentCode,listFacility);
+		var identifier=[{
+			use:"official",
+			type:{coding:[{system:identifierCodingSystem,code:"requisitioncode",display:"requisitioncode"}],text:"requisitioncode"},
+			value:idRequisition
+		}];
+		//now loop through the product list to build requisitionDetail
+		var requisitionDetails=[];
+		for(var iteratorProduct=0;iteratorProduct<listRequisitions[iteratorReq].products.length;iteratorProduct++)
+		{
+			oProduct=listRequisitions[iteratorReq].products[iteratorProduct];
+			requisitionDetails.push(
+			//[
+				{
+					url: hrefDomainFhir+"/fhir/requisitionDetail",
+					extension:[{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/product",
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/product",
+					url:"product",
+					valueReference:{reference:"Basic/"+oProduct.productCode}
+				},
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/program",
+					url:"program",
+					valueReference:{reference:"OrganizationAffiliation/"+listRequisitions[iteratorReq].programCode}
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/organization",
+					url:"organization",
+					valueReference:{reference:"Organization/"+OrganizationId}
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/initialStock",
+					url:"initialStock",
+					valueDecimal:oProduct.beginningBalance
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/receivedQuantity",
+					url:"receivedQuantity",
+					valueDecimal:oProduct.quantityReceived
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/consumedQuantity",
+					url:"consumedQuantity",
+					valueDecimal:oProduct.quantityDispensed
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/losses",
+					url:"losses",
+					valueDecimal:oProduct.totalLossesAndAdjustments
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/losses",
+					url:"positiveAdjustment",
+					valueDecimal:0
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/losses",
+					url:"negativeAdjustment",
+					valueDecimal:0
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/stockOnHand",
+					url:"stockOnHand",
+					valueDecimal:oProduct.stockInHand
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/stockOnHand",
+					url:"averageMonthConsumption",
+					valueDecimal:0
+				},
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/stockOnHand",
+					url:"stockOutDay",
+					valueDecimal:0
+				}
+				,
+				{
+					url:"startDate",
+					valueDate:formatDateInZform(startDate)
+				}
+				,
+				{
+					url:"endDate",
+					valueDate:formatDateInZform(endDate)
+				}]}
+			//]
+			);
+			//break;
+		}//end for products
+		var oRequisition={
+			resourceType:"Basic",
+			id:idRequisition,
+			identifier:identifier,
+			code:requisitionCode,
+			extension:requisitionDetails};
+		listRequisitionFhir.push(oRequisition);
+	}//end for requisition
+	return listRequisitionFhir;
+}
+
+//return the requisitions details by id 
+//@id of the requisition to search in the lists
+//@listRequisitions that contains requisition to loop through
+function getRequisitionDetailsById(id,listRequisitions)
+{
+	var foundRequisition=null;
+	for(var i=0;i<listRequisitions.length;i++)
+	{
+		if(listRequisitions[i].id==id)
+		{
+			foundRequisition=listRequisitions[i];
+			break;
+		}
+	}
+	return foundRequisition;
+}
+//Return the OrganizationId from Organization simplified object
+//@eSiglCode of the agentCode from requisition
+//listOrganization list simplified organizations
+function getOrganizationIdFromCode(eSiglCode,listOrganization)
+{
+	var idFound=null;
+	for(var i=0;i<listOrganization.length;i++)
+	{
+		if(listOrganization[i].eSiglCode==eSiglCode)
+		{
+			idFound=listOrganization[i].id;
+			break;
+		}
+	}
+	return idFound;
+}
 //returns the list of requisition filtered by the @startDate
 //@stardate: datestring in format "yyyy-mm-dd"
 //@list Requisitions by facility
@@ -649,7 +807,55 @@ exports.getOrganizationsNotSynched=function getOrganizationsNotSynched(batchSize
 	
 	return listSelectedOrganizations;
 }
-
+//return the list of requisitions from eSIGL not synched in mongodb log
+//@@ batchSize : the limit size of the returned result
+//@@ listSynchedRequisitions the list of {code,date} from mongodb log
+//@@ listRequisitions the list of all requisitions from fhir
+exports.getRequisitionsNotSynched=function getRequisitionsNotSynched(batchSize,listSynchedRequisitions,listRequisitions)
+{
+	var listSelectedRequisitions=[];
+	if(listSynchedRequisitions.length>0)
+	{
+		for(var iterator=0;iterator<listRequisitions.length;iterator++)
+		{
+			var requisition=listRequisitions[iterator];
+			var found=false;
+			for(var iteratorSync=0;iteratorSync<listSynchedRequisitions.length;iteratorSync++)
+			{
+				var synchCode=requisition.id;
+				if (listSynchedRequisitions[iteratorsync].code==synchCode)
+				{
+					found=true;
+					break;
+				}
+			}
+			if(found)
+			{
+				continue;
+			}
+			else
+			{
+				listSelectedRequisitions.push(requisition)
+				if(listSelectedRequisitions.length>=batchSize)
+				{
+					break;
+				}
+			}
+		}
+	}
+	else
+	{
+		for(var iteratorSync=0;iteratorSync<listRequisitions.length;iteratorSync++)
+		{
+			listSelectedRequisitions.push(listRequisitions[iteratorSync]);
+			if(listSelectedRequisitions.length>=batchSize)
+			{
+				break;
+			}
+		}
+	}
+	return listSelectedRequisitions;
+}
 //Format the string date ISO8601 from DHIS2 in Zform (Zulu time Zone) whikch is the format accepted by HAPI Fhir Server
 //The format looks like  yyyy-mm-ddThh:mm:ss+zz:zz ; the last part is the zone indicator
 function formatDateInZform(originalDate)
@@ -716,7 +922,7 @@ var organizationSchema=Schema({
 });
 var requisitionSyncSchema=Schema({
 	code:String, //by default 1
-	lastDateSynched:Date
+	lastDateOfRequisitionSync:Date
 });
 var synchedOrganizationDefinition=mongoose.model('synchedOrganization',organizationSchema);
 var synchedRequisitionDefinition=mongoose.model('synchedRequisition',requisitionSyncSchema);
@@ -728,11 +934,11 @@ var getAllSynchedOrganization=function (callback)
 		return callback(synchedOrganizationsList);
 		});
 }
-var getLastSynchedRequisitionDate=function (callback)
+var getAllSynchedRequisitions=function (callback)
 {
-	var requestResult=synchedOrganizationDefinition.findOne({"code":1}).exec(function(error,lastSynchedRequisitionDate){
+	var requestResult=synchedRequisitionDefinition.find({}).exec(function(error,synchedRequisitionsList){
 		if(error) return handleError(err);
-		return callback(lastSynchedRequisitionDate);
+		return callback(synchedRequisitionsList);
 		});
 }
 var updateSynchedRequisitionDate=function (_lastSynchedDate,callback)
@@ -779,7 +985,40 @@ var upsertSynchedOrganization=function(synchedOrganization,callback)
 				}
 			})//end of exec
 }
-
+var upsertSynchedRequisition=function(synchedRequisition,callback)
+{
+	synchedRequisitionDefinition.findOne({
+			code:synchedRequisition.code,
+			}).exec(function(error,foundSynchedRequisition){
+				if(error) {
+					console.log(error);
+					callback(false)
+				}
+				else
+				{
+					if(!foundSynchedRequisition)
+					{
+						var reqToUpdate= new synchedRequisitionDefinition({code:synchedRequisition.code,
+							lastDateOfRequisitionSync:synchedRequisition.lastDateOfRequisitionSync});
+						requestResult=reqToUpdate.save(function(err,result){
+							if(err)
+							{
+								console.log(err);
+								callback(false);
+							}
+							else
+							{
+								callback(true);
+							}
+						});
+					}
+					else
+					{
+						console.log("Requisition already logged!");
+					}
+				}
+			})//end of exec
+}
 var saveAllSynchedOrganizations=function (synchedOrganizationList,callBackReturn)
 {
 	const async = require("async"); 
@@ -818,6 +1057,45 @@ var saveAllSynchedOrganizations=function (synchedOrganizationList,callBackReturn
 		
 	});//end of asynch
 }
+var saveAllSynchedRequisitions=function (synchedRequisitionList,callBackReturn)
+{
+	const async = require("async"); 
+	var result=false;
+	
+	async.each(synchedRequisitionList,function(synchedRequisition,callback)
+	{
+		upsertSynchedRequisition(synchedRequisition,function(response)
+		{
+			result=response;
+			if(response)
+			{
+				console.log(synchedRequisition.code +"inserted with success.");
+			}
+			else
+			{
+				console.log(synchedRequisition.code +"failed to be inserted!");
+			}
+			callback(response);
+		})
+	},function(err)
+	{
+		if(err)
+		{
+			console.log(err);
+			callBackReturn(false);
+		}
+		if(result)
+		{
+			callBackReturn(true);
+		}
+		else
+		{
+			callBackReturn(false);
+		}
+		
+	});//end of asynch
+}
 exports.getAllSynchedOrganization=getAllSynchedOrganization;
-exports.saveAllSynchedOrganizations=saveAllSynchedOrganizations;
+exports.getAllSynchedRequisitions=getAllSynchedRequisitions;
+exports.saveAllSynchedRequisitions=saveAllSynchedRequisitions;
 exports.getFacilityeSiGLCode=getFacilityeSiGLCode;

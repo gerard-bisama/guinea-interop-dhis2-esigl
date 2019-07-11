@@ -1532,7 +1532,7 @@ function setupApp () {
 							  path : orchestration.path,
 							  headers: orchestration.headers,
 							  querystring: orchestration.params,
-							  body: orchestration.body.requisitions,
+							  body: resp.body.requisitions,
 							  method: orchestration.method,
 							  timestamp: new Date().getTime()
 							},
@@ -1726,6 +1726,238 @@ function setupApp () {
 			}
 		});*/
 	});//end app.get syncrequisition2fhir
+	app.get('/syncrequisition2fhir_new', (req, res) => {
+		winston.info("***********************Channel for getting requisition triggered*******************************");
+		needle.defaults(
+		{
+			open_timeout: 600000
+		});
+		winston.info("Start extraction of requisitions from eSIGL...!");
+		var orchestrations=[];
+		orchestrations = [{ 
+			ctxObjectRef: "requisitions",
+			name: "requisitions", 
+			//domain: mediatorConfig.config.esiglServer.url,
+			domain: "http://localhost:8001",
+			//path: mediatorConfig.config.esiglServer.resourcespath+"/lookup/programs",
+			path: "/requisitions",
+			params: "",
+			body: "",
+			method: "GET",
+			//headers: {'Authorization': basicClientToken}
+			headers: ""
+		  }
+		  ];
+		var ctxObject=[]; 
+		var orchestrationsResults=[]; 
+		var listProgramsFromeSIGL=[];
+		async.each(orchestrations, function(orchestration, callback) {
+			var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
+			var options={headers:orchestration.headers};
+			winston.info("Querying "+orchestration.ctxObjectRef+"from eSIGL....");
+			needle.get(orchUrl,options, function(err, resp) {
+				if ( err ){
+					callback(err);
+				}
+				orchestrationsResults.push({
+				name: orchestration.name,
+				request: {
+				  path : orchestration.path,
+				  headers: orchestration.headers,
+				  querystring: orchestration.params,
+				  body: resp.body.requisitions,
+				  method: orchestration.method,
+				  timestamp: new Date().getTime()
+				},
+				response: {
+				  status: resp.statusCode,
+				  body: resp.body.requisitions,
+				  timestamp: new Date().getTime()
+				}
+				});
+				ctxObject[orchestration.ctxObjectRef] = resp.body;
+				//console.log(ctxObject);
+				callback();
+			});//end of needle
+			
+		},function(err)
+		{
+			if(err)
+			{
+				winston.error(err);
+			}
+			
+			winston.info("Extracted requisitions form eSIGL done!");
+			var globalListRequisitions=[];
+			//globalListRequisitions=orchestrationsResults[0].response.body;
+			var globalListRequisitionsToProcess=customLibrairy.geRequisitionsFromStartDate(mediatorConfig.config.periodStartDate,orchestrationsResults[0].response.body);
+			customLibrairy.getAllSynchedRequisitions(function (listSynchedRequisitions)
+			{
+				
+				var batchSize=parseInt(mediatorConfig.config.batchSizeRequisitionToProcess);
+				var listRequisition2Process=customLibrairy.getRequisitionsNotSynched(batchSize,listSynchedRequisitions,globalListRequisitionsToProcess);
+				//Now getRequisitionDetails
+				var orchestrationsDetailReq=[];
+				for(var iteratorReq=0;iteratorReq<listRequisition2Process.length;iteratorReq++)
+				{
+					orchestrationsDetailReq.push(
+					{ 
+					ctxObjectRef: listRequisition2Process[iteratorReq].id,
+					name: listRequisition2Process[iteratorReq].id, 
+					//domain: mediatorConfig.config.esiglServer.url,
+					domain: "http://localhost:8001",
+					path: "/requisitionbyid/"+listRequisition2Process[iteratorReq].id,
+					params:"",
+					body: "",
+					method: "GET",
+					//headers: {'Authorization': basicClientToken}
+					headers: ""
+				  });
+				}
+				//winston.info("")
+				var ctxObjectReqDetail = []; 
+				var orchestrationsResultsReqDetail=[];
+				var counter=1; 
+				async.each(orchestrationsDetailReq, function(orchestration, callbackReqDetail) {
+					var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
+					var options={headers:orchestration.headers};
+					winston.info(counter+"/"+orchestrationsDetailReq.length);
+					winston.info("Querying requisitions/"+orchestration.ctxObjectRef+" from eSIGL....");
+					needle.get(orchUrl,options, function(err, resp) {
+						if ( err ){
+							callbackReqDetail(err);
+						}
+						orchestrationsResultsReqDetail.push({
+						name: orchestration.name,
+						request: {
+						  path : orchestration.path,
+						  headers: orchestration.headers,
+						  querystring: orchestration.params,
+						  body: resp.body.requisition,
+						  method: orchestration.method,
+						  timestamp: new Date().getTime()
+						},
+						response: {
+						  status: resp.statusCode,
+						  body: resp.body.requisition,
+						  timestamp: new Date().getTime()
+						}
+						});
+						ctxObject[orchestration.ctxObjectRef] = resp.body.requisition;
+						//console.log(ctxObject);
+						counter++;
+						callbackReqDetail();
+					});//end of needle
+			},function(err)
+			{
+				if(err)
+				{
+					winston.error(err);
+				}
+				var listRequisitionsDetails=[];
+				winston.info("Extraction of requisition details done!")
+				for(var iteratorReqDetails=0;iteratorReqDetails<orchestrationsResultsReqDetail.length;iteratorReqDetails++)
+				{	
+					var foundRequisition=orchestrationsResultsReqDetail[i].response.body;
+					var oRequisitionDetails={
+							id:foundRequisition.id,
+							agentCode:foundRequisition.agentCode,
+							periodStartDate:foundRequisition.periodStartDate,
+							periodEndDate:foundRequisition.periodEndDate,
+							requisitionStatus:foundRequisition.requisitionStatus
+						};
+					listRequisitionsDetails.push(oRequisitionDetails);
+				}
+				
+				//Then extract Facilities where requisition was made
+				var orchestrationsFacilities=[];
+				for(var iteratorFac=0;iteratorFac<listRequisitionsDetails.length;iteratorFac++)
+				{
+					orchestrationsFacilities.push(
+					{ 
+					ctxObjectRef: listRequisitionsDetails[iteratorFac].agentCode,
+					name: listRequisitionsDetails[iteratorFac].agentCode, 
+					domain: mediatorConfig.config.hapiServer.url,
+					path: "/Organization?&_format=json&identifier="+istRequisitionsDetails[iteratorFac].agentCode,
+					params:"",
+					body: "",
+					method: "GET",
+					//headers: {'Authorization': basicClientToken}
+					headers: ""
+				  });
+				}
+				//winston.info("")
+				var ctxObjectFacility = []; 
+				var orchestrationsResultsFacility=[];
+				var counterFacility=1;
+				async.each(orchestrationsFacilities, function(orchestration, callbackFacility) {
+					var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
+					var options={headers:orchestration.headers};
+					winston.info(counterFacility+"/"+orchestrationsFacilities.length);
+					winston.info("Querying Organization?identifier="+orchestration.ctxObjectRef+" from Hapi....");
+					needle.get(orchUrl,options, function(err, resp) {
+						if ( err ){
+							callbackFacility(err);
+						}
+						orchestrationsResultsFacility.push({
+						name: orchestration.name,
+						request: {
+						  path : orchestration.path,
+						  headers: orchestration.headers,
+						  querystring: orchestration.params,
+						  body: resp.body.entry.length>0?resp.body.entry[0].resource:"",
+						  method: orchestration.method,
+						  timestamp: new Date().getTime()
+						},
+						response: {
+						  status: resp.statusCode,
+						  body: resp.body.requisition,
+						  timestamp: new Date().getTime()
+						}
+						});
+						ctxObject[orchestration.ctxObjectRef] = resp.body;
+						//console.log(ctxObject);
+						counterFacility++;
+						callbackFacility();
+					});//end of needle
+				},function(err)
+				{
+					if(err)
+					{
+						winston.error(err)
+					}
+					winston.info("Extraction of facility information from requisitions done!");
+					var listFacilitiesRequisition=[]
+					//Now Build new object related to facilities that contains only facility id and esigl code
+					for(var iteratorFac=0;iteratorFac<orchestrationsResultsFacility.length;iteratorFac++)
+					{
+						var oOrganization=orchestrationsResultsFacility[iteratorFac].response.body;
+						if(oOrganization!="")
+						{
+							var oFacility={
+								id:oOrganization.id,
+								eSiglCode:orchestrationsResultsFacility[iteratorFac].name
+								};
+							listFacilitiesRequisition.push(oFacility);
+						}
+					}
+					
+					//Now build the bundle Requisition ressources
+					var listRequisitionToPush=customLibrairy.buildRequisitionFhirResourcesNewApi(listFacilitiesRequisition,listRequisitionsDetails,listRequisition2Process,
+						mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
+					winston.info("Requisitions transformed to Requisition resources done");
+					console.log("Total requisition to process: "+listRequisitionToPush.length);
+					return;
+						
+					}); //end of each.sync orchestration facilities
+				
+			});//end of asynch.each orchestrationsDetailReq
+				
+			});//end of customLibrairy.getAllSynchedRequisitions
+			
+			//console.log(orchestrationsResults[0].response.body);
+		});//end asyn.each orchestration requisitions
+	});
   return app
 }
 //return the list of Organization from fhir based on the filter content

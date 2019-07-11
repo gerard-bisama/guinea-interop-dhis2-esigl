@@ -108,7 +108,7 @@
     "upstreamUrl": "http://sampleApplication:7001",
     "clientPassword":"pwd",
     "dhis2Server":{
-		"url":"https://url.org",
+		"url":"https://domain",
 		"username":"user",
 		"password":"pwd",
 		"orgunitapipath":"/dhis/api/organisationUnits.json?fields=:all&paging=false"
