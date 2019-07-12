@@ -477,11 +477,11 @@ exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourc
 	for(var iteratorReq=0;iteratorReq<listRequisitions.length;iteratorReq++)
 	{
 		var idRequisition=listRequisitions[iteratorReq].id;
-		var requisitionDetails=getRequisitionDetailsById(idRequisition);
+		var requisitionDetails=getRequisitionDetailsById(idRequisition,listRequisitionDetails);
 		var dateTimeStartDate=new Date(requisitionDetails.periodStartDate).toJSON();
 		var dateTimeEndDate=new Date(requisitionDetails.periodEndDate).toJSON();
-		var startDate=dateTime.split("T")[0];
-		var endDate=dateTime.split("T")[0];
+		var startDate=dateTimeStartDate.split("T")[0];
+		var endDate=dateTimeEndDate.split("T")[0];
 		var OrganizationId=getOrganizationIdFromCode(requisitionDetails.agentCode,listFacility);
 		var identifier=[{
 			use:"official",
@@ -594,7 +594,7 @@ exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourc
 
 //return the requisitions details by id 
 //@id of the requisition to search in the lists
-//@listRequisitions that contains requisition to loop through
+//@listRequisitionsDetails that contains requisition to loop through
 function getRequisitionDetailsById(id,listRequisitions)
 {
 	var foundRequisition=null;
@@ -629,6 +629,7 @@ function getOrganizationIdFromCode(eSiglCode,listOrganization)
 //@list Requisitions by facility
 exports.geRequisitionsFromStartDate=function(startDate,listRequisitions)
 {
+	//console.log(listRequisitions);
 	//convert the date string in date
 	var definedStartDate=new Date(startDate);
 	//console.log(`${startDate} to ${definedStartDate}`)
@@ -636,8 +637,9 @@ exports.geRequisitionsFromStartDate=function(startDate,listRequisitions)
 	for(var iterator=0;iterator<listRequisitions.length;iterator++)
 	{
 		var dateRequisition=new Date(listRequisitions[iterator].periodStartDate);
+		//console.log(listRequisitions[iterator]);
 		//console.log(`${dateRequisition}>=${definedStartDate}`)
-		if(dateRequisition>=definedStartDate)
+		if(dateRequisition>definedStartDate)
 		{
 			
 			listSelectedRequisitions.push(listRequisitions[iterator]);
@@ -645,6 +647,34 @@ exports.geRequisitionsFromStartDate=function(startDate,listRequisitions)
 		else //Not selected requisition
 		{
 			console.log(`Requisition not retained since the periodStartDate is ${dateRequisition}`);
+		}
+		
+	}
+	return listSelectedRequisitions;
+}
+//returns the list of requisition filtered by the period @startDate-@endDate
+//@startDate: datestring in format "yyyy-mm-dd"
+//@endDate: datestring in format "yyyy-mm-dd"
+//@list Requisitions by facility
+exports.geRequisitionsPeriod=function(startDate,endDate,listRequisitions)
+{
+	//convert the date string in date
+	var definedStartDate=new Date(startDate);
+	var definedEndDate=new Date(endDate);
+	//console.log(`${startDate} to ${definedStartDate}`)
+	var listSelectedRequisitions=[];
+	for(var iterator=0;iterator<listRequisitions.length;iterator++)
+	{
+		var dateRequisition=new Date(listRequisitions[iterator].periodStartDate);
+		//console.log(`${dateRequisition}>=${definedStartDate}`)
+		if(dateRequisition>=definedStartDate && dateRequisition<=definedEndDate)
+		{
+			
+			listSelectedRequisitions.push(listRequisitions[iterator]);
+		}
+		else //Not selected requisition
+		{
+			console.log(`Requisition not retained since the periodStartDate in period is ${dateRequisition}`);
 		}
 		
 	}
@@ -742,6 +772,23 @@ exports.getFacilityInTheListFromId=function getFacilityInTheListFromId(idToSearc
 	}
 	return found;
 }
+exports.getMaxStartDatePeriode=function getMaxStartDatePeriode(listRequisitions)
+{
+	
+    var  max=listRequisitions[0].periodStartDate;
+    for(var i=1;i<listRequisitions.length;i++)
+    {
+		if(max<listRequisitions[i].periodStartDate)
+		{
+			max=listOfStartDatePeriod[i].periodStartDate;
+		}
+		else
+		{
+			continue;
+		}
+	}
+	return max;
+}
 //return eSIGL facility-type matches the id
 exports.getFacilityTypeInTheListFromId=function getFacilityTypeInTheListFromId(idToSearch,listOfFacilityTypes)
 {
@@ -822,8 +869,8 @@ exports.getRequisitionsNotSynched=function getRequisitionsNotSynched(batchSize,l
 			var found=false;
 			for(var iteratorSync=0;iteratorSync<listSynchedRequisitions.length;iteratorSync++)
 			{
-				var synchCode=requisition.id;
-				if (listSynchedRequisitions[iteratorsync].code==synchCode)
+				//var synchCode=requisition.id;
+				if (listSynchedRequisitions[iteratorsync].idreq==requisition.id)
 				{
 					found=true;
 					break;
@@ -924,8 +971,14 @@ var requisitionSyncSchema=Schema({
 	code:String, //by default 1
 	lastDateOfRequisitionSync:Date
 });
+var requisitionSyncLogSchema=Schema({
+	reqid:String, //by default 1
+	minperiodstartdate:Date,
+	maxperiodstartdate:Date
+});
 var synchedOrganizationDefinition=mongoose.model('synchedOrganization',organizationSchema);
 var synchedRequisitionDefinition=mongoose.model('synchedRequisition',requisitionSyncSchema);
+var requisitionSyncLogDefinition=mongoose.model('requisitionSyncLog',requisitionSyncLogSchema);
 //return the list of organization which requisition has been already synched
 var getAllSynchedOrganization=function (callback)
 {
@@ -934,12 +987,44 @@ var getAllSynchedOrganization=function (callback)
 		return callback(synchedOrganizationsList);
 		});
 }
-var getAllSynchedRequisitions=function (callback)
+var getAllSynchedRequisitionsByFacility=function (callback)
 {
 	var requestResult=synchedRequisitionDefinition.find({}).exec(function(error,synchedRequisitionsList){
 		if(error) return handleError(err);
 		return callback(synchedRequisitionsList);
 		});
+}
+var getAllRequisitionPeriodSynched=function(minStartDate,maxStartDate,callback)
+{
+	var _minStartDate=new Date(minStartDate);
+	var _maxStartDate=new Date(maxStartDate);
+	if(maxStartDate!="")
+	{
+		var requestResult=requisitionSyncLogDefinition.find({"periodstartdate":{$gte:_minStartDate,$lte:_maxStartDate}},{"_id":0}).exec(function(error,synchedRequisitionsList){
+		if(error) return handleError(err);
+		//return callback(synchedMaxperiod.maxperiodstartdate);
+		return callback(synchedRequisitionsList);
+		});
+	}
+	else
+	{
+		var requestResult=requisitionSyncLogDefinition.find({"periodstartdate":{$gte:_minStartDate}},{"_id":0}).exec(function(error,synchedRequisitionsList){
+		if(error) return handleError(err);
+		//return callback(synchedMaxperiod.maxperiodstartdate);
+		return callback(synchedRequisitionsList);
+		});
+	}
+	
+}
+var updateRequisitionMaxPeriodStartDateSynched=function (_maxPeriodStartDate,callback)
+{
+	requisitionSyncLogDefinition.findOneAndUpdate({code:"1"},{$set:{maxperiodstartdate:_maxPeriodStartDate}},{upsert:true},(err, doc) => {
+		if (err) {
+			console.log("Error: Failed to update the record maxperiodstartdate!");
+		}
+		console.log(true)
+	}
+	)
 }
 var updateSynchedRequisitionDate=function (_lastSynchedDate,callback)
 {
@@ -1000,6 +1085,40 @@ var upsertSynchedRequisition=function(synchedRequisition,callback)
 					{
 						var reqToUpdate= new synchedRequisitionDefinition({code:synchedRequisition.code,
 							lastDateOfRequisitionSync:synchedRequisition.lastDateOfRequisitionSync});
+						requestResult=reqToUpdate.save(function(err,result){
+							if(err)
+							{
+								console.log(err);
+								callback(false);
+							}
+							else
+							{
+								callback(true);
+							}
+						});
+					}
+					else
+					{
+						console.log("Requisition already logged!");
+					}
+				}
+			})//end of exec
+}
+var upsertSynchedRequisitionPeriod=function(minStartDate,maxStartDate,synchedRequisitionId,callback)
+{
+	requisitionSyncLogDefinition.findOne({
+			reqid:synchedRequisitionId,
+			}).exec(function(error,foundSynchedRequisition){
+				if(error) {
+					console.log(error);
+					callback(false)
+				}
+				else
+				{
+					if(!foundSynchedRequisition)
+					{
+						var reqToUpdate= new synchedRequisitionDefinition({reqid:synchedRequisitionId,
+							periodstartdate:minStartDate,maxperiodstartdate:maxStartDate});
 						requestResult=reqToUpdate.save(function(err,result){
 							if(err)
 							{
@@ -1095,7 +1214,49 @@ var saveAllSynchedRequisitions=function (synchedRequisitionList,callBackReturn)
 		
 	});//end of asynch
 }
+var saveAllSynchedRequisitionsPeriod=function (synchedRequisitionList,callBackReturn)
+{
+	const async = require("async"); 
+	var result=false;
+	
+	async.each(synchedRequisitionList,function(synchedRequisition,callback)
+	{
+		upsertSynchedRequisitionPeriod(minStartDate,maxStartDate,synchedRequisition.id,function(response)
+		{
+			result=response;
+			if(response)
+			{
+				console.log(synchedRequisition.id +"inserted with success.");
+			}
+			else
+			{
+				console.log(synchedRequisition.id +"failed to be inserted!");
+			}
+			callback(response);
+		})
+	},function(err)
+	{
+		if(err)
+		{
+			console.log(err);
+			callBackReturn(false);
+		}
+		if(result)
+		{
+			callBackReturn(true);
+		}
+		else
+		{
+			callBackReturn(false);
+		}
+		
+	});//end of asynch
+}
 exports.getAllSynchedOrganization=getAllSynchedOrganization;
-exports.getAllSynchedRequisitions=getAllSynchedRequisitions;
+exports.getAllSynchedRequisitionsByFacility=getAllSynchedRequisitionsByFacility;
 exports.saveAllSynchedRequisitions=saveAllSynchedRequisitions;
 exports.getFacilityeSiGLCode=getFacilityeSiGLCode;
+//exports.getRequisitionMaxPeriodStartDateSynched=getRequisitionMaxPeriodStartDateSynched;
+exports.getAllRequisitionPeriodSynched=getAllRequisitionPeriodSynched;
+exports.saveAllSynchedRequisitionsPeriod=saveAllSynchedRequisitionsPeriod;
+exports.updateRequisitionMaxPeriodStartDateSynched=updateRequisitionMaxPeriodStartDateSynched;

@@ -1789,13 +1789,44 @@ function setupApp () {
 			
 			winston.info("Extracted requisitions form eSIGL done!");
 			var globalListRequisitions=[];
+			var globalListRequisitionsToProcess=[];
 			//globalListRequisitions=orchestrationsResults[0].response.body;
-			var globalListRequisitionsToProcess=customLibrairy.geRequisitionsFromStartDate(mediatorConfig.config.periodStartDate,orchestrationsResults[0].response.body);
-			customLibrairy.getAllSynchedRequisitions(function (listSynchedRequisitions)
+			if(mediatorConfig.config.periodEndDate!="")
 			{
-				
+				globalListRequisitions=customLibrairy.geRequisitionsFromStartDate(mediatorConfig.config.periodStartDate,
+			orchestrationsResults[0].response.body);
+			}
+			else
+			{
+				globalListRequisitions=customLibrairy.geRequisitionsPeriod(mediatorConfig.config.periodStartDate,mediatorConfig.config.periodEndDate,
+			orchestrationsResults[0].response.body);
+			}
+			
+			//customLibrairy.getAllSynchedRequisitions(function (listSynchedRequisitions)
+			customLibrairy.getAllRequisitionPeriodSynched(mediatorConfig.config.periodStartDate,mediatorConfig.config.periodEndDate
+			,function(listAlreadySynchedRequisitions)
+			{
+				//console.log(maxperiodstartdateSynched);
+				//var periodStartDate="";
+				//var globalListRequisitionsToProcess=[];
+				var listRequisition2Process=[];
 				var batchSize=parseInt(mediatorConfig.config.batchSizeRequisitionToProcess);
-				var listRequisition2Process=customLibrairy.getRequisitionsNotSynched(batchSize,listSynchedRequisitions,globalListRequisitionsToProcess);
+				if(listAlreadySynchedRequisitions==null)
+				{
+					listRequisition2Process=customLibrairy.getRequisitionsNotSynched(batchSize,[],orchestrationsResults[0].response.body);
+			
+				}
+				else
+				{
+					listRequisition2Process=customLibrairy.getRequisitionsNotSynched(batchSize,listAlreadySynchedRequisitions,orchestrationsResults[0].response.body);
+			
+				}
+				//res.send("interrupt");
+				//console.log(globalListRequisitionsToProcess);
+				//return;
+				winston.info("Return "+listRequisition2Process.length+" requisition selected from "+mediatorConfig.config.periodStartDate);
+				
+				//var listRequisition2Process=customLibrairy.getRequisitionsNotSynched(batchSize,[],globalListRequisitionsToProcess);
 				//Now getRequisitionDetails
 				var orchestrationsDetailReq=[];
 				for(var iteratorReq=0;iteratorReq<listRequisition2Process.length;iteratorReq++)
@@ -1845,9 +1876,10 @@ function setupApp () {
 						});
 						ctxObject[orchestration.ctxObjectRef] = resp.body.requisition;
 						//console.log(ctxObject);
-						counter++;
+						//counter++;
 						callbackReqDetail();
 					});//end of needle
+					counter++;
 			},function(err)
 			{
 				if(err)
@@ -1858,7 +1890,7 @@ function setupApp () {
 				winston.info("Extraction of requisition details done!")
 				for(var iteratorReqDetails=0;iteratorReqDetails<orchestrationsResultsReqDetail.length;iteratorReqDetails++)
 				{	
-					var foundRequisition=orchestrationsResultsReqDetail[i].response.body;
+					var foundRequisition=orchestrationsResultsReqDetail[iteratorReqDetails].response.body;
 					var oRequisitionDetails={
 							id:foundRequisition.id,
 							agentCode:foundRequisition.agentCode,
@@ -1871,20 +1903,26 @@ function setupApp () {
 				
 				//Then extract Facilities where requisition was made
 				var orchestrationsFacilities=[];
+				var identifierToProcess=[];
 				for(var iteratorFac=0;iteratorFac<listRequisitionsDetails.length;iteratorFac++)
 				{
+					if(identifierToProcess.includes(listRequisitionsDetails[iteratorFac].agentCode))
+					{
+						continue;
+					}
 					orchestrationsFacilities.push(
 					{ 
 					ctxObjectRef: listRequisitionsDetails[iteratorFac].agentCode,
 					name: listRequisitionsDetails[iteratorFac].agentCode, 
 					domain: mediatorConfig.config.hapiServer.url,
-					path: "/Organization?&_format=json&identifier="+istRequisitionsDetails[iteratorFac].agentCode,
+					path: "/fhir/Organization?&_format=json&identifier="+listRequisitionsDetails[iteratorFac].agentCode,
 					params:"",
 					body: "",
 					method: "GET",
 					//headers: {'Authorization': basicClientToken}
 					headers: ""
 				  });
+				  identifierToProcess.push(listRequisitionsDetails[iteratorFac].agentCode);
 				}
 				//winston.info("")
 				var ctxObjectFacility = []; 
@@ -1905,18 +1943,18 @@ function setupApp () {
 						  path : orchestration.path,
 						  headers: orchestration.headers,
 						  querystring: orchestration.params,
-						  body: resp.body.entry.length>0?resp.body.entry[0].resource:"",
+						  body: resp.body.entry!=null?resp.body.entry[0].resource:"",
 						  method: orchestration.method,
 						  timestamp: new Date().getTime()
 						},
 						response: {
 						  status: resp.statusCode,
-						  body: resp.body.requisition,
+						  body: JSON.parse(resp.body.toString('utf8')).entry!=null?JSON.parse(resp.body.toString('utf8')).entry[0].resource:"",
 						  timestamp: new Date().getTime()
 						}
 						});
 						ctxObject[orchestration.ctxObjectRef] = resp.body;
-						//console.log(ctxObject);
+						//console.log(resp.body);
 						counterFacility++;
 						callbackFacility();
 					});//end of needle
@@ -1932,6 +1970,8 @@ function setupApp () {
 					for(var iteratorFac=0;iteratorFac<orchestrationsResultsFacility.length;iteratorFac++)
 					{
 						var oOrganization=orchestrationsResultsFacility[iteratorFac].response.body;
+						//console.log(orchestrationsResultsFacility[iteratorFac].response);
+						//return ;
 						if(oOrganization!="")
 						{
 							var oFacility={
@@ -1941,12 +1981,105 @@ function setupApp () {
 							listFacilitiesRequisition.push(oFacility);
 						}
 					}
-					
+					//console.log(listFacilitiesRequisition);
 					//Now build the bundle Requisition ressources
 					var listRequisitionToPush=customLibrairy.buildRequisitionFhirResourcesNewApi(listFacilitiesRequisition,listRequisitionsDetails,listRequisition2Process,
 						mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
 					winston.info("Requisitions transformed to Requisition resources done");
-					console.log("Total requisition to process: "+listRequisitionToPush.length);
+					//console.log("Total requisition to process: "+listRequisitionToPush.length);
+					
+					var orchestrationsRequistition2Push=[];
+					for(var iteratorReq=0;iteratorReq<listRequisitionToPush.length;iteratorReq++)
+					{
+						var oRequisition=listRequisitionToPush[iteratorReq];
+						orchestrationsRequistition2Push.push(
+							{ 
+							ctxObjectRef: oRequisition.id,
+							name: oRequisition.id, 
+							domain: mediatorConfig.config.hapiServer.url,
+							path: "/fhir/Basic/"+oRequisition.id,
+							params: "",
+							body:  JSON.stringify(oRequisition),
+							method: "PUT",
+							headers: {'Content-Type': 'application/json'}
+						  });
+						
+					}
+					var asyncFhir2Update = require('async');
+					var ctxObject2Update = []; 
+					var orchestrationsResults2Update=[];
+					var counterPush=1;
+					
+					asyncFhir2Update.each(orchestrationsRequistition2Push, function(orchestration2FhirUpdate, callbackFhirUpdate) {
+						var orchUrl = orchestration2FhirUpdate.domain + orchestration2FhirUpdate.path + orchestration2FhirUpdate.params;
+						var options={headers:orchestration2FhirUpdate.headers};
+						var requisition2Push=orchestration2FhirUpdate.body;
+						needle.put(orchUrl,requisition2Push,{json:true}, function(err, resp) {
+							// if error occured
+							if ( err ){
+								winston.error("Needle: error when pushing program data to hapi");
+								callbackFhirUpdate(err);
+							}
+							winston.info(counterPush+"/"+orchestrationsRequistition2Push.length);
+							winston.info("...Inserting "+orchestration2FhirUpdate.path);
+							orchestrationsResults2Update.push({
+							name: orchestration2FhirUpdate.name,
+							request: {
+							  path : orchestration2FhirUpdate.path,
+							  headers: orchestration2FhirUpdate.headers,
+							  querystring: orchestration2FhirUpdate.params,
+							  body: orchestration2FhirUpdate.body,
+							  method: orchestration2FhirUpdate.method,
+							  timestamp: new Date().getTime()
+							},
+							response: {
+							  status: resp.statusCode,
+							  body: JSON.stringify(resp.body.toString('utf8'), null, 4),
+							  timestamp: new Date().getTime()
+							}
+							});
+							// add orchestration response to context object and return callback
+							ctxObject2Update[orchestration2FhirUpdate.ctxObjectRef] = resp.body.toString('utf8');
+							
+							callbackFhirUpdate();
+						});//end of needle
+						counterPush++;
+						},function(err)
+						{
+							if(err)
+							{
+								winston.error(err);
+							}
+							var urn = mediatorConfig.urn;
+							var status = 'Successful';
+							var response = {
+							  status: 200,
+							  headers: {
+								'content-type': 'application/json'
+							  },
+							  body:JSON.stringify( {'Requisition_sync_operationd':'success'}),
+							  timestamp: new Date().getTime()
+							};
+							var properties = {};
+							properties['Nombre requisitions maj'] =orchestrationsResults2Update.length;
+							var returnObject = {
+							  "x-mediator-urn": urn,
+							  "status": status,
+							  "response": response,
+							  "orchestrations": orchestrationsResults2Update,
+							  "properties": properties
+							}
+							winston.info("End of eSIGL=>Fhir requisition orchestration");
+							//now keep the log of sync
+							//get the maxPeriodStartDate from synched requisition
+							return;
+						});//end asynchFhir2Update.each orchestrationsRequistition2Push
+					
+					
+					
+					
+					
+					//console.log(JSON.stringify(listRequisitionToPush[0]));
 					return;
 						
 					}); //end of each.sync orchestration facilities
