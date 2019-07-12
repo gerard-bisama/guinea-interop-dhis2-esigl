@@ -467,7 +467,7 @@ exports.buildRequisitionFhirResources=function buildRequisitionFhirResources(fac
 	return listRequisitionFhir;
 }
 
-exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourcesNewApi(listFacility,listRequisitionDetails,listRequisitions,hrefDomaineSIGL,hrefDomainFhir)
+exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourcesNewApi(prefixIdResource,listFacility,listRequisitionDetails,listRequisitions,hrefDomaineSIGL,hrefDomainFhir)
 {
 	var listRequisitionFhir=[];
 	var identifierCodingSystem=hrefDomaineSIGL+"/requisition-id";
@@ -476,8 +476,8 @@ exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourc
 	
 	for(var iteratorReq=0;iteratorReq<listRequisitions.length;iteratorReq++)
 	{
-		var idRequisition=listRequisitions[iteratorReq].id;
-		var requisitionDetails=getRequisitionDetailsById(idRequisition,listRequisitionDetails);
+		var idRequisition=prefixIdResource+listRequisitions[iteratorReq].id;
+		var requisitionDetails=getRequisitionDetailsById(prefixIdResource,idRequisition,listRequisitionDetails);
 		var dateTimeStartDate=new Date(requisitionDetails.periodStartDate).toJSON();
 		var dateTimeEndDate=new Date(requisitionDetails.periodEndDate).toJSON();
 		var startDate=dateTimeStartDate.split("T")[0];
@@ -595,12 +595,12 @@ exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourc
 //return the requisitions details by id 
 //@id of the requisition to search in the lists
 //@listRequisitionsDetails that contains requisition to loop through
-function getRequisitionDetailsById(id,listRequisitions)
+function getRequisitionDetailsById(prefixId,id,listRequisitions)
 {
 	var foundRequisition=null;
 	for(var i=0;i<listRequisitions.length;i++)
 	{
-		if(listRequisitions[i].id==id)
+		if(prefixId+listRequisitions[i].id==id)
 		{
 			foundRequisition=listRequisitions[i];
 			break;
@@ -858,7 +858,7 @@ exports.getOrganizationsNotSynched=function getOrganizationsNotSynched(batchSize
 //@@ batchSize : the limit size of the returned result
 //@@ listSynchedRequisitions the list of {code,date} from mongodb log
 //@@ listRequisitions the list of all requisitions from fhir
-exports.getRequisitionsNotSynched=function getRequisitionsNotSynched(batchSize,listSynchedRequisitions,listRequisitions)
+exports.getRequisitionsNotSynched=function getRequisitionsNotSynched(prefixIdResource,batchSize,listSynchedRequisitions,listRequisitions)
 {
 	var listSelectedRequisitions=[];
 	if(listSynchedRequisitions.length>0)
@@ -870,7 +870,8 @@ exports.getRequisitionsNotSynched=function getRequisitionsNotSynched(batchSize,l
 			for(var iteratorSync=0;iteratorSync<listSynchedRequisitions.length;iteratorSync++)
 			{
 				//var synchCode=requisition.id;
-				if (listSynchedRequisitions[iteratorsync].idreq==requisition.id)
+				//console.log(`Synched resource selection : ${listSynchedRequisitions[iteratorSync].}==${prefixIdResource+requisition.id}`);
+				if (listSynchedRequisitions[iteratorSync].reqid==prefixIdResource+requisition.id)
 				{
 					found=true;
 					break;
@@ -976,9 +977,16 @@ var requisitionSyncLogSchema=Schema({
 	minperiodstartdate:Date,
 	maxperiodstartdate:Date
 });
+var facilitySyncLogSchema=Schema({
+	code:{type:String,default:"1"},//by default 1
+	pageCount:String, 
+	current:{type:Number,default:1},
+	dateOperation:Date
+});
 var synchedOrganizationDefinition=mongoose.model('synchedOrganization',organizationSchema);
 var synchedRequisitionDefinition=mongoose.model('synchedRequisition',requisitionSyncSchema);
 var requisitionSyncLogDefinition=mongoose.model('requisitionSyncLog',requisitionSyncLogSchema);
+var facilitySyncLogDefinition=mongoose.model('facilitySyncLog',facilitySyncLogSchema);
 //return the list of organization which requisition has been already synched
 var getAllSynchedOrganization=function (callback)
 {
@@ -1000,7 +1008,7 @@ var getAllRequisitionPeriodSynched=function(minStartDate,maxStartDate,callback)
 	var _maxStartDate=new Date(maxStartDate);
 	if(maxStartDate!="")
 	{
-		var requestResult=requisitionSyncLogDefinition.find({"periodstartdate":{$gte:_minStartDate,$lte:_maxStartDate}},{"_id":0}).exec(function(error,synchedRequisitionsList){
+		var requestResult=requisitionSyncLogDefinition.find({"minperiodstartdate":{$gte:_minStartDate,$lte:_maxStartDate}},{"_id":0}).exec(function(error,synchedRequisitionsList){
 		if(error) return handleError(err);
 		//return callback(synchedMaxperiod.maxperiodstartdate);
 		return callback(synchedRequisitionsList);
@@ -1008,7 +1016,7 @@ var getAllRequisitionPeriodSynched=function(minStartDate,maxStartDate,callback)
 	}
 	else
 	{
-		var requestResult=requisitionSyncLogDefinition.find({"periodstartdate":{$gte:_minStartDate}},{"_id":0}).exec(function(error,synchedRequisitionsList){
+		var requestResult=requisitionSyncLogDefinition.find({"minperiodstartdate":{$gte:_minStartDate}},{"_id":0}).exec(function(error,synchedRequisitionsList){
 		if(error) return handleError(err);
 		//return callback(synchedMaxperiod.maxperiodstartdate);
 		return callback(synchedRequisitionsList);
@@ -1025,6 +1033,33 @@ var updateRequisitionMaxPeriodStartDateSynched=function (_maxPeriodStartDate,cal
 		console.log(true)
 	}
 	)
+}
+var upDateLogSyncFacility=function (_dateOperation,_pageCount,callback)
+{
+	var res=facilitySyncLogDefinition.findOneAndUpdate({code:"1"},{$set:{dateOperation:_dateOperation,pageCount:_pageCount},$inc:{current:1}},{upsert:true},(err, doc) => {
+		if (err) {
+			console.log("Error: Failed to update the facility log sync record!");
+			callback(false);
+		}
+		else
+		{
+			callback(true);
+		}})
+		
+}
+var getSyncLogFacility=function(_dateOperation,callback)
+{
+	var requestResult=facilitySyncLogDefinition.findOne({"code":"1","dateOperation":{$eq:_dateOperation}},{"_id":0}).exec(function(error,doc){
+		if(error) {
+			console.log("Error: Failed to get the facility log sync record!");
+			callback (null);
+		}
+		else
+		{
+			callback(doc);
+		}
+		
+		});
 }
 var updateSynchedRequisitionDate=function (_lastSynchedDate,callback)
 {
@@ -1117,9 +1152,11 @@ var upsertSynchedRequisitionPeriod=function(minStartDate,maxStartDate,synchedReq
 				{
 					if(!foundSynchedRequisition)
 					{
-						var reqToUpdate= new synchedRequisitionDefinition({reqid:synchedRequisitionId,
-							periodstartdate:minStartDate,maxperiodstartdate:maxStartDate});
-						requestResult=reqToUpdate.save(function(err,result){
+						
+						var reqToUpdate= new requisitionSyncLogDefinition({reqid:synchedRequisitionId,
+							minperiodstartdate:minStartDate,maxperiodstartdate:maxStartDate});
+						
+						var requestResult=reqToUpdate.save(function(err,result){
 							if(err)
 							{
 								console.log(err);
@@ -1214,14 +1251,16 @@ var saveAllSynchedRequisitions=function (synchedRequisitionList,callBackReturn)
 		
 	});//end of asynch
 }
-var saveAllSynchedRequisitionsPeriod=function (synchedRequisitionList,callBackReturn)
+var saveAllSynchedRequisitionsPeriod=function (minStartDate,maxStartDate,synchedRequisitionList,callBackReturn)
 {
 	const async = require("async"); 
 	var result=false;
-	
+	var _minStartDate=new Date(minStartDate);
+	var _maxStartDate= new Date(maxStartDate);
+	//console.log(`requestString => ${_minStartDate} : ${_maxStartDate}`);
 	async.each(synchedRequisitionList,function(synchedRequisition,callback)
 	{
-		upsertSynchedRequisitionPeriod(minStartDate,maxStartDate,synchedRequisition.id,function(response)
+		upsertSynchedRequisitionPeriod(_minStartDate,_maxStartDate,synchedRequisition.id,function(response)
 		{
 			result=response;
 			if(response)
@@ -1260,3 +1299,5 @@ exports.getFacilityeSiGLCode=getFacilityeSiGLCode;
 exports.getAllRequisitionPeriodSynched=getAllRequisitionPeriodSynched;
 exports.saveAllSynchedRequisitionsPeriod=saveAllSynchedRequisitionsPeriod;
 exports.updateRequisitionMaxPeriodStartDateSynched=updateRequisitionMaxPeriodStartDateSynched;
+exports.upDateLogSyncFacility=upDateLogSyncFacility;
+exports.getSyncLogFacility=getSyncLogFacility;

@@ -273,6 +273,14 @@
       "description": "numbre of facility to process within each poll to get requisitions information (Starting from 5)",
       "type": "string",
       "template": []
+    }
+    ,
+    {
+      "param": "batchSizeFacilityToSync",
+      "displayName": "batchSizeFacilityToSync ",
+      "description": "numbre of facility to process at once during the dhis2=>hapi sync",
+      "type": "string",
+      "template": []
     } ,
     {
       "param": "batchSizeRequisitionToProcess",
@@ -318,7 +326,14 @@
       "type": "string",
       "template": []
     }
-    
+     ,
+    {
+      "param": "prefixResourceId",
+      "displayName": "prefixResourceId ",
+      "description": "Prefix of the fhir resource id,if the id coming fron subsystem are only digit (default:fhir-)",
+      "type": "string",
+      "template": []
+    }
   ],
   "config": {
     "upstreamUrl": "http://sampleApplication:7001",
@@ -327,7 +342,7 @@
 		"url":"https://domain",
 		"username":"user",
 		"password":"pwd",
-		"orgunitapipath":"/dhis/api/organisationUnits.json?fields=:all&paging=false"
+		"orgunitapipath":"/dhis/api"
 		},
 	"hapiServer":{
 		"url":"http://ip:8083/hapi-fhir-jpaserver"
@@ -340,11 +355,13 @@
 		},
 	"mappingFile":"/home/exchange-server/guinea-interop-dhis2-esigl/esigl-dhis-interop/data/mappingstructure-esigl-dhis2_final.csv",
 	"batchSizeRequisitionFacilities":"5",
+	"batchSizeFacilityToSync":"100",
 	"batchSizeRequisitionToProcess":"10",
 	"facilityLevesForRequisitions":"level_4,level_5",
 	"periodStartDate":"2017-04-01",
 	"periodEndDate":"2017-04-30",
 	"maxNumberDayRequisitionsToPull":"5",
-	"pgStringConnection":"postgresql://user:pwd@localhost:5432/open_lmis_simulator"
+	"pgStringConnection":"postgresql://user:pwd@localhost:5432/open_lmis_simulator",
+	"prefixResourceId":"fhir-"
   }
 }
