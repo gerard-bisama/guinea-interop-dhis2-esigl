@@ -1,8 +1,8 @@
 {
   "api": {
     "username": "root@openhim.org",
-    "password": "pwd",
-    "apiURL": "https://192.168.1.4:8080",
+    "password": "him!19",
+    "apiURL": "https://192.168.1.3:8080",
     "trustSelfSigned": "true"
   },
   "register": true,

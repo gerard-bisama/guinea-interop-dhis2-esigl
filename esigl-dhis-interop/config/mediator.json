@@ -361,7 +361,7 @@
 	"periodStartDate":"2017-04-01",
 	"periodEndDate":"2017-04-30",
 	"maxNumberDayRequisitionsToPull":"5",
-	"pgStringConnection":"postgresql://user:pwd@localhost:5432/open_lmis_simulator",
+	"pgStringConnection":"postgresql://user:pwd@localhost:5432/db",
 	"prefixResourceId":"fhir-"
   }
 }
