@@ -1,6 +1,6 @@
 {
   "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60b41c05c",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "name": "Push DHIS2 and eSIGL to FHIR HAPI Server",
   "description": "Pull DHIS2 and eSIGL resources, convert them to Fhir Related resources and push in HAPI",
   "defaultChannelConfig": [
@@ -281,7 +281,15 @@
       "description": "numbre of facility to process at once during the dhis2=>hapi sync",
       "type": "string",
       "template": []
-    } ,
+    } 
+    ,
+    {
+      "param": "batchSizeeSGLFacilityToSync",
+      "displayName": "batchSizeeSGLFacilityToSync ",
+      "description": "numbre of facility to process at once during the eSIGL=>hapi sync (default:10)",
+      "type": "string",
+      "template": []
+    },
     {
       "param": "batchSizeRequisitionToProcess",
       "displayName": "batchSizeRequisitionToProcess ",
@@ -345,7 +353,7 @@
 		"orgunitapipath":"/dhis/api"
 		},
 	"hapiServer":{
-		"url":"http://ip:8083/hapi-fhir-jpaserver"
+		"url":"http://ip:port/hapi-fhir-jpaserver"
 		},
 	"esiglServer":{
 		"url":"https://domain",
@@ -356,6 +364,7 @@
 	"mappingFile":"/home/exchange-server/guinea-interop-dhis2-esigl/esigl-dhis-interop/data/mappingstructure-esigl-dhis2_final.csv",
 	"batchSizeRequisitionFacilities":"5",
 	"batchSizeFacilityToSync":"100",
+	"batchSizeeSGLFacilityToSync":"10",
 	"batchSizeRequisitionToProcess":"10",
 	"facilityLevesForRequisitions":"level_4,level_5",
 	"periodStartDate":"2017-04-01",

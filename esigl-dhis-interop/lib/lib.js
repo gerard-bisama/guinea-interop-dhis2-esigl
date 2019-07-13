@@ -977,7 +977,17 @@ var requisitionSyncLogSchema=Schema({
 	minperiodstartdate:Date,
 	maxperiodstartdate:Date
 });
+var mappingSyncLogSchema=Schema({
+	facilityId:String, 
+	syncDate:Date
+});
 var facilitySyncLogSchema=Schema({
+	code:{type:String,default:"1"},//by default 1
+	pageCount:String, 
+	current:{type:Number,default:1},
+	dateOperation:Date
+});
+var facilitySiglSyncLogSchema=Schema({
 	code:{type:String,default:"1"},//by default 1
 	pageCount:String, 
 	current:{type:Number,default:1},
@@ -987,12 +997,21 @@ var synchedOrganizationDefinition=mongoose.model('synchedOrganization',organizat
 var synchedRequisitionDefinition=mongoose.model('synchedRequisition',requisitionSyncSchema);
 var requisitionSyncLogDefinition=mongoose.model('requisitionSyncLog',requisitionSyncLogSchema);
 var facilitySyncLogDefinition=mongoose.model('facilitySyncLog',facilitySyncLogSchema);
+var facilitySIGLSyncLogDefinition=mongoose.model('facilitySiglSyncLog',facilitySiglSyncLogSchema);
+var mappingSyncLogDefinition=mongoose.model('mappingSyncLog',mappingSyncLogSchema);
 //return the list of organization which requisition has been already synched
 var getAllSynchedOrganization=function (callback)
 {
 	var requestResult=synchedOrganizationDefinition.find({}).exec(function(error,synchedOrganizationsList){
 		if(error) return handleError(err);
 		return callback(synchedOrganizationsList);
+		});
+}
+var getAllMappingSync=function (callback)
+{
+	var requestResult=mappingSyncLogDefinition.find({}).exec(function(error,synchedMapping){
+		if(error) return handleError(err);
+		return callback(synchedMapping);
 		});
 }
 var getAllSynchedRequisitionsByFacility=function (callback)
@@ -1047,11 +1066,38 @@ var upDateLogSyncFacility=function (_dateOperation,_pageCount,callback)
 		}})
 		
 }
+var upDateLogSyncFacilityeSigl=function (_dateOperation,_pageCount,callback)
+{
+	var res=facilitySIGLSyncLogDefinition.findOneAndUpdate({code:"1"},{$set:{dateOperation:_dateOperation,pageCount:_pageCount},$inc:{current:1}},{upsert:true},(err, doc) => {
+		if (err) {
+			console.log("Error: Failed to update the esigl facility log sync record!");
+			callback(false);
+		}
+		else
+		{
+			callback(true);
+		}})
+		
+}
 var getSyncLogFacility=function(_dateOperation,callback)
 {
 	var requestResult=facilitySyncLogDefinition.findOne({"code":"1","dateOperation":{$eq:_dateOperation}},{"_id":0}).exec(function(error,doc){
 		if(error) {
 			console.log("Error: Failed to get the facility log sync record!");
+			callback (null);
+		}
+		else
+		{
+			callback(doc);
+		}
+		
+		});
+}
+var getSyncLogFacilityeSigl=function(_dateOperation,callback)
+{
+	var requestResult=facilitySIGLSyncLogDefinition.findOne({"code":"1","dateOperation":{$eq:_dateOperation}},{"_id":0}).exec(function(error,doc){
+		if(error) {
+			console.log("Error: Failed to get the esigl facility log sync record!");
 			callback (null);
 		}
 		else
@@ -1175,6 +1221,42 @@ var upsertSynchedRequisitionPeriod=function(minStartDate,maxStartDate,synchedReq
 				}
 			})//end of exec
 }
+var upsertMappingSync=function(_syncDate,_facilityId,callback)
+{
+	requisitionSyncLogDefinition.findOne({
+			facilityId:_facilityId,
+			}).exec(function(error,foundSynchedMapping){
+				if(error) {
+					console.log(error);
+					callback(false)
+				}
+				else
+				{
+					if(!foundSynchedMapping)
+					{
+						
+						var reqToUpdate= new mappingSyncLogDefinition({facilityId:_facilityId,
+							syncDate:_syncDate});
+						
+						var requestResult=reqToUpdate.save(function(err,result){
+							if(err)
+							{
+								console.log(err);
+								callback(false);
+							}
+							else
+							{
+								callback(true);
+							}
+						});
+					}
+					else
+					{
+						console.log("Mapping already logged!");
+					}
+				}
+			})//end of exec
+}
 var saveAllSynchedOrganizations=function (synchedOrganizationList,callBackReturn)
 {
 	const async = require("async"); 
@@ -1291,13 +1373,56 @@ var saveAllSynchedRequisitionsPeriod=function (minStartDate,maxStartDate,synched
 		
 	});//end of asynch
 }
+var saveAllSynchedMapping=function (syncDate,synchedMappingList,callBackReturn)
+{
+	const async = require("async"); 
+	var result=false;
+	
+	//console.log(`requestString => ${_minStartDate} : ${_maxStartDate}`);
+	async.each(synchedMappingList,function(synchedMapping,callback)
+	{
+		upsertMappingSync(syncDate,synchedMapping,function(response)
+		{
+			result=response;
+			if(response)
+			{
+				console.log(synchedMapping +"inserted with success.");
+			}
+			else
+			{
+				console.log(synchedMapping +"failed to be inserted!");
+			}
+			callback(response);
+		})
+	},function(err)
+	{
+		if(err)
+		{
+			console.log(err);
+			callBackReturn(false);
+		}
+		if(result)
+		{
+			callBackReturn(true);
+		}
+		else
+		{
+			callBackReturn(false);
+		}
+		
+	});//end of asynch
+}
 exports.getAllSynchedOrganization=getAllSynchedOrganization;
 exports.getAllSynchedRequisitionsByFacility=getAllSynchedRequisitionsByFacility;
 exports.saveAllSynchedRequisitions=saveAllSynchedRequisitions;
 exports.getFacilityeSiGLCode=getFacilityeSiGLCode;
+exports.getAllMappingSync=getAllMappingSync;
 //exports.getRequisitionMaxPeriodStartDateSynched=getRequisitionMaxPeriodStartDateSynched;
 exports.getAllRequisitionPeriodSynched=getAllRequisitionPeriodSynched;
 exports.saveAllSynchedRequisitionsPeriod=saveAllSynchedRequisitionsPeriod;
 exports.updateRequisitionMaxPeriodStartDateSynched=updateRequisitionMaxPeriodStartDateSynched;
 exports.upDateLogSyncFacility=upDateLogSyncFacility;
+exports.upDateLogSyncFacilityeSigl=upDateLogSyncFacilityeSigl;
 exports.getSyncLogFacility=getSyncLogFacility;
+exports.getSyncLogFacilityeSigl=getSyncLogFacilityeSigl;
+exports.saveAllSynchedMapping=saveAllSynchedMapping;

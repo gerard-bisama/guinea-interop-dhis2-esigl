@@ -350,7 +350,24 @@ var requisitionDetais=[
 		requisitionStatus:"AUTHORIZED"
 	}
 ]
-
+var listFacilityId=[1372,1380,1381,1382,1383,1384,1385,1386,1387,138];
+var listProgramCode=["SIGL-INTEGRE-PNLP","SIGL-INTEGRE-PNMSR","SIGL-INTEGRE-VIH","SIGL-INTEGRE-PNLAT"]
+function generateRandomRequisitions(number)
+{
+	for(var i=0;i<number;i++)
+	{
+		//generate a random number between 1 and 10 for listFacilityId index
+		var indexFacility= Math.floor(Math.random() * 10);  
+		var idFacility=listFacilityId[indexFacility];
+		var indexProgramCode= Math.floor(Math.random() *4); 
+		var programCode=listProgramCode[indexProgramCode];
+		//generate number between 1-30, for date
+		var day=Math.floor(Math.random() * 30)+1;
+		var generatedDate="2019-04-"+day;
+		var timestamp=new Date(generatedDate).getTime(); 
+		 
+	}
+}
 var requisitions=function (callback)
 {
 	return callback(requisitionLists);
