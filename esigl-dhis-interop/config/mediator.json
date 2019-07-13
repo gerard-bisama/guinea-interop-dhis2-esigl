@@ -343,7 +343,7 @@
       "template": []
     }
   ],
-  "config": {
+   "config": {
     "upstreamUrl": "http://sampleApplication:7001",
     "clientPassword":"pwd",
     "dhis2Server":{

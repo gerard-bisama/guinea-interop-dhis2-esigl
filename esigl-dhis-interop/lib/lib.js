@@ -466,9 +466,31 @@ exports.buildRequisitionFhirResources=function buildRequisitionFhirResources(fac
 	}//end for requisition
 	return listRequisitionFhir;
 }
-
+function getStockOutDaysFromRequisitionDetails(idRequisition,productCode, listRequisitionDetails)
+{
+	var stockOutDays=0;
+	for(var iteratorReq=0;iteratorReq<listRequisitionDetails.length;iteratorReq++)
+	{
+		
+		if(listRequisitionDetails[iteratorReq].id==idRequisition)
+		{
+			var oRequisition=listRequisitionDetails[iteratorReq];
+			//now loop through product to get the stockoutdays informations
+			for(var iteratorProd=0;iteratorProd<oRequisition.products.length;iteratorProd++)
+			{
+				if(oRequisition.products[iteratorProd].productCode==productCode)
+				{
+					stockOutDays=oRequisition.products[iteratorProd].stockOutDays;
+					break;
+				}
+			}
+		}
+	}
+	return stockOutDays;
+}
 exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourcesNewApi(prefixIdResource,listFacility,listRequisitionDetails,listRequisitions,hrefDomaineSIGL,hrefDomainFhir)
 {
+	console.log(listFacility);
 	var listRequisitionFhir=[];
 	var identifierCodingSystem=hrefDomaineSIGL+"/requisition-id";
 	var requisitionExtensionCodingSystem=hrefDomainFhir+"/fhir/StructureDefinition/Requisition";
@@ -560,12 +582,12 @@ exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourc
 				{
 					//url:hrefDomainFhir+"/fhir/requisitionDetail/stockOnHand",
 					url:"averageMonthConsumption",
-					valueDecimal:0
+					valueDecimal:oProduct.amc
 				},
 				{
 					//url:hrefDomainFhir+"/fhir/requisitionDetail/stockOnHand",
 					url:"stockOutDay",
-					valueDecimal:0
+					valueDecimal:getStockOutDaysFromRequisitionDetails(listRequisitions[iteratorReq].id,oProduct.productCode,listRequisitionDetails)
 				}
 				,
 				{
@@ -995,7 +1017,7 @@ var facilitySiglSyncLogSchema=Schema({
 });
 var synchedOrganizationDefinition=mongoose.model('synchedOrganization',organizationSchema);
 var synchedRequisitionDefinition=mongoose.model('synchedRequisition',requisitionSyncSchema);
-var requisitionSyncLogDefinition=mongoose.model('requisitionSyncLog',requisitionSyncLogSchema);
+var requisitionSyncLogDefinition=mongoose.model('requisitionSyncLog',requisitionSyncLogSchema);//keep log of synched requisition new API
 var facilitySyncLogDefinition=mongoose.model('facilitySyncLog',facilitySyncLogSchema);
 var facilitySIGLSyncLogDefinition=mongoose.model('facilitySiglSyncLog',facilitySiglSyncLogSchema);
 var mappingSyncLogDefinition=mongoose.model('mappingSyncLog',mappingSyncLogSchema);
@@ -1030,7 +1052,17 @@ var getAllRequisitionPeriodSynched=function(minStartDate,maxStartDate,callback)
 		var requestResult=requisitionSyncLogDefinition.find({"minperiodstartdate":{$gte:_minStartDate,$lte:_maxStartDate}},{"_id":0}).exec(function(error,synchedRequisitionsList){
 		if(error) return handleError(err);
 		//return callback(synchedMaxperiod.maxperiodstartdate);
-		return callback(synchedRequisitionsList);
+		//return callback(synchedRequisitionsList);
+		var async = require('async');
+		var arrayList=[];
+		async.each(synchedRequisitionsList, function(synchedRequisition, callbackAsync) {
+			arrayList.push(synchedRequisition);
+			callbackAsync();
+		},function(err)
+		{
+			return callback(arrayList);
+			
+			});//end asynch
 		});
 	}
 	else

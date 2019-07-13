@@ -1784,7 +1784,7 @@ function setupApp () {
 			//domain: mediatorConfig.config.esiglServer.url,
 			domain: "http://localhost:8001",
 			//path: mediatorConfig.config.esiglServer.resourcespath+"/lookup/programs",
-			path: "/requisitions",
+			path: "/requisitionsgen",
 			params: "",
 			body: "",
 			method: "GET",
@@ -1835,7 +1835,7 @@ function setupApp () {
 			var globalListRequisitions=[];
 			var globalListRequisitionsToProcess=[];
 			//globalListRequisitions=orchestrationsResults[0].response.body;
-			if(mediatorConfig.config.periodEndDate!="")
+			if(mediatorConfig.config.periodEndDate=="")
 			{
 				globalListRequisitions=customLibrairy.geRequisitionsFromStartDate(mediatorConfig.config.periodStartDate,
 			orchestrationsResults[0].response.body);
@@ -1845,12 +1845,12 @@ function setupApp () {
 				globalListRequisitions=customLibrairy.geRequisitionsPeriod(mediatorConfig.config.periodStartDate,mediatorConfig.config.periodEndDate,
 			orchestrationsResults[0].response.body);
 			}
-			
+			//console.log(globalListRequisitions);
 			//customLibrairy.getAllSynchedRequisitions(function (listSynchedRequisitions)
 			customLibrairy.getAllRequisitionPeriodSynched(mediatorConfig.config.periodStartDate,mediatorConfig.config.periodEndDate
 			,function(listAlreadySynchedRequisitions)
 			{
-				//console.log(listAlreadySynchedRequisitions);
+				//console.log(listAlreadySynchedRequisitions[110]);
 				//var periodStartDate="";
 				//var globalListRequisitionsToProcess=[];
 				var listRequisition2Process=[];
@@ -1858,12 +1858,12 @@ function setupApp () {
 				if(listAlreadySynchedRequisitions==null)
 				{
 					listRequisition2Process=customLibrairy.getRequisitionsNotSynched(mediatorConfig.config.prefixResourceId,batchSize,[],
-					orchestrationsResults[0].response.body);
+					globalListRequisitions);
 			
 				}
 				else
 				{
-					listRequisition2Process=customLibrairy.getRequisitionsNotSynched(mediatorConfig.config.prefixResourceId,batchSize,listAlreadySynchedRequisitions,orchestrationsResults[0].response.body);
+					listRequisition2Process=customLibrairy.getRequisitionsNotSynched(mediatorConfig.config.prefixResourceId,batchSize,listAlreadySynchedRequisitions,globalListRequisitions);
 			
 				}
 				//res.send("interrupt");
@@ -1882,7 +1882,8 @@ function setupApp () {
 					name: listRequisition2Process[iteratorReq].id, 
 					//domain: mediatorConfig.config.esiglServer.url,
 					domain: "http://localhost:8001",
-					path: "/requisitionbyid/"+listRequisition2Process[iteratorReq].id,
+					//path: "/requisitionbyid/"+listRequisition2Process[iteratorReq].id,
+					path: "/requisitiongenbyid?"+`reqid=${listRequisition2Process[iteratorReq].id}&prog=${listRequisition2Process[iteratorReq].programCode}&fac=${listRequisition2Process[iteratorReq].facilityCode}`,
 					params:"",
 					body: "",
 					method: "GET",
@@ -1941,12 +1942,13 @@ function setupApp () {
 							agentCode:foundRequisition.agentCode,
 							periodStartDate:foundRequisition.periodStartDate,
 							periodEndDate:foundRequisition.periodEndDate,
+							products:foundRequisition.products,
 							requisitionStatus:foundRequisition.requisitionStatus
 						};
 					listRequisitionsDetails.push(oRequisitionDetails);
 				}
 				
-				//Then extract Facilities where requisition was made
+				//Then extract Facilities where requisition was made,to get facilityId (dhis2 id) for {Reference:Organization/id}
 				var orchestrationsFacilities=[];
 				var identifierToProcess=[];
 				for(var iteratorFac=0;iteratorFac<listRequisitionsDetails.length;iteratorFac++)
