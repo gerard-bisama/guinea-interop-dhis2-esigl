@@ -6,8 +6,10 @@
         "start": "node server.js"
     },
     "dependencies": {
-        "express": "^4.16.3",
+        "async": "^3.1.0",
         "body-parser": "^1.17.2",
-        "express-session": "^1.15.3"
+        "express": "^4.16.3",
+        "express-session": "^1.15.3",
+        "needle": "^2.4.0"
     }
 }

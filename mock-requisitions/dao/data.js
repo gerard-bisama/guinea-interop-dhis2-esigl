@@ -1,3 +1,5 @@
+var needle = require('needle');
+var async = require('async');
 var requisitionLists={requisitions:
 [
 {
@@ -351,26 +353,132 @@ var requisitionDetais=[
 	}
 ]
 var listFacilityId=[1372,1380,1381,1382,1383,1384,1385,1386,1387,138];
-var listProgramCode=["SIGL-INTEGRE-PNLP","SIGL-INTEGRE-PNMSR","SIGL-INTEGRE-VIH","SIGL-INTEGRE-PNLAT"]
-function generateRandomRequisitions(number)
+var listProgramCode=["SIGL-INTEGRE-PNLP","SIGL-INTEGRE-PNMSR","SIGL-INTEGRE-VIH","SIGL-INTEGRE-PNLAT"];
+var listProductCode=["MORA0051","MORA0050","MORA0052","MORA0053","MINJ0059","DCON0574","MINJ0369","MORA0371","MORA0399","DLAB0550"];
+function generateRandomRequisitions(number,mainCallBack)
 {
+	var listRequisitionGenerated=[];
+	var indicesAsynch=[];
 	for(var i=0;i<number;i++)
 	{
-		//generate a random number between 1 and 10 for listFacilityId index
-		var indexFacility= Math.floor(Math.random() * 10);  
-		var idFacility=listFacilityId[indexFacility];
-		var indexProgramCode= Math.floor(Math.random() *4); 
-		var programCode=listProgramCode[indexProgramCode];
-		//generate number between 1-30, for date
-		var day=Math.floor(Math.random() * 30)+1;
-		var generatedDate="2019-04-"+day;
-		var timestamp=new Date(generatedDate).getTime(); 
-		 
+		indicesAsynch.push(i);
 	}
+	//listRequisitionGenerated
+	async.each(indicesAsynch, function(indexAsync, callback) {
+		var options={};
+		var orchUrl="https://www.google.com";
+		needle.get(orchUrl, function(err, resp) {
+			//generate a random number between 1 and 10 for listFacilityId index
+			console.log(indexAsync+" fake call...");
+			var indexFacility= Math.floor(Math.random() * 10);  
+			var idFacility=listFacilityId[indexFacility];
+			var indexProgramCode= Math.floor(Math.random() *4); 
+			var programCode=listProgramCode[indexProgramCode];
+			//generate number between 1-30, for date
+			var day=Math.floor(Math.random() * 30)+1;
+			var generatedDate="2019-04-"+day;
+			var timestampStartDate=new Date(generatedDate).getTime();
+			//generate 8 product per requisitions
+			var indexCodeProductAlreadySelected=[]; 
+			while(indexCodeProductAlreadySelected.length<8)
+			{
+				var indexProduct=Math.floor(Math.random() *10);
+				if(indexCodeProductAlreadySelected.includes(indexProduct))
+				{
+					continue;
+				}
+				else
+				{
+					indexCodeProductAlreadySelected.push(indexProduct);
+				}
+			}
+			var listProductSelected=[];
+			for(iterator=0;iterator<indexCodeProductAlreadySelected.length;iterator++)
+			{
+				var index=indexCodeProductAlreadySelected[iterator];
+				listProductSelected.push(
+					{
+						productCode:listProductCode[index],
+						quantityReceived:Math.floor(Math.random() *100)+20,
+						quantityDispensed:Math.floor(Math.random() *100)+20,
+						beginningBalance:Math.floor(Math.random() *100)+20,
+						totalLossesAndAdjustments:Math.floor(Math.random() *100)+20,
+						stockInHand:Math.floor(Math.random() *100)+20,
+						amc:Math.floor(Math.random() *100)+20
+					}
+				);
+			}
+			var oRequisition={
+				id:"req"+i,
+				programCode:programCode,
+				facilityCode:"F"+idFacility,
+				periodStartDate:timestampStartDate,
+				products:listProductSelected
+				};
+			listRequisitionGenerated.push(oRequisition);
+			callback();
+		});
+	},function(err)
+	{
+		if(err)
+		{
+			console.log("!!!Error:"+err);
+		}
+		mainCallBack( {requisitions:listRequisitionGenerated}); 
+		//console.log(listRequisitionGenerated);
+	});
+}
+function generateRandomRequisitionsDetails(idRequisition,codeProgram,CodeFacility,mainCallBack)
+{
+	var indicesAsynch=[1];
+	var reqDetails;
+	//listRequisitionGenerated
+	async.each(indicesAsynch, function(indexAsync, callback) {
+		var options={};
+		var orchUrl="https://www.radiookapin.net";
+		needle.get(orchUrl, function(err, resp) {
+			console.log(indexAsync+" fake call...");
+			var generatedDate="2019-04-01";
+			var timestampStartDate=new Date(generatedDate).getTime();
+			var generatedEndDate="2019-04-30";
+			var timestampEndDate=new Date(generatedEndDate).getTime();
+			reqDetails={
+				id:idRequisition,
+				programCode:codeProgram,
+				agentCode:CodeFacility,
+				emergency:false,
+				periodStartDate:timestampStartDate,
+				periodEndDate:timestampEndDate,
+				stringPeriodStartDate:generatedDate,
+				stringPeriodEndDate:generatedEndDate,
+				products:[],
+				requisitionStatus:"AUTHORIZED"
+			}
+			callback();
+		});
+		
+	},function(err)
+	{
+		if(err)
+		{
+			console.log("!!Error:"+err);
+		}
+		mainCallBack( reqDetails); 
+	});
+	
 }
 var requisitions=function (callback)
 {
 	return callback(requisitionLists);
+}
+var requisitionsGenerated=function (callback)
+{
+	//var listRequisitionGenerated=generateRandomRequisitions(12);
+	generateRandomRequisitions(120,function(listRequisitionGenerated)
+	{
+		return callback(listRequisitionGenerated);
+	});
+	//return callback(listRequisitionGenerated);
 }
 var requisitionsbyId=function (idRequisition,callback)
 {
@@ -384,5 +492,14 @@ var requisitionsbyId=function (idRequisition,callback)
 	}
 	return callback(foundRequisition);
 }
+var generateRequisitionById=function(idRequisition,codeProg,codeFac,callback)
+{
+	generateRandomRequisitionsDetails(idRequisition,codeProg,codeFac,function(detailRequisition)
+	{
+		return callback(detailRequisition);
+	});
+}
 exports.requisitions=requisitions;
 exports.requisitionsbyId=requisitionsbyId;
+exports.requisitionsGenerated=requisitionsGenerated;
+exports.generateRequisitionById=generateRequisitionById;

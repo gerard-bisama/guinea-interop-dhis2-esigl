@@ -22,12 +22,34 @@ app.get('/requisitions', function(req, res) {
 		res.send(allRequisitions);
 	});
 });
+app.get('/requisitionsgen', function(req, res) {
+	
+    //res.render('index',{groups:groups});
+    customlib.requisitionsGenerated(function (allRequisitions)
+    {
+		console.log("Returned the list of all generated requisitions...");
+		res.send(allRequisitions);
+	});
+});
 app.get('/requisitionbyid/:uuid', function(req, res) {
 	
     //res.render('index',{groups:groups});
     requisitionId=req.params.uuid;
     console.log("requisitionId :"+requisitionId);
     customlib.requisitionsbyId(requisitionId,function (oRequisition)
+    {
+		console.log("Returned the list of the requisition");
+		res.send(oRequisition);
+	});
+});
+app.get('/requisitiongenbyid', function(req, res) {
+	
+    //res.render('index',{groups:groups});
+    var requisitionId=req.query.reqid;
+    var programCode=req.query.prog;
+    var facilitycode=req.query.fac;
+    console.log("requisitionId :"+requisitionId);
+    customlib.generateRequisitionById(requisitionId,programCode,facilitycode,function (oRequisition)
     {
 		console.log("Returned the list of the requisition");
 		res.send(oRequisition);
