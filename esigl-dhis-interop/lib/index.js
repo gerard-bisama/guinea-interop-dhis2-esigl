@@ -590,13 +590,13 @@ function setupApp () {
 				//then build the first loop request to esigl API
 				_pageSize=parseInt(mediatorConfig.config.batchSizeeSGLFacilityToSync);
 				_currentPage=1;
-				requestFacilities=`/lookup/facilities?paging=true&pageSize=${_pageSize}&page=${_currentPage}`;
+				requestFacilities=`/lookup/facilities?paging=false&pageSize=${_pageSize}&page=${_currentPage}`;
 			}
 			else
 			{
 				_pageSize=mediatorConfig.config.batchSizeeSGLFacilityToSync;
 				_currentPage=syncRecord.current;
-				requestFacilities=`/lookup/facilities?paging=true&pageSize=${_pageSize}&page=${_currentPage}`;
+				requestFacilities=`/lookup/facilities?paging=false&pageSize=${_pageSize}&page=${_currentPage}`;
 				//if(syncRecord.current > syncRecord.pageCount)
 				
 			}
