@@ -363,6 +363,7 @@ function generateRandomRequisitions(number,mainCallBack)
 	{
 		indicesAsynch.push(i);
 	}
+	var counter=1;
 	//listRequisitionGenerated
 	async.each(indicesAsynch, function(indexAsync, callback) {
 		var options={};
@@ -409,13 +410,15 @@ function generateRandomRequisitions(number,mainCallBack)
 				);
 			}
 			var oRequisition={
-				id:"req"+i,
+				//id:"req"+i,
+				id:counter,
 				programCode:programCode,
 				facilityCode:"F"+idFacility,
 				periodStartDate:timestampStartDate,
 				products:listProductSelected
 				};
 			listRequisitionGenerated.push(oRequisition);
+			counter++;
 			callback();
 		});
 	},function(err)
@@ -442,6 +445,16 @@ function generateRandomRequisitionsDetails(idRequisition,codeProgram,CodeFacilit
 			var timestampStartDate=new Date(generatedDate).getTime();
 			var generatedEndDate="2019-04-30";
 			var timestampEndDate=new Date(generatedEndDate).getTime();
+			var listProductSelected=[];
+			for(var i=0;i<listProductCode.length;i++)
+			{
+				listProductSelected.push(
+				{
+					productCode:listProductCode[i],
+					stockOutDays:Math.floor(Math.random() *100)+20
+				}
+				);
+			}
 			reqDetails={
 				id:idRequisition,
 				programCode:codeProgram,
@@ -451,7 +464,7 @@ function generateRandomRequisitionsDetails(idRequisition,codeProgram,CodeFacilit
 				periodEndDate:timestampEndDate,
 				stringPeriodStartDate:generatedDate,
 				stringPeriodEndDate:generatedEndDate,
-				products:[],
+				products:listProductSelected,
 				requisitionStatus:"AUTHORIZED"
 			}
 			callback();
@@ -496,7 +509,7 @@ var generateRequisitionById=function(idRequisition,codeProg,codeFac,callback)
 {
 	generateRandomRequisitionsDetails(idRequisition,codeProg,codeFac,function(detailRequisition)
 	{
-		return callback(detailRequisition);
+		return callback({requisition:detailRequisition});
 	});
 }
 exports.requisitions=requisitions;
