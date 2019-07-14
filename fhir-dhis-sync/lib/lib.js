@@ -8,6 +8,20 @@ mongoose.connect('mongodb://localhost:27017/interopmediator');
 var Schema=mongoose.Schema;
 
 
+exports.getProductName=function(ProductFhir)
+{
+	var name="";
+	for(var iteratorExt=0;iteratorExt<ProductFhir.extension[0].extension.length;iteratorExt++)
+	{
+		if(ProductFhir.extension[0].extension[iteratorExt].url=="primaryName")
+		{
+			name=ProductFhir.extension[0].extension[iteratorExt].valueString;
+			break;
+		}
+	}
+	return name;
+}
+
 //Format the string date ISO8601 from DHIS2 in Zform (Zulu time Zone) whikch is the format accepted by HAPI Fhir Server
 //The format looks like  yyyy-mm-ddThh:mm:ss+zz:zz ; the last part is the zone indicator
 function formatDateInZform(originalDate)

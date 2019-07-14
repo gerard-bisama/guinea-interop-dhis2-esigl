@@ -1,12 +1,12 @@
 {
   "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60b41c23c",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "name": "Fhir Resources from HAPI to DHIS2",
   "description": "Pull Fhir resources form HAPI and push them to DHIS2 ",
   "defaultChannelConfig": [
     {
-      "name": "Sync FHIR resources to DHIS2",
-      "urlPattern": "^/syncoptionsetproductname/$",
+      "name": "Sync product list to DHIS2",
+      "urlPattern": "^/product2dhsi2/$",
       "alerts": [],
       "txRerunAcl": [],
       "txViewFullAcl": [],
@@ -17,11 +17,11 @@
       "timeout":"600000",
       "routes": [
         {
-          "name": "Sync DHIS2 orgUnits to FHIR Server",
+          "name": "products list to DHIS2",
           "host": "localhost",
           "port": "5022",
           "primary": true,
-          "path": "/syncoptionsetproductname",
+          "path": "/product2dhsi2",
           "type": "http"
         }
         
@@ -80,9 +80,9 @@
 			"type": "string"
 		},
 		{
-			"param": "orgunitapipath",
-			"displayName": "orgunitapipath",
-			"description": "The API that to query orgunits from dhis2 (e.g: /api/organisationUnits.json?fields=:all&paging=false)",
+			"param": "apiPath",
+			"displayName": "apiPath",
+			"description": "The API path that to query resources from dhis2 (e.g: /api)",
 			"type": "string"
 		}
 		
@@ -108,13 +108,14 @@
     "upstreamUrl": "http://sampleApplication:7001",
     "clientPassword":"pwd",
     "dhis2Server":{
-		"url":"https://domain",
+		"url":"http://domain",
 		"username":"user",
 		"password":"pwd",
-		"orgunitapipath":"/dhis/api/organisationUnits.json?fields=:all&paging=false"
+		"apiPath":"/api"
 		},
 	"hapiServer":{
-		"url":"http://ip:port/hapi-fhir-jpaserver"
+		"url":"http://domain/hapi-fhir-jpaserver"
 		}
   }
 }
+

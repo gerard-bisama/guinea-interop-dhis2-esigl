@@ -42,565 +42,202 @@ function setupApp () {
   var btoa = require('btoa');
   
     
-	app.get('/syncorgunit2fhir', (req, res) => {
+	app.get('/product2dhsi2', (req, res) => {
 		needle.defaults(
 		{
 			open_timeout: 600000
 		});
 		//console.log("Entered ....!");
-		console.log("Start dhis2=>hapi facility sync...!");
+		console.log("Start hapi=>dhis2 products sync...!");
 		const basicClientToken = `Basic ${btoa(mediatorConfig.config.dhis2Server.username+':'+mediatorConfig.config.dhis2Server.password)}`;
-		//console.log(basicClientToken);
-		var orchestrations=[];
-		orchestrations = [{ 
-			ctxObjectRef: "OrgUnits",
-			name: "Get orgunits from dhis2", 
-			domain: mediatorConfig.config.dhis2Server.url,
-			path: mediatorConfig.config.dhis2Server.orgunitapipath,
-			params: "",
-			body: "",
-			method: "GET",
-			headers: {'Authorization': basicClientToken}
-		  }];
-		var ctxObject = []; 
-		var orchestrationsResults=[]; 
-		async.each(orchestrations, function(orchestration, callback) {
-		// code to execute the orchestrations
-		// construct the URL to request
-		var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
-		//console.log(orchUrl);
-		var options={headers:orchestration.headers};
-		//console.log(options);
-		needle.get(orchUrl,options, function(err, resp) {
-		// if error occured
-		if ( err ){
-			callback(err);
-		}
-		//console.log(orchestration.headers);
-	  // add new orchestration to object
-	  //orchestration.body.organisationUnits, removed it in the boby attribute to force to change the results transaction logs
-		orchestrationsResults.push({
-		name: orchestration.name,
-		request: {
-		  path : orchestration.path,
-		  headers: orchestration.headers,
-		  querystring: orchestration.params,
-		  body: orchestration.body.organisationUnits,
-		  method: orchestration.method,
-		  timestamp: new Date().getTime()
-		},
-		response: {
-		  status: resp.statusCode,
-		  body: JSON.stringify(resp.body.organisationUnits, null, 4),
-		  timestamp: new Date().getTime()
-		}
-		});
-		// add orchestration response to context object and return callback
-		ctxObject[orchestration.ctxObjectRef] = resp.body.organisationUnits;
-		callback();
-		});//end of needle orchUrl
-		}, function(err){
-
-			// This section will execute once all requests have been completed
-			console.log("dhis2 Orgunits extracted... ");
-			var urn = mediatorConfig.urn;
-			var status = 'Successful';
-			//JSON.stringify(ctxObject.OrgUnits, null, 4) //This is the listof orgunit and we dont want to store it in the openhim transaction log, replaced the body
-			var response = {
-			  status: 200,
-			  headers: {
-				'content-type': 'application/json'
-			  },
-			  body:JSON.stringify( {'resquestResult':'success'}),
-			  timestamp: new Date().getTime()
-			};
-			// construct property data to be returned
-			var properties = {};
-			properties['Nombre orgunits extraites'] = ctxObject.OrgUnits.length;
-			console.log("OrgUnits extracted :"+ ctxObject.OrgUnits.length);
-			//console.log(ctxObject.OrgUnits.slice(0,10));
-			//var organizationBundle=customLibrairy.buildOrganizationHierarchy( ctxObject.OrgUnits.slice(13,15));
-			var organizationBundle=customLibrairy.buildOrganizationHierarchy( ctxObject.OrgUnits);
-			console.log("Transform orgunit list to FHIR Bundle. Total entry :"+organizationBundle.entry.length);
-			var listOrganizationLevel1=customLibrairy.getOrganizationByLevel("level_1",organizationBundle.entry);
-			console.log("Process Organization level 1. Nbr of entities :"+listOrganizationLevel1.length);
-			//console.log(JSON.stringify(listOrganizationLevel1));
+		//Get Product list from hapi
+		var globalStoredList=[];
+		getAllProducts("",globalStoredList,function(productLists)
+		{
+			winston.info("Product resources returned from Fhir..");
+			//console.log(JSON.stringify(productLists[0]));
 			//return;
-			//console.log(JSON.stringify(organizationBundle));
-			//Build orchestration request for pushing organization to fhir
-			var orchestrations2Fhir=[];
+			var orchestrationsProducts2Push=[];
+			productLists[0].extension[0].extension[0].url
 			
-			for(var i=0;i<listOrganizationLevel1.length;i++)
+			//first create product as categoryOptions
+			for(var iteratorOrch=0;iteratorOrch<productLists.length;iteratorOrch++)
+			//for(var iteratorOrch=0;iteratorOrch<2;iteratorOrch++)
 			{
-				var oOrganization=listOrganizationLevel1[i];
-				orchestrations2Fhir.push({ 
-				ctxObjectRef: "organisation_"+i,
-				name: "push orgnization for fhir ", 
-				domain: mediatorConfig.config.hapiServer.url,
-				path: "/fhir/Organization/"+oOrganization.id,
-				params: "",
-				body:  JSON.stringify(oOrganization),
-				method: "PUT",
-				headers: {'Content-Type': 'application/json'}
-				});
-			}
-			//console.log(JSON.stringify(orchestrations2Fhir));
-			//return;
-			var async2Fhir = require('async');
-			var ParamsLevel1ToTransfertToAsyncSession=
-			{
-				"ctxObject2Fhir":[],
-				"orchestrationsResults2Fhir":[],
-				"OrganizationBundleEntry":organizationBundle.entry
-			}
-			var ctxObject2Fhir = []; 
-			var orchestrationsResults2Fhir=[]; 
-			var counter=1;
-			async2Fhir.each(orchestrations2Fhir, function(orchestration2Fhir, callbackFhir) {
-				var orchUrl = orchestration2Fhir.domain + orchestration2Fhir.path + orchestration2Fhir.params;
-				var options={headers:orchestration2Fhir.headers};
-				var organizationToPush=orchestration2Fhir.body;
-				needle.put(orchUrl,organizationToPush,{json:true}, function(err, resp) {
-					// if error occured
-					if ( err ){
-						console.log("********************Error neeble sync OrganizationLevel1********************************");
-						callbackFhir(err);
+				var oProduct=productLists[iteratorOrch];
+				var codeProduct=oProduct.id;
+				var productName=customLibrairy.getProductName(oProduct);
+				var productPayLoad={
+					code:oProduct.id,
+					name:productName,
+					shortName:productName,
+					displayName:productName
 					}
-					//console.log(orchestration.headers);
-				  // add new orchestration to object
-				  //orchestration.body.organisationUnits, removed it in the boby attribute to force to change the results transaction logs
-				  //console.log("----------------------Response-------------------------------");
-				  //console.log(JSON.stringify(resp.body.toString('utf8')));
-					console.log(counter+"/"+orchestrations2Fhir.length);
-					console.log("...Inserting "+orchestration2Fhir.path);
-					orchestrationsResults2Fhir.push({
-					name: orchestration2Fhir.name,
+				orchestrationsProducts2Push.push(
+					{ 
+					ctxObjectRef: codeProduct,
+					name: codeProduct, 
+					domain: mediatorConfig.config.dhis2Server.url,
+					path:mediatorConfig.config.dhis2Server.apiPath+"/categoryOptions",
+					params: "",
+					body:  JSON.stringify(productPayLoad),
+					method: "POST",
+					headers: {'Content-Type': 'application/json','Authorization': basicClientToken}
+				  });
+				
+			}
+			var asyncProduct2Push = require('async');
+			var ctxObject2Update = []; 
+			var orchestrationsResultsProducts=[];
+			var counterPush=1;
+			
+			asyncProduct2Push.each(orchestrationsProducts2Push, function(orchestrationProduct, callbackProduct) {
+				var orchUrl = orchestrationProduct.domain + orchestrationProduct.path + orchestrationProduct.params;
+				var options={
+					headers:orchestrationProduct.headers
+					};
+				var product2Push=orchestrationProduct.body;
+				//console.log(orchUrl);
+				needle.post(orchUrl,product2Push,options, function(err, resp) {
+					// if error occured
+					
+					if ( err ){
+						winston.error("Needle: error when pushing product data to dhis2");
+						callbackProduct(err);
+					}
+					//console.log(resp);
+					console.log("********************************************************");
+					winston.info(counterPush+"/"+orchestrationsProducts2Push.length);
+					winston.info("...Inserting "+orchestrationProduct.path);
+					orchestrationsResultsProducts.push({
+					name: orchestrationProduct.name,
 					request: {
-					  path : orchestration2Fhir.path,
-					  headers: orchestration2Fhir.headers,
-					  querystring: orchestration2Fhir.params,
-					  body: orchestration2Fhir.body,
-					  method: orchestration2Fhir.method,
+					  path : orchestrationProduct.path,
+					  headers: orchestrationProduct.headers,
+					  querystring: orchestrationProduct.params,
+					  body: orchestrationProduct.body,
+					  method: orchestrationProduct.method,
 					  timestamp: new Date().getTime()
 					},
 					response: {
 					  status: resp.statusCode,
-					  body: JSON.stringify(resp.body.toString('utf8'), null, 4), //convert response fron byte to string plain text
+					  //body: JSON.stringify(resp.body.toString('utf8'), null, 4),
+					  body: resp.body,
 					  timestamp: new Date().getTime()
 					}
-					
 					});
+					//console.log(resp.body);
 					// add orchestration response to context object and return callback
-					ctxObject2Fhir[orchestration2Fhir.ctxObjectRef] = resp.body.toString('utf8');
-					counter++;
-					callbackFhir();
+					ctxObject2Update[orchestrationProduct.ctxObjectRef] = resp.body;
+					counterPush++;
+					callbackProduct();
 				});
-				
-				
-			}, function(err){
-				var urn = mediatorConfig.urn;
-				var status = 'Successful';
-				//JSON.stringify(ctxObject.OrgUnits, null, 4) //This is the listof orgunit and we dont want to store it in the openhim transaction log, replaced the body
-				var response = {
-				  status: 200,
-				  headers: {
-					'content-type': 'application/json'
-				  },
-				  body:JSON.stringify( {'resquestResultToFhir':'success'}),
-				  timestamp: new Date().getTime()
-				};
-				var properties = {};
-				properties['Nombre organization maj'] =ctxObject2Fhir.length;
-				var listOrganizationLevel2=customLibrairy.getOrganizationByLevel("level_2",organizationBundle.entry);
-				console.log("Process Organization level 2. Nbr of entities :"+listOrganizationLevel2.length);
-				//console.log("-------------------------------Org Level2---------------------------------------------");
-				//console.log(listOrganizationLevel2);
-				var orchestrations2FhirLevel2=[];
-			
-				for(var i=0;i<listOrganizationLevel2.length;i++)
+			},function(err)
+			{
+				if(err)
 				{
-					var oOrganization=listOrganizationLevel2[i];
-					orchestrations2FhirLevel2.push({ 
-					ctxObjectRef: "organisation_"+i,
-					name: "push orgnization for fhir ", 
-					domain: mediatorConfig.config.hapiServer.url,
-					path: "/fhir/Organization/"+oOrganization.id,
-					params: "",
-					body:  JSON.stringify(oOrganization),
-					method: "PUT",
-					headers: {'Content-Type': 'application/json'}
-					});
+					winston.error(err);
 				}
-				//console.log(JSON.stringify(orchestrations2FhirLevel2));
-				//return;
-				var async2FhirLevel2 = require('async');
-				var ctxObject2FhirLevel2 = []; 
-				var orchestrationsResults2FhirLevel2=[];
-				counter=1; 
-				async2FhirLevel2.each(orchestrations2FhirLevel2, function(orchestration2FhirLevel2, callbackFhirLevel2) {
-					var orchUrl = orchestration2FhirLevel2.domain + orchestration2FhirLevel2.path + orchestration2FhirLevel2.params;
-					var options={headers:orchestration2FhirLevel2.headers};
-					var organizationToPush=orchestration2FhirLevel2.body;
-					needle.put(orchUrl,organizationToPush,{json:true}, function(err, resp) {
-						// if error occured
-						if ( err ){
-							console.log("********************Error neeble sync OrganizationLevel2********************************");
-							callbackFhirLevel2(err);
-						}
-						//console.log(orchestration.headers);
-					  // add new orchestration to object
-					  //orchestration.body.organisationUnits, removed it in the boby attribute to force to change the results transaction logs
-					  //console.log("----------------------Response-------------------------------");
-					  //console.log(JSON.stringify(resp.body.toString('utf8')));
-						console.log(counter+"/"+orchestrations2FhirLevel2.length);
-						console.log("...Inserting "+orchestration2FhirLevel2.path);
-						orchestrationsResults2FhirLevel2.push({
-						name: orchestration2FhirLevel2.name,
-						request: {
-						  path : orchestration2FhirLevel2.path,
-						  headers: orchestration2FhirLevel2.headers,
-						  querystring: orchestration2FhirLevel2.params,
-						  body: orchestration2FhirLevel2.body,
-						  method: orchestration2FhirLevel2.method,
-						  timestamp: new Date().getTime()
-						},
-						response: {
-						  status: resp.statusCode,
-						  body: JSON.stringify(resp.body.toString('utf8'), null, 4),
-						  timestamp: new Date().getTime()
-						}
-						});
-						// add orchestration response to context object and return callback
-						ctxObject2FhirLevel2[orchestration2FhirLevel2.ctxObjectRef] = resp.body.toString('utf8');
-						counter++;
-						callbackFhirLevel2();
-						
-					});
-					
-				}, function(err){
-					var urn = mediatorConfig.urn;
-					var status = 'Successful';
-					//JSON.stringify(ctxObject.OrgUnits, null, 4) //This is the listof orgunit and we dont want to store it in the openhim transaction log, replaced the body
-					var response = {
-					  status: 200,
-					  headers: {
-						'content-type': 'application/json'
-					  },
-					  body:JSON.stringify( {'resquestResultToFhirLevel2':'success'}),
-					  timestamp: new Date().getTime()
-					};
-					var properties = {};
-					properties['Nombre organization maj'] =ctxObject2FhirLevel2.length;
-					var listOrganizationLevel3=customLibrairy.getOrganizationByLevel("level_3",organizationBundle.entry);
-					console.log("Process Organization level 3. Nbr of entities :"+listOrganizationLevel3.length);
-					//console.log("-------------------------------Org Level3---------------------------------------------");
-				    //console.log(listOrganizationLevel3);
-				    var orchestrations2FhirLevel3=[];
-					for(var i=0;i<listOrganizationLevel3.length;i++)
+				winston.info("Creation of product => categoryOptions done!")
+				//console.log(orchestrationsResultsProducts[0].response.body);
+				//Now check the responses, if created push catogoryOptions into the product  Categorie
+				var listProductIdCreated=[];
+				for(var iteratorResp=0;iteratorResp<orchestrationsResultsProducts.length;iteratorResp++)
+				{
+					var operationResponse=orchestrationsResultsProducts[iteratorResp].response;
+					var productCode=orchestrationsResultsProducts[iteratorResp].name;
+					if(operationResponse.body.httpStatus=="Created")
 					{
-						var oOrganization=listOrganizationLevel3[i];
-						orchestrations2FhirLevel3.push({ 
-						ctxObjectRef: "organisation_"+i,
-						name: "push orgnization for fhir ", 
-						domain: mediatorConfig.config.hapiServer.url,
-						path: "/fhir/Organization/"+oOrganization.id,
-						params: "",
-						body:  JSON.stringify(oOrganization),
-						method: "PUT",
-						headers: {'Content-Type': 'application/json'}
-						});
+						listProductIdCreated.push(operationResponse.body.response.uid);
+						winston.info("Product: "+productCode+" created with id = "+operationResponse.body.response.uid);
 					}
-					//console.log(JSON.stringify(orchestrations2FhirLevel2));
-					//return;
-					var async2FhirLevel3 = require('async');
-					var ctxObject2FhirLevel3 = []; 
-					var orchestrationsResults2FhirLevel3=[];
-					counter=1;
-					async2FhirLevel3.each(orchestrations2FhirLevel3, function(orchestration2FhirLevel3, callbackFhirLevel3) {
-						var orchUrl = orchestration2FhirLevel3.domain + orchestration2FhirLevel3.path + orchestration2FhirLevel3.params;
-						var options={headers:orchestration2FhirLevel3.headers};
-						var organizationToPush=orchestration2FhirLevel3.body;
-						needle.put(orchUrl,organizationToPush,{json:true}, function(err, resp) {
-							// if error occured
-							if ( err ){
-								console.log("********************Error neeble sync OrganizationLevel3********************************");
-								callbackFhirLevel3(err);
-							}
-							console.log(counter+"/"+orchestrations2FhirLevel3.length);
-							console.log("...Inserting "+orchestration2FhirLevel3.path);
-							orchestrationsResults2FhirLevel3.push({
-							name: orchestrationsResults2FhirLevel3.name,
-							request: {
-							  path : orchestration2FhirLevel3.path,
-							  headers: orchestration2FhirLevel3.headers,
-							  querystring: orchestration2FhirLevel3.params,
-							  body: orchestration2FhirLevel3.body,
-							  method: orchestration2FhirLevel3.method,
-							  timestamp: new Date().getTime()
-							},
-							response: {
-							  status: resp.statusCode,
-							  body: JSON.stringify(resp.body.toString('utf8'), null, 4),
-							  timestamp: new Date().getTime()
-							}
-							});
-							// add orchestration response to context object and return callback
-							ctxObject2FhirLevel3[orchestration2FhirLevel3.ctxObjectRef] = resp.body.toString('utf8');
-							counter++;
-							callbackFhirLevel3();
-						});
-						
-					
-				},function(err){
-					var urn = mediatorConfig.urn;
-					var status = 'Successful';
-					//JSON.stringify(ctxObject.OrgUnits, null, 4) //This is the listof orgunit and we dont want to store it in the openhim transaction log, replaced the body
-					var response = {
-					  status: 200,
-					  headers: {
-						'content-type': 'application/json'
-					  },
-					  body:JSON.stringify( {'resquestResultToFhirLevel3':'success'}),
-					  timestamp: new Date().getTime()
-					};
-					var properties = {};
-					properties['Nombre organization maj'] =ctxObject2FhirLevel3.length;
-					var listOrganizationLevel4=customLibrairy.getOrganizationByLevel("level_4",organizationBundle.entry);
-					console.log("Process Organization level 4. Nbr of entities :"+listOrganizationLevel4.length);
-					//console.log("-------------Breakpoint level4--------------");
-					//return;
-					var orchestrations2FhirLevel4=[];
-					for(var i=0;i<listOrganizationLevel4.length;i++)
+					else
 					{
-						var oOrganization=listOrganizationLevel4[i];
-						orchestrations2FhirLevel4.push({ 
-						ctxObjectRef: "organisation_"+i,
-						name: "push orgnization for fhir ", 
-						domain: mediatorConfig.config.hapiServer.url,
-						path: "/fhir/Organization/"+oOrganization.id,
-						params: "",
-						body:  JSON.stringify(oOrganization),
-						method: "PUT",
-						headers: {'Content-Type': 'application/json'}
-						});
+						winston.warn("Failed to create Product: "+productCode);
 					}
-					//console.log(JSON.stringify(orchestrations2FhirLevel2));
-					//return;
-					var async2FhirLevel4 = require('async');
-					var ctxObject2FhirLevel4 = []; 
-					var orchestrationsResults2FhirLevel4=[];
-					counter=1;
-					async2FhirLevel4.each(orchestrations2FhirLevel4, function(orchestration2FhirLevel4, callbackFhirLevel4) {
-						var orchUrl = orchestration2FhirLevel4.domain + orchestration2FhirLevel4.path + orchestration2FhirLevel4.params;
-						var options={headers:orchestration2FhirLevel4.headers};
-						var organizationToPush=orchestration2FhirLevel4.body;
-						needle.put(orchUrl,organizationToPush,{json:true}, function(err, resp) {
-							// if error occured
-							if ( err ){
-								console.log("********************Error neeble sync OrganizationLevel4********************************");
-								callbackFhirLevel4(err);
-							}
-							console.log(counter+"/"+orchestrations2FhirLevel4.length);
-							console.log("...Inserting "+orchestration2FhirLevel4.path);
-							orchestrationsResults2FhirLevel4.push({
-							name: orchestration2FhirLevel4.name,
-							request: {
-							  path : orchestration2FhirLevel4.path,
-							  headers: orchestration2FhirLevel4.headers,
-							  querystring: orchestration2FhirLevel4.params,
-							  body: orchestration2FhirLevel4.body,
-							  method: orchestration2FhirLevel4.method,
-							  timestamp: new Date().getTime()
-							},
-							response: {
-							  status: resp.statusCode,
-							  body: JSON.stringify(resp.body.toString('utf8'), null, 4),
-							  timestamp: new Date().getTime()
-							}
-							});
-							// add orchestration response to context object and return callback
-							ctxObject2FhirLevel4[orchestration2FhirLevel4.ctxObjectRef] = resp.body.toString('utf8');
-							counter++;
-							callbackFhirLevel4();
-						});
-						
+				}
+				//If id product created assign them to the product category
+				if(listProductIdCreated.length>0)
+				{
+					var ochestrationProductCollection=[];
+					for(var iteratorCol=0;iteratorCol<listProductIdCreated.length;iteratorCol++)
+					{
+						ochestrationProductCollection.push(
+						{ 
+							ctxObjectRef: listProductIdCreated[iteratorCol],
+							name: listProductIdCreated[iteratorCol], 
+							domain: mediatorConfig.config.dhis2Server.url,
+							path:mediatorConfig.config.dhis2Server.apiPath+"/categories/"+"eXSyxUjuR0Z"+"/categoryOptions/"+listProductIdCreated[iteratorCol],
+							params: "",
+							body:  "",
+							method: "POST",
+							headers: {'Content-Type': 'application/json','Authorization': basicClientToken}
+					  });
+					}
+					var asyncProductCollection = require('async');
+					var ctxObject2Update = []; 
+					var orchestrationsResultsCollections=[];
+					var counterCollection=1;
 					
-					},function(err){
-						var urn = mediatorConfig.urn;
-						var status = 'Successful';
-						var response = {
-						  status: 200,
-						  headers: {
-							'content-type': 'application/json'
-						  },
-						  body:JSON.stringify( {'resquestResultToFhirLevel4':'success'}),
-						  timestamp: new Date().getTime()
-						};
-						var properties = {};
-						properties['Nombre organization maj'] =ctxObject2FhirLevel4.length;
-						var listOrganizationLevel5=customLibrairy.getOrganizationByLevel("level_5",organizationBundle.entry);
-						console.log("Process Organization level 5. Nbr of entities :"+listOrganizationLevel5.length);
-						//console.log(JSON.stringify(listOrganizationLevel5));
-						//console.log("-------------Breakpoint level5--------------");
-						//return;
-						if(listOrganizationLevel5.length>0){
-							var orchestrations2FhirLevel5=[];
-							for(var i=0;i<listOrganizationLevel5.length;i++)
-							{
-								var oOrganization=listOrganizationLevel5[i];
-								orchestrations2FhirLevel5.push({ 
-								ctxObjectRef: "organisation_"+i,
-								name: "push orgnization for fhir ", 
-								domain: mediatorConfig.config.hapiServer.url,
-								path: "/fhir/Organization/"+oOrganization.id,
-								params: "",
-								body:  JSON.stringify(oOrganization),
-								method: "PUT",
-								headers: {'Content-Type': 'application/json'}
-								});
-							}
-							
-							var async2FhirLevel5 = require('async');
-							var ctxObject2FhirLevel5 = []; 
-							var orchestrationsResults2FhirLevel5=[];
-							counter=1;
-							async2FhirLevel5.each(orchestrations2FhirLevel5, function(orchestration2FhirLevel5, callbackFhirLevel5) {
-								var orchUrl = orchestration2FhirLevel5.domain + orchestration2FhirLevel5.path + orchestration2FhirLevel5.params;
-								var options={headers:orchestration2FhirLevel5.headers};
-								var organizationToPush=orchestration2FhirLevel5.body;
-								needle.put(orchUrl,organizationToPush,{json:true}, function(err, resp) {
-									// if error occured
-									if ( err ){
-										console.log("********************Error neeble sync OrganizationLevel5********************************");
-										callbackFhirLevel5(err);
-									}
-									console.log(counter+"/"+orchestrations2FhirLevel5.length);
-									console.log("...Inserting "+orchestration2FhirLevel5.path);
-									orchestrationsResults2FhirLevel5.push({
-									name: orchestration2FhirLevel5.name,
-									request: {
-									  path : orchestration2FhirLevel5.path,
-									  headers: orchestration2FhirLevel5.headers,
-									  querystring: orchestration2FhirLevel5.params,
-									  body: orchestration2FhirLevel5.body,
-									  method: orchestration2FhirLevel5.method,
-									  timestamp: new Date().getTime()
-									},
-									response: {
-									  status: resp.statusCode,
-									  body: JSON.stringify(resp.body.toString('utf8'), null, 4),
-									  timestamp: new Date().getTime()
-									}
-									});
-									// add orchestration response to context object and return callback
-									ctxObject2FhirLevel5[orchestration2FhirLevel5.ctxObjectRef] = resp.body.toString('utf8');
-									counter++;
-									callbackFhirLevel5();
-								});
-								
-						
-							},function(err){
-								var urn = mediatorConfig.urn;
-								var status = 'Successful';
-								var response = {
-								  status: 200,
-								  headers: {
-									'content-type': 'application/json'
-								  },
-								  body:JSON.stringify( {'resquestResultToFhirLevel5':'success'}),
-								  timestamp: new Date().getTime()
-								};
-								var properties = {};
-								properties['Nombre organization maj'] =ctxObject2FhirLevel5.length;
-								var returnObject = {
-								  "x-mediator-urn": urn,
-								  "status": status,
-								  "response": response,
-								  "orchestrations": orchestrationsResults2FhirLevel5,
-								  "properties": properties
-								}
-								console.log("********************Fin de la synchronisation DHIS2=>FHIR***********************************");
-								res.set('Content-Type', 'application/json+openhim');
-								res.send(returnObject);
-							});//end of async2FhirLevel5.each
-							
-						}//end of if listOrganizationLevel5.length
-						else
-						{
-							var urn = mediatorConfig.urn;
-							var status = 'Successful';
-							var response = {
-							  status: 200,
-							  headers: {
-								'content-type': 'application/json'
-							  },
-							  body:JSON.stringify( {'resquestResultToFhirLevel4':'success'}),
-							  timestamp: new Date().getTime()
+					asyncProductCollection.each(ochestrationProductCollection, function(orchestrationCollection, callbackCollection) {
+						var orchUrl = orchestrationCollection.domain + orchestrationCollection.path + orchestrationCollection.params;
+						var options={
+							headers:orchestrationCollection.headers
 							};
-							var properties = {};
-							properties['Nombre organization maj'] =ctxObject2FhirLevel4.length;
-							var returnObject = {
-							  "x-mediator-urn": urn,
-							  "status": status,
-							  "response": response,
-							  "orchestrations": orchestrationsResults2FhirLevel4,
-							  "properties": properties
+							needle.post(orchUrl,{},options, function(err, resp) {
+								if ( err ){
+									winston.error("Needle: error when pushing product data to the collection to dhis2");
+									callbackProduct(err);
+								}
+								console.log("********************************************************");
+								winston.info(counterCollection+"/"+ochestrationProductCollection.length);
+								winston.info("...Inserting "+orchestrationCollection.path);
+								orchestrationsResultsCollections.push({
+								name: orchestrationCollection.name,
+								request: {
+								  path : orchestrationCollection.path,
+								  headers: orchestrationCollection.headers,
+								  querystring: orchestrationCollection.params,
+								  body: orchestrationCollection.body,
+								  method: orchestrationCollection.method,
+								  timestamp: new Date().getTime()
+								},
+								response: {
+								  status: resp.statusCode,
+								  body: JSON.stringify(resp.body.toString('utf8'), null, 4),
+								  //body: resp.body,
+								  timestamp: new Date().getTime()
+								}
+								});
+								ctxObject2Update[orchestrationCollection.ctxObjectRef] = resp.body;
+								counterCollection++;
+								callbackCollection();
+							});//end of needle
+							
+						},function(err)
+						{
+							if(err)
+							{
+								winston.error(err);
 							}
-							console.log("********************Fin de la synchronisation DHIS2=>FHIR***********************************");
-							res.set('Content-Type', 'application/json+openhim');
-							res.send(returnObject);
-						}
-					});//end of async2FhirLevel4.each
-					
-				});//end of async2FhirLevel3.each
-					
-				});//end of async2FhirLevel2.each
-				
-				
-				//return;
-				/*
-				var returnObject = {
-				  "x-mediator-urn": urn,
-				  "status": status,
-				  "response": response,
-				  "orchestrations": orchestrationsResults2Fhir,
-				  "properties": properties
+							winston.info("Assign of products => Category done!");
+							for(var iteratorResp=0;iteratorResp<orchestrationsResultsCollections.length;iteratorResp++)
+							{
+								console.log(orchestrationsResultsCollections[iteratorResp].response);
+							}
+						});//end of asyncProductCollection.each 
 				}
-				// set content type header so that OpenHIM knows how to handle the response
-				//res.set('Content-Type', 'application/json+openhim');
-				res.set('Content-Type', 'application/json+openhim');
-				res.send(returnObject);*/
-				 if (err){
-					console.log("********************Error async: Sync organization level 2********************************");
-					console.log(err)
-					//return;
-				  }
-			});//end of each orchestrationfhir
-			
-			//orchestration to push the list of organisation to fhir
-			
-			// construct returnObject to be returned
-			//orchestrationsResults, limited to 10 object only
-			//orchestrationsResults[0].body=JSON.stringify( ctxObject.OrgUnits.slice(0,1));
-			/*
-			var returnObject = {
-			  "x-mediator-urn": urn,
-			  "status": status,
-			  "response": response,
-			  "orchestrations": orchestrationsResults,
-			  "properties": properties
-			}
-			res.set('Content-Type', 'application/json');
-			res.send(returnObject);
-			// if any errors occurred during a request the print out the error and stop processing
-			*/
-			if (err){
-				console.log(err)
-			//return;
-			}
-		});//end of asyn.each orchestrations
-	
-	})//end of app.get /syncorgunit2fhir
+				else
+				{
+					winston.warn("No product to assign to the category");
+				}
+				
+			});//end of asyncProduct2Push
+		
+		});//end of getAllProducts
+		
+		
+	})//end of app.get /product2dhsi2
 	
   return app
 }
@@ -616,7 +253,7 @@ function getAllOrganizations(bundleParam,filter,globalStoredList,callback)
 	if(bundleParam=="")
 	{
 		//urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Organization?type=${level}`;
-		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Organization?${filter}`;
+		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Organization?_count=10&${filter}`;
 		
 		winston.info("First iteration!")
 	}
@@ -643,7 +280,8 @@ function getAllOrganizations(bundleParam,filter,globalStoredList,callback)
 		if(resp.statusCode==200)
 		{
 			
-			var responseBundle=JSON.parse(resp.body.toString('utf8'))
+			var responseBundle=JSON.parse(resp.body.toString('utf8'));
+			
 			//console.log(responseBundle.link);
 			if(responseBundle.entry!=null)
 			{
@@ -671,6 +309,88 @@ function getAllOrganizations(bundleParam,filter,globalStoredList,callback)
 						console.log();
 						console.log("---------------------------------");
 						getAllOrganizations(responseBundle.link[iterator].url,filter,globalStoredList,callback);
+					}
+					else
+					{
+						 return callback(globalStoredList);
+					}
+					
+				}
+			}//end if
+		}
+	});//end of needle
+	
+}
+//return the list of Products from fhir based on the filter content
+//@@ bundleParam callback parameter for recursive call
+//@@ globalStoredList store list of entries in every iterations
+function getAllProducts(bundleParam,globalStoredList,callback)
+{
+	
+	
+	var urlRequest="";
+	if(bundleParam=="")
+	{
+		var filter="code=product&_format=json&_count=4";
+		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Basic?${filter}`;
+		
+		winston.info("First iteration!")
+	}
+	else
+	{
+		urlRequest=`${bundleParam}`;
+		//console.log(bundleParam);
+		winston.info("Looping througth bundle response to build organization list!");
+		
+	}
+	var needle = require('needle');
+	needle.defaults(
+	{
+		open_timeout: 600000
+	});
+	var headers= {'Content-Type': 'application/json'};
+	var options={headers:headers};
+	needle.get(urlRequest,options, function(err, resp) {
+		console.log(urlRequest);
+		console.log("-------------------------------------------------");
+		if ( err ){
+			winston.error("Error occured while looping through bundle to construct the Fhir Product List");
+			callback(err);
+		}
+		//console.log(resp.statusCode);
+		if(resp.statusCode==200)
+		{
+			//console.log(resp.body);
+			//var responseBundle=JSON.stringify(resp.body.toString('utf8'));
+			var responseBundle=JSON.parse(resp.body.toString('utf8'), null, 4);
+			//console.log(responseBundle);
+			if(responseBundle.entry!=null)
+			{
+				for(var iterator=0;iterator<responseBundle.entry.length;iterator++)
+				{
+					globalStoredList.push(responseBundle.entry[iterator].resource);
+				}
+				if(responseBundle.link.length>0)
+				{
+					//console.log("responsebundle size: "+responseBundle.link.length);
+					var hasNextPageBundle=false;
+					var iterator=0;
+					for(;iterator <responseBundle.link.length;iterator++)
+					{
+						if(responseBundle.link[iterator].relation=="next")
+						{
+							
+							hasNextPageBundle=true;
+							break;
+							//GetOrgUnitId(myArr.link[iterator].url,listAssociatedDataRow,listAssociatedResource,callback);
+						}
+					}
+					//if(hasNextPageBundle==true)
+					if(false)
+					{
+						//console.log();
+						//onsole.log("---------------------------------");
+						getAllProducts(responseBundle.link[iterator].url,globalStoredList,callback);
 					}
 					else
 					{
