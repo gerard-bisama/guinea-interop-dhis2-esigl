@@ -288,7 +288,7 @@ exports.buildProgramFhirResources=function buildProgramFhirResources(listProgram
 	return listProgramsFhir;
 	
 }
-exports.buildProgramProductsFhirResources=function buildProgramProductsFhirResources(mainProgram,listProgramsProduct,hrefDomaineSIGL,hrefDomainFhir)
+exports.buildProgramProductsFhirResources=function buildProgramProductsFhirResources(mainProgram,listProductCategories,listProgramsProduct,hrefDomaineSIGL,hrefDomainFhir)
 {
 	var listProgramsFhir=[];
 	var identifierCodingSystem=hrefDomaineSIGL+"/program-id";
@@ -306,7 +306,8 @@ exports.buildProgramProductsFhirResources=function buildProgramProductsFhirResou
 			type:{coding:[{system:identifierCodingSystem,code:"programcode",display:"programcode"}],text:"programcode"},
 			value:mainProgram.code
 		}];
-	var productCategory={coding:[{system:programProductCodingSystem,code:listProgramsProduct[0].category,display:listProgramsProduct[0].category}],text:listProgramsProduct[0].category};
+	var codeCatProduct=getProductCategoryCodeFromName(listProgramsProduct[0].category,listProductCategories);
+	var productCategory={coding:[{system:programProductCodingSystem,code:codeCatProduct,display:listProgramsProduct[0].category}],text:listProgramsProduct[0].category};
 	var oProgram={
 			resourceType:"OrganizationAffiliation",
 			id:mainProgram.code,
@@ -345,6 +346,19 @@ exports.buildProgramProductsFhirResources=function buildProgramProductsFhirResou
 	//oProgram.extension[0].extension.push()
 	listProgramsFhir.push(oProgram);
 	return listProgramsFhir;
+}
+function getProductCategoryCodeFromName(categoryName,listProductCategories)
+{
+	var foundCode="";
+	for(var i=0;i<listProductCategories.length;i++)
+	{
+		if(categoryName==listProductCategories[i].name)
+		{
+			foundCode=listProductCategories[i].code;
+			break;
+		}
+	}
+	return foundCode;
 }
 
 exports.buildRequisitionFhirResources=function buildRequisitionFhirResources(facilityId,facilityCode,listRequisitions,hrefDomaineSIGL,hrefDomainFhir)
