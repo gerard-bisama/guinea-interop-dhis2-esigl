@@ -1,6 +1,6 @@
 {
   "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60b41c23c",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "name": "Fhir Resources from HAPI to DHIS2",
   "description": "Pull Fhir resources form HAPI and push them to DHIS2 ",
   "defaultChannelConfig": [
@@ -22,6 +22,31 @@
           "port": "5022",
           "primary": true,
           "path": "/product2dhsi2",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "polling"
+    },
+     {
+      "name": "Sync programs list categories to DHIS2",
+      "urlPattern": "^/program2dhis2/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "0 0 1 * *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Sync programs list to DHIS2",
+          "host": "localhost",
+          "port": "5022",
+          "primary": true,
+          "path": "/program2dhis2",
           "type": "http"
         }
         
@@ -101,6 +126,29 @@
 			"type": "string"
 		}
       ]
+    },
+    {
+      "param": "productCategoryId",
+      "displayName": "productCategoryId",
+      "description": "id of the product category in dhis2. this act as id of the collections of products",
+      "type": "string",
+      "template": []
+    }
+    ,
+    {
+      "param": "programCategoryId",
+      "displayName": "programCategoryId",
+      "description": "id of the programme category in dhis2. this act as id of the collections of programme",
+      "type": "string",
+      "template": []
+    }
+    ,
+    {
+      "param": "programProductCategoryId",
+      "displayName": "programProductCategoryId",
+      "description": "id of the Categorie-Produit category in dhis2. this act as id of the collections of Categorie-Produit",
+      "type": "string",
+      "template": []
     }
     
   ],
@@ -109,13 +157,16 @@
     "clientPassword":"pwd",
     "dhis2Server":{
 		"url":"http://domain",
-		"username":"user",
+		"username":"username",
 		"password":"pwd",
 		"apiPath":"/api"
 		},
 	"hapiServer":{
-		"url":"http://domain/hapi-fhir-jpaserver"
-		}
+		"url":"http://ip:port/hapi-fhir-jpaserver"
+		},
+	"productCategoryId":"C3L25mpAIJ2",
+	"programCategoryId":"fQzqjBe3TVb",
+	"programProductCategoryId":"KyGPnVSLKmO"
   }
 }
 

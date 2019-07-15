@@ -21,7 +21,32 @@ exports.getProductName=function(ProductFhir)
 	}
 	return name;
 }
-
+exports.getProgramName=function(ProgramFhir)
+{
+	var name="";
+	for(var iteratorExt=0;iteratorExt<ProgramFhir.extension[0].extension.length;iteratorExt++)
+	{
+		if(ProgramFhir.extension[0].extension[iteratorExt].url=="name")
+		{
+			name=ProgramFhir.extension[0].extension[iteratorExt].valueString;
+			break;
+		}
+	}
+	return name;
+}
+exports.getCategoryProduct=function(ProgramFhir)
+{
+	var category="";
+	for(var iteratorExt=0;iteratorExt<ProgramFhir.extension[0].extension.length;iteratorExt++)
+	{
+		if(ProgramFhir.extension[0].extension[iteratorExt].url=="productCategory")
+		{
+			category=ProgramFhir.extension[0].extension[iteratorExt].valueCodeableConcept.text;
+			break;
+		}
+	}
+	return category;
+}
 //Format the string date ISO8601 from DHIS2 in Zform (Zulu time Zone) whikch is the format accepted by HAPI Fhir Server
 //The format looks like  yyyy-mm-ddThh:mm:ss+zz:zz ; the last part is the zone indicator
 function formatDateInZform(originalDate)
