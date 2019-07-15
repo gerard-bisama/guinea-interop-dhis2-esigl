@@ -37,12 +37,13 @@ function setupApp () {
 	
   const app = express()
   app.use(errorHandler);
-  var needle = require('needle');
+  //
   var async = require('async');
   var btoa = require('btoa');
   
     
 	app.get('/product2dhsi2', (req, res) => {
+		var needle = require('needle');
 		needle.defaults(
 		{
 			open_timeout: 600000
@@ -70,7 +71,7 @@ function setupApp () {
 				var productPayLoad={
 					code:oProduct.id,
 					name:productName,
-					shortName:productName,
+					shortName:productName.substr(50),
 					displayName:productName
 					}
 				orchestrationsProducts2Push.push(
@@ -341,6 +342,7 @@ function setupApp () {
 		
 	})//end of app.get /product2dhsi2
 	app.get('/program2dhis2', (req, res) => {
+		var needle=require('needle')
 		needle.defaults(
 		{
 			open_timeout: 600000
@@ -369,7 +371,7 @@ function setupApp () {
 				var programPayLoad={
 					code:codeProgram,
 					name:productName,
-					shortName:productName,
+					shortName:productName.substr(50),
 					displayName:productName
 					}
 				orchestrationsProgram2Push.push(
@@ -388,13 +390,13 @@ function setupApp () {
 			for(var iteratorOrch=0;iteratorOrch<programLists.length;iteratorOrch++)
 			{
 				var oProgram=programLists[iteratorOrch];
-				var categoryName=customLibrairy.getCategoryProduct(oProgram);
+				var categoryName=customLibrairy.getCategoryProduct(oProgram).name;
 				//console.log(categoryName);
 				var codeProgram=categoryName.trim().replace(/\s/g,"");
 				var productCategoryPayLoad={
 					code:codeProgram,
 					name:categoryName,
-					shortName:categoryName,
+					shortName:categoryName.substr(50),
 					displayName:categoryName
 					}
 				/*
@@ -649,6 +651,7 @@ function setupApp () {
 		
 	})//end of app.get /product2dhsi2
 	app.get('/catproduct2dhis2', (req, res) => {
+		var needle = require('needle');
 		needle.defaults(
 		{
 			open_timeout: 600000
@@ -669,20 +672,20 @@ function setupApp () {
 			for(var iteratorOrch=0;iteratorOrch<programLists.length;iteratorOrch++)
 			{
 				var oProgram=programLists[iteratorOrch];
-				var categoryName=customLibrairy.getCategoryProduct(oProgram);
+				var productCategory=customLibrairy.getCategoryProduct(oProgram);
 				//console.log(categoryName);
-				var codeProgram=categoryName.trim().replace(/\s/g,"");
+				//var codeProgram=productCategory.name;
 				var productCategoryPayLoad={
-					code:codeProgram,
-					name:categoryName,
-					shortName:categoryName,
-					displayName:categoryName
+					code:productCategory.code,
+					name:productCategory.name,
+					shortName:productCategory.name.substr(50),
+					displayName:productCategory.name
 					}
 				
 				OrchestrationsProgamCategoryProducts.push(
 					{ 
-					ctxObjectRef: codeProgram,
-					name: codeProgram, 
+					ctxObjectRef: productCategory.code,
+					name: productCategory.code, 
 					domain: mediatorConfig.config.dhis2Server.url,
 					path:mediatorConfig.config.dhis2Server.apiPath+"/categoryOptions",
 					params: "",
@@ -744,7 +747,7 @@ function setupApp () {
 					winston.error(err);
 				}
 				winston.info("Creation of products category => categoryOptions done!")
-				//console.log(orchestrationsResultsProducts[0].response.body);
+				console.log(orchestrationsResultsResource);
 				//Now check the responses, if created push catogoryOptions into the product  Categorie
 				var listResourceIdCreated=[];
 				for(var iteratorResp=0;iteratorResp<orchestrationsResultsResource.length;iteratorResp++)
@@ -927,6 +930,286 @@ function setupApp () {
 		
 		
 	})//end of app.get /product2dhsi2
+	app.get('/dispensingUnit2dhis2', (req, res) => {
+		var needle = require('needle');
+		needle.defaults(
+		{
+			open_timeout: 600000
+		});
+		//console.log("Entered ....!");
+		console.log("Start hapi=>dhis2 dispensingunit sync...!");
+		const basicClientToken = `Basic ${btoa(mediatorConfig.config.dhis2Server.username+':'+mediatorConfig.config.dhis2Server.password)}`;
+		//Get Product list from hapi
+		var globalStoredList=[];
+		getAllProducts("",globalStoredList,function(productLists)
+		{
+			winston.info("Products categories resources returned from Fhir..");
+			//console.log(JSON.stringify(productLists[0]));
+			//return;
+			var OrchestrationsDispenensing2Push=[];
+			//first create resources as categoryOptions
+			var listDispensingUnit=customLibrairy.getAllDispensingUnitFormProduct(productLists);
+			//console.log(listDispensingUnit);
+			//console.log("************************************************");
+			//return;
+			for(var iteratorOrch=0;iteratorOrch<listDispensingUnit.length;iteratorOrch++)
+			{
+				var oDispensing=listDispensingUnit[iteratorOrch];
+				var dispensingPayLoad={
+					code:oDispensing,
+					name:oDispensing,
+					shortName:oDispensing.substr(50),
+					displayName:oDispensing
+					}
+				
+				OrchestrationsDispenensing2Push.push(
+					{ 
+					ctxObjectRef: oDispensing,
+					name: oDispensing, 
+					domain: mediatorConfig.config.dhis2Server.url,
+					path:mediatorConfig.config.dhis2Server.apiPath+"/categoryOptions",
+					params: "",
+					body:  JSON.stringify(dispensingPayLoad),
+					method: "POST",
+					headers: {'Content-Type': 'application/json','Authorization': basicClientToken}
+				  });
+				
+			}
+			var asyncDispensing2Push = require('async');
+			var ctxObject2Update = []; 
+			var orchestrationsResultsResource=[];
+			var counterPush=1;
+			
+			asyncDispensing2Push.each(OrchestrationsDispenensing2Push, function(orchestrationDispensingUnit, callbackProgram) {
+				var orchUrl = orchestrationDispensingUnit.domain + orchestrationDispensingUnit.path + orchestrationDispensingUnit.params;
+				var options={
+					headers:orchestrationDispensingUnit.headers
+					};
+				var resource2Push=orchestrationDispensingUnit.body;
+				//console.log(orchUrl);
+				needle.post(orchUrl,resource2Push,options, function(err, resp) {
+					// if error occured
+					
+					if ( err ){
+						winston.error("Needle: error when pushing dispensing unit data to dhis2");
+						callbackProgram(err);
+					}
+					//console.log(resp);
+					console.log("********************************************************");
+					winston.info(counterPush+"/"+OrchestrationsDispenensing2Push.length);
+					winston.info("...Inserting "+orchestrationDispensingUnit.path);
+					orchestrationsResultsResource.push({
+					name: orchestrationDispensingUnit.name,
+					request: {
+					  path : orchestrationDispensingUnit.path,
+					  headers: orchestrationDispensingUnit.headers,
+					  querystring: orchestrationDispensingUnit.params,
+					  body: orchestrationDispensingUnit.body,
+					  method: orchestrationDispensingUnit.method,
+					  timestamp: new Date().getTime()
+					},
+					response: {
+					  status: resp.statusCode,
+					  body: resp.body,
+					  timestamp: new Date().getTime()
+					}
+					});
+					//console.log(resp.body);
+					// add orchestration response to context object and return callback
+					ctxObject2Update[orchestrationDispensingUnit.ctxObjectRef] = resp.body;
+					counterPush++;
+					callbackProgram();
+				});
+			},function(err)
+			{
+				if(err)
+				{
+					winston.error(err);
+				}
+				winston.info("Creation of dispensingunit => categoryOptions done!")
+				console.log(orchestrationsResultsResource);
+				//Now check the responses, if created push catogoryOptions into the product  Categorie
+				var listResourceIdCreated=[];
+				for(var iteratorResp=0;iteratorResp<orchestrationsResultsResource.length;iteratorResp++)
+				{
+					var operationResponse=orchestrationsResultsResource[iteratorResp].response;
+					var dispensingUnitCode=orchestrationsResultsResource[iteratorResp].name;
+					if(operationResponse.body.httpStatus=="Created")
+					{
+						listResourceIdCreated.push(operationResponse.body.response.uid);
+						winston.info("Dispensing unit: "+dispensingUnitCode+" created with id = "+operationResponse.body.response.uid);
+					}
+					else
+					{
+						winston.warn("Failed to create product category: "+prodCatCode);
+					}
+				}
+				//If id product created assign them to the product category
+				if(listResourceIdCreated.length>0)
+				{
+					var ochestrationResourceCollection=[];
+					//Building the identifiable Ojects payload
+					var identifiablePayload={
+						identifiableObjects:[]
+						};
+					for(var iteratorCol=0;iteratorCol<listResourceIdCreated.length;iteratorCol++)
+					{
+						identifiablePayload.identifiableObjects.push(
+							{
+								id:listResourceIdCreated[iteratorCol]
+							}
+						);
+					}
+					ochestrationResourceCollection.push(
+					{ 
+						ctxObjectRef: "dispensingUnitsCollection",
+						name: "dispensingUnitsCollection", 
+						domain: mediatorConfig.config.dhis2Server.url,
+						path:mediatorConfig.config.dhis2Server.apiPath+"/categories/"+mediatorConfig.config.dispensingUnitCategoryId+"/categoryOptions",
+						params: "",
+						body:  JSON.stringify(identifiablePayload),
+						method: "POST",
+						headers: {'Content-Type': 'application/json','Authorization': basicClientToken}
+				  });
+					var asyncResourceCollection = require('async');
+					var ctxObject2Update = []; 
+					var orchestrationsResultsCollections=[];
+					var counterCollection=1;
+					
+					asyncResourceCollection.each(ochestrationResourceCollection, function(orchestrationCollection, callbackCollection) {
+						var orchUrl = orchestrationCollection.domain + orchestrationCollection.path + orchestrationCollection.params;
+						var options={
+							headers:orchestrationCollection.headers
+							};
+						var dataToPush=orchestrationCollection.body;
+							needle.post(orchUrl,dataToPush,options, function(err, resp) {
+								if ( err ){
+									winston.error("Needle: error when pushing dispensing unit data to the collection to dhis2");
+									callbackCollection(err);
+								}
+								console.log("********************************************************");
+								winston.info(counterCollection+"/"+ochestrationResourceCollection.length);
+								winston.info("...Inserting "+orchestrationCollection.path);
+								orchestrationsResultsCollections.push({
+								name: orchestrationCollection.name,
+								request: {
+								  path : orchestrationCollection.path,
+								  headers: orchestrationCollection.headers,
+								  querystring: orchestrationCollection.params,
+								  body: orchestrationCollection.body,
+								  method: orchestrationCollection.method,
+								  timestamp: new Date().getTime()
+								},
+								response: {
+								  status: resp.statusCode,
+								  body: JSON.stringify(resp.body.toString('utf8'), null, 4),
+								  //body: resp.body,
+								  timestamp: new Date().getTime()
+								}
+								});
+								ctxObject2Update.push({ref:orchestrationCollection.name,log:resp.body});
+								counterCollection++;
+								callbackCollection();
+							});//end of needle
+							
+						},function(err)
+						{
+							if(err)
+							{
+								winston.error(err);
+							}
+							winston.info("Assign of dispensing unit => Category done!");
+							//console.log(orchestrationsResultsCollections[0].response);
+							
+							for(var iteratorResp=0;iteratorResp<orchestrationsResultsCollections.length;iteratorResp++)
+							{
+								//console.log(orchestrationsResultsCollections[iteratorResp].response);
+								if(orchestrationsResultsCollections[iteratorResp].response.status>=200 && orchestrationsResultsCollections[iteratorResp].response.status<300)
+								{
+									winston.info("Assignment to the collection done for dispensing unit categoryOption ");
+									
+								}
+								else
+								{
+									
+									winston.warn("Assignment to the collection failed for dispensing unit categoryOption ");
+								}
+							}
+							var urn = mediatorConfig.urn;
+							var status = 'Successful';
+							var response = {
+							  status: 200,
+							  headers: {
+								'content-type': 'application/json'
+							  },
+							  body:JSON.stringify( {'OperationResult':'Dispensing unit synched successfully into dhis2'}),
+							  timestamp: new Date().getTime()
+							};
+							var properties = {};
+							properties['Number dispensing unit pushed'] =listResourceIdCreated.length;
+							var returnObject = {
+							  "x-mediator-urn": urn,
+							  "status": status,
+							  "response": response,
+							  "orchestrations": orchestrationsResultsCollections,
+							  "properties": properties
+							}
+							winston.info("End of Hapi=>DHIS2 program orchestration");
+							res.set('Content-Type', 'application/json+openhim');
+							res.send(returnObject);
+						});//end of asyncProductCollection.each 
+				}
+				else
+				{
+					winston.warn("No dispensingUnit to assign to the category");
+					var urn = mediatorConfig.urn;
+					var status = 'Successful';
+					var response = {
+					  status: 200,
+					  headers: {
+						'content-type': 'application/json'
+					  },
+					  body:JSON.stringify( {'OperationResult':'dispensingUnit to assign to the category'}),
+					  timestamp: new Date().getTime()
+					};
+					var properties = {};
+					properties['Number dispensing unit pushed'] =0;
+					var orchestrationToReturn=[
+					{
+						name: "DispensingHapi2Dhis2Sync",
+						request: {
+						  path :"/dhis/api",
+						  headers: {'Content-Type': 'application/json'},
+						  querystring: "",
+						  body:JSON.stringify( {'Process sync':'succeded'}),
+						  method: "POST",
+						  timestamp: new Date().getTime()
+						},
+						response: {
+						  status: 200,
+						  body:JSON.stringify({'OperationResult':'Not performed'}),
+						  timestamp: new Date().getTime()
+						}
+					}
+					];
+					var returnObject = {
+					  "x-mediator-urn": urn,
+					  "status": status,
+					  "response": response,
+					  "orchestrations": orchestrationToReturn,
+					  "properties": properties
+					}
+					winston.info("End of Hapi=>DHIS2 dispensingunit orchestration");
+					res.set('Content-Type', 'application/json+openhim');
+					res.send(returnObject);
+				}//end else
+				
+			});//end of asyncProduct2Push
+		
+		});//end of getAllProducts
+		
+		
+	})//end of app.get /product2dhsi2
 	
   return app
 }
@@ -1020,7 +1303,7 @@ function getAllProducts(bundleParam,globalStoredList,callback)
 	var urlRequest="";
 	if(bundleParam=="")
 	{
-		var filter="code=product&_format=json&_count=2";
+		var filter="code=product&_format=json&_count=4";
 		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Basic?${filter}`;
 		
 		winston.info("First iteration!")
@@ -1165,6 +1448,7 @@ function getAllPrograms(bundleParam,globalStoredList,callback)
 					}
 					else
 					{
+						//res.end();
 						 return callback(globalStoredList);
 					}
 					

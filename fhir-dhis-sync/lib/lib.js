@@ -21,6 +21,29 @@ exports.getProductName=function(ProductFhir)
 	}
 	return name;
 }
+exports.getAllDispensingUnitFormProduct=function(ListProductFhir)
+{
+	var listDispensingUnit=[];
+	for(var iterator=0;iterator<ListProductFhir.length;iterator++)
+	{
+		//if(ListProductFhir[iterator].extension[0].)
+		for(var iteratorExt=0;iteratorExt<ListProductFhir[iterator].extension[0].extension.length;iteratorExt++)
+		{
+			if(ListProductFhir[iterator].extension[0].extension[iteratorExt].url=="dispensingUnit")
+			{
+				if(listDispensingUnit.includes(ListProductFhir[iterator].extension[0].extension[iteratorExt].valueString))
+				{
+					continue;
+				}
+				else
+				{
+					listDispensingUnit.push(ListProductFhir[iterator].extension[0].extension[iteratorExt].valueString);
+				}
+			}
+		}
+	}//end for iterator
+	return listDispensingUnit;
+}
 exports.getProgramName=function(ProgramFhir)
 {
 	var name="";
@@ -36,12 +59,16 @@ exports.getProgramName=function(ProgramFhir)
 }
 exports.getCategoryProduct=function(ProgramFhir)
 {
-	var category="";
+	var category=null;
 	for(var iteratorExt=0;iteratorExt<ProgramFhir.extension[0].extension.length;iteratorExt++)
 	{
 		if(ProgramFhir.extension[0].extension[iteratorExt].url=="productCategory")
 		{
-			category=ProgramFhir.extension[0].extension[iteratorExt].valueCodeableConcept.text;
+			//categoryName=ProgramFhir.extension[0].extension[iteratorExt].valueCodeableConcept.text;
+			category={
+					code:ProgramFhir.extension[0].extension[iteratorExt].valueCodeableConcept.coding[0].code,
+					name:ProgramFhir.extension[0].extension[iteratorExt].valueCodeableConcept.text
+				};
 			break;
 		}
 	}

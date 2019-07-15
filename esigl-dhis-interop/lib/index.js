@@ -1086,6 +1086,7 @@ function setupApp () {
 			listProductsFromeSIGL=ctxObject.products.products;
 			listProductCategoryFromeSIGL=ctxObject.productCategories["product-categories"];
 			listDosageUnitFromeSIGL=ctxObject.dosageUnits["dosage-units"]
+			////loop throup product to constr
 			var listProductsFhir=customLibrairy.buildProductFhirResources(listProductsFromeSIGL,listProductCategoryFromeSIGL,listDosageUnitFromeSIGL,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
 			winston.info("Transformation of product to Fhir product extension done!");
 			var orchestrations2FhirUpdate=[];

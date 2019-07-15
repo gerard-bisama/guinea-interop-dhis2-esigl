@@ -1,6 +1,6 @@
 {
   "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60b41c23c",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "name": "Fhir Resources from HAPI to DHIS2",
   "description": "Pull Fhir resources form HAPI and push them to DHIS2 ",
   "defaultChannelConfig": [
@@ -30,7 +30,7 @@
       "type": "polling"
     },
      {
-      "name": "Sync programs list categories to DHIS2",
+      "name": "Sync programs list to DHIS2",
       "urlPattern": "^/program2dhis2/$",
       "alerts": [],
       "txRerunAcl": [],
@@ -47,6 +47,57 @@
           "port": "5022",
           "primary": true,
           "path": "/program2dhis2",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "polling"
+    }
+    ,
+     {
+      "name": "Sync products-category list to DHIS2",
+      "urlPattern": "^/catproduct2dhis2/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "0 0 1 * *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Sync products-category list to DHIS2",
+          "host": "localhost",
+          "port": "5022",
+          "primary": true,
+          "path": "/catproduct2dhis2",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "polling"
+    },
+    {
+      "name": "Sync dispensingUnits list to DHIS2",
+      "urlPattern": "^/dispensingUnit2dhis2/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "0 0 1 * *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Sync dispensingUnits list to DHIS2",
+          "host": "localhost",
+          "port": "5022",
+          "primary": true,
+          "path": "/dispensingUnit2dhis2",
           "type": "http"
         }
         
@@ -150,23 +201,30 @@
       "type": "string",
       "template": []
     }
-    
+    ,
+    {
+      "param": "dispensingUnitCategoryId",
+      "displayName": "dispensingUnitCategoryId",
+      "description": "id of the dispensing unit in dhis2. this act as id of the collections of dispensing",
+      "type": "string",
+      "template": []
+    }
   ],
-  "config": {
+ "config": {
     "upstreamUrl": "http://sampleApplication:7001",
     "clientPassword":"pwd",
     "dhis2Server":{
 		"url":"http://domain",
-		"username":"username",
+		"username":"user",
 		"password":"pwd",
 		"apiPath":"/api"
 		},
 	"hapiServer":{
-		"url":"http://ip:port/hapi-fhir-jpaserver"
+		"url":"http://domain/hapi-fhir-jpaserver"
 		},
-	"productCategoryId":"C3L25mpAIJ2",
-	"programCategoryId":"fQzqjBe3TVb",
-	"programProductCategoryId":"KyGPnVSLKmO"
+	"productCategoryId":"pBrXHaZJRMV",
+	"programCategoryId":"mxdcavKYgFs",
+	"programProductCategoryId":"W7EVDisPmD8",
+	"dispensingUnitCategoryId":"TtwRlK52Mba"
   }
 }
-
