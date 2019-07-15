@@ -575,6 +575,8 @@ function setupApp () {
 			open_timeout: 600000
 		});
 		winston.info("Start eSIGL=>Organization mapping...!");
+		//console.log(req.params);
+		return;
 		const basicClientToken = `Basic ${btoa(mediatorConfig.config.esiglServer.username+':'+mediatorConfig.config.esiglServer.password)}`;
 		var _currentDateOperation=new Date();
 		var _dateOperation=_currentDateOperation.toJSON().split("T")[0];
@@ -2162,7 +2164,7 @@ function getAllOrganizations(bundleParam,filter,globalStoredList,callback)
 	if(bundleParam=="")
 	{
 		//urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Organization?type=${level}`;
-		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Organization?${filter}`;
+		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Organization?_count=2&${filter}`;
 		
 		winston.info("First iteration!")
 	}
