@@ -681,7 +681,8 @@ function setupApp () {
 		const basicClientToken = `Basic ${btoa(mediatorConfig.config.dhis2Server.username+':'+mediatorConfig.config.dhis2Server.password)}`;
 		//Get Product list from hapi
 		var globalStoredList=[];
-		getAllPrograms("",globalStoredList,function(programLists)
+		//getAllPrograms("",globalStoredList,function(programLists)
+		getAllProgramsCurl("",globalStoredList,function(programLists)
 		{
 			winston.info("Products categories resources returned from Fhir..");
 			//console.log(JSON.stringify(productLists[0]));
@@ -971,7 +972,8 @@ function setupApp () {
 		const basicClientToken = `Basic ${btoa(mediatorConfig.config.dhis2Server.username+':'+mediatorConfig.config.dhis2Server.password)}`;
 		//Get Product list from hapi
 		var globalStoredList=[];
-		getAllProducts("",globalStoredList,function(productLists)
+		//getAllProducts("",globalStoredList,function(productLists)
+		getAllProductsCurl("",globalStoredList,function(productLists)
 		{
 			winston.info("Products categories resources returned from Fhir..");
 			//console.log(JSON.stringify(productLists[0]));

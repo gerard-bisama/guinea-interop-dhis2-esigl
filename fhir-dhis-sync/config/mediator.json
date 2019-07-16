@@ -261,7 +261,7 @@
   ],
  "config": {
     "upstreamUrl": "http://sampleApplication:7001",
-    "clientPassword":"pwd",
+    "clientPassword":"pwed",
     "dhis2Server":{
 		"url":"http://domain",
 		"username":"user",
