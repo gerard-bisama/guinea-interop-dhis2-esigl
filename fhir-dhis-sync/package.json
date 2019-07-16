@@ -23,6 +23,7 @@
   "dependencies": {
     "async": "^3.0.1",
     "btoa": "^1.2.1",
+    "child_process": "^1.0.2",
     "csv-util": "0.0.1",
     "express": "^4.13.4",
     "forever-monitor": "^1.7.1",
@@ -35,6 +36,7 @@
     "url": "^0.11.0",
     "uuid": "^3.3.2",
     "xmldom": "^0.1.22",
+    "xmlhttprequest": "^1.8.0",
     "xpath": "0.0.23"
   },
   "devDependencies": {

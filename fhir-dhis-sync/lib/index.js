@@ -5,7 +5,7 @@ const express = require('express')
 const medUtils = require('openhim-mediator-utils')
 const winston = require('winston')
 const customLibrairy=require('./lib.js');
-
+const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 const utils = require('./utils')
 
 // Logging setup
@@ -53,10 +53,12 @@ function setupApp () {
 		const basicClientToken = `Basic ${btoa(mediatorConfig.config.dhis2Server.username+':'+mediatorConfig.config.dhis2Server.password)}`;
 		//Get Product list from hapi
 		var globalStoredList=[];
-		getAllProducts("",globalStoredList,function(productLists)
+		//getAllProducts("",globalStoredList,function(productLists)
+		getAllProductsCurl("",globalStoredList,function(productLists)
 		{
 			winston.info("Product resources returned from Fhir..");
-			//console.log(JSON.stringify(productLists[0]));
+			//console.log(JSON.stringify(productLists[));
+			//console.log(productLists.length);
 			//return;
 			var orchestrationsProducts2Push=[];
 			//productLists[0].extension[0].extension[0].url
@@ -147,10 +149,19 @@ function setupApp () {
 				{
 					var operationResponse=orchestrationsResultsProducts[iteratorResp].response;
 					var productCode=orchestrationsResultsProducts[iteratorResp].name;
+					//console.log(JSON.stringify(operationResponse));
 					if(operationResponse.body.httpStatus=="Created")
 					{
 						listProductIdCreated.push(operationResponse.body.response.uid);
 						winston.info("Product: "+productCode+" created with id = "+operationResponse.body.response.uid);
+					}
+					else if(operationResponse.body.httpStatus=="Conflict")
+					{
+						if(operationResponse.body.response.errorReports.length>0)
+						{
+							var resourceId=operationResponse.body.response.errorReports[0].mainId;
+							listProductIdCreated.push(resourceId);
+						}
 					}
 					else
 					{
@@ -352,10 +363,11 @@ function setupApp () {
 		const basicClientToken = `Basic ${btoa(mediatorConfig.config.dhis2Server.username+':'+mediatorConfig.config.dhis2Server.password)}`;
 		//Get Product list from hapi
 		var globalStoredList=[];
-		getAllPrograms("",globalStoredList,function(programLists)
+		//getAllPrograms("",globalStoredList,function(programLists)
+		getAllProgramsCurl("",globalStoredList,function(programLists)
 		{
 			winston.info("Programs resources returned from Fhir..");
-			//console.log(JSON.stringify(productLists[0]));
+			//console.log(JSON.stringify(programLists[0]));
 			//return;
 			var orchestrationsProgram2Push=[];
 			var OrchestrationsProgamCategoryProducts=[];
@@ -478,6 +490,14 @@ function setupApp () {
 					{
 						listProgramIdCreated.push(operationResponse.body.response.uid);
 						winston.info("Program: "+programCode+" created with id = "+operationResponse.body.response.uid);
+					}
+					else if(operationResponse.body.httpStatus=="Conflict")
+					{
+						if(operationResponse.body.response.errorReports.length>0)
+						{
+							var resourceId=operationResponse.body.response.errorReports[0].mainId;
+							listProductIdCreated.push(resourceId);
+						}
 					}
 					else
 					{
@@ -747,17 +767,27 @@ function setupApp () {
 					winston.error(err);
 				}
 				winston.info("Creation of products category => categoryOptions done!")
-				console.log(orchestrationsResultsResource);
+				//console.log(orchestrationsResultsResource[0]);
+				//console.log("///////////////////////////////////////////////////////////////");
 				//Now check the responses, if created push catogoryOptions into the product  Categorie
 				var listResourceIdCreated=[];
 				for(var iteratorResp=0;iteratorResp<orchestrationsResultsResource.length;iteratorResp++)
 				{
 					var operationResponse=orchestrationsResultsResource[iteratorResp].response;
+					//console.log(operationResponse);
 					var prodCatCode=orchestrationsResultsResource[iteratorResp].name;
 					if(operationResponse.body.httpStatus=="Created")
 					{
 						listResourceIdCreated.push(operationResponse.body.response.uid);
 						winston.info("Product Category: "+prodCatCode+" created with id = "+operationResponse.body.response.uid);
+					}
+					else if(operationResponse.body.httpStatus=="Conflict")
+					{
+						if(operationResponse.body.response.errorReports.length>0)
+						{
+							var resourceId=operationResponse.body.response.errorReports[0].mainId;
+							listProductIdCreated.push(resourceId);
+						}
 					}
 					else
 					{
@@ -1027,7 +1057,7 @@ function setupApp () {
 					winston.error(err);
 				}
 				winston.info("Creation of dispensingunit => categoryOptions done!")
-				console.log(orchestrationsResultsResource);
+				//console.log(orchestrationsResultsResource);
 				//Now check the responses, if created push catogoryOptions into the product  Categorie
 				var listResourceIdCreated=[];
 				for(var iteratorResp=0;iteratorResp<orchestrationsResultsResource.length;iteratorResp++)
@@ -1038,6 +1068,14 @@ function setupApp () {
 					{
 						listResourceIdCreated.push(operationResponse.body.response.uid);
 						winston.info("Dispensing unit: "+dispensingUnitCode+" created with id = "+operationResponse.body.response.uid);
+					}
+					else if(operationResponse.body.httpStatus=="Conflict")
+					{
+						if(operationResponse.body.response.errorReports.length>0)
+						{
+							var resourceId=operationResponse.body.response.errorReports[0].mainId;
+							listProductIdCreated.push(resourceId);
+						}
 					}
 					else
 					{
@@ -1210,8 +1248,29 @@ function setupApp () {
 		
 		
 	})//end of app.get /product2dhsi2
-	
-  return app
+	app.get('/requisition2dhis2', (req, res) => {
+		var needle = require('needle');
+		needle.defaults(
+		{
+			open_timeout: 600000
+		});
+		winston.info("Start hapi=>dhis2 requisitions sync...!");
+		const basicClientToken = `Basic ${btoa(mediatorConfig.config.dhis2Server.username+':'+mediatorConfig.config.dhis2Server.password)}`;
+		var globalStoredList=[];
+		//getAllRequisitions("",globalStoredList,function(requisitionLists)
+		getAllRequisitionsCurl("",globalStoredList,function(requisitionsList)
+		//getAllRequisitionsCurl(function(res)
+		{
+			winston.info("Requisitions resources returned from Fhir..");
+			//console.log(requisitionLists.length);
+			for(var  iteratorReq =0;iteratorReq<requisitionsList.length;iteratorReq++)
+			{
+				console.log("id: "+requisitionsList[iteratorReq].id);
+			}
+			return;
+		})//end getAllRequisitions
+	})//end app.get requisition2dhis2
+  return app 
 }
 //return the list of Organization from fhir based on the filter content
 //@@ bundleParam callback parameter for recursive call
@@ -1225,7 +1284,8 @@ function getAllOrganizations(bundleParam,filter,globalStoredList,callback)
 	if(bundleParam=="")
 	{
 		//urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Organization?type=${level}`;
-		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Organization?_count=10&${filter}`;
+		var filterAdditional="_count="+mediatorConfig.config.resourceCountFhir;
+		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Organization?${filter}&${filterAdditional}`;
 		
 		winston.info("First iteration!")
 	}
@@ -1293,6 +1353,8 @@ function getAllOrganizations(bundleParam,filter,globalStoredList,callback)
 	});//end of needle
 	
 }
+
+
 //return the list of Products from fhir based on the filter content
 //@@ bundleParam callback parameter for recursive call
 //@@ globalStoredList store list of entries in every iterations
@@ -1303,7 +1365,7 @@ function getAllProducts(bundleParam,globalStoredList,callback)
 	var urlRequest="";
 	if(bundleParam=="")
 	{
-		var filter="code=product&_format=json&_count=4";
+		var filter="code=product&_format=json&_count="+mediatorConfig.config.resourceCountFhir;
 		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Basic?${filter}`;
 		
 		winston.info("First iteration!")
@@ -1312,7 +1374,7 @@ function getAllProducts(bundleParam,globalStoredList,callback)
 	{
 		urlRequest=`${bundleParam}`;
 		//console.log(bundleParam);
-		winston.info("Looping througth bundle response to build organization list!");
+		winston.info("Looping througth bundle response to build Product list!");
 		
 	}
 	var needle = require('needle');
@@ -1326,7 +1388,8 @@ function getAllProducts(bundleParam,globalStoredList,callback)
 		console.log(urlRequest);
 		console.log("-------------------------------------------------");
 		if ( err ){
-			winston.error("Error occured while looping through bundle to construct the Fhir Product List");
+			//winston.error("Error occured while looping through bundle to construct the Fhir Product List");
+			winston.error(err);
 			callback(err);
 		}
 		//console.log(resp.statusCode);
@@ -1375,6 +1438,107 @@ function getAllProducts(bundleParam,globalStoredList,callback)
 	});//end of needle
 	
 }
+function getAllProductsCurl(bundleParam,globalStoredList,callback)
+{
+	var urlRequest="";
+	if(bundleParam=="")
+	{
+		var filter="code=product&_format=json&_count="+mediatorConfig.config.resourceCountFhir;
+		urlRequest="'"+`${mediatorConfig.config.hapiServer.url}/fhir/Basic?${filter}`+"'";
+	}
+	else
+	{
+		urlRequest="'"+`${bundleParam}`+"'";
+		winston.info("Looping througth bundle response to construct requisitions list!");
+	}
+	console.log(urlRequest);
+	var args = "-X GET  -H 'Content-Type: application/fhir+json' "+urlRequest;
+	var exec = require('child_process').exec;
+	exec('curl ' + args, function (error, stdout, stderr) {
+      //console.log('stdout: ' + stdout);
+      console.log('stderr: ' + stderr);
+      if (error !== null) {
+        console.log('exec error: ' + error);
+        callback(error);
+      }
+      var responseBundle=JSON.parse(stdout);
+		if(responseBundle.entry!=null)
+		{
+			//console.log("Has entries!!!!!");
+			var resourceIndexToRetain=[];
+			for(var iterator=0;iterator<responseBundle.entry.length;iterator++)
+			{
+				//if(esponseBundle.entry[iterator].resource)
+				//check if the ressource is already in the globalStoredList
+				//console.log("Resource returned :"+responseBundle.entry[iterator].resource.id);
+				var itemFound=false;
+				for(var itStoreList=0; itStoreList<globalStoredList.length;itStoreList++)
+				{
+					//console.log(`Compare ${globalStoredList[itStoreList].id} == ${responseBundle.entry[iterator].resource.id}`)
+					if(globalStoredList[itStoreList].id==responseBundle.entry[iterator].resource.id)
+					{
+						
+						itemFound=true;
+						break;
+					}
+				}
+				//console.log("res :"+itemFound);
+				//console.log("******************************************");
+				if(!itemFound)
+				{
+					resourceIndexToRetain.push(iterator);
+					//itemFound=false;
+				}
+				
+			}//end for iterator responseBundle
+			//Now getall resources retained
+			for(var iteratorResource=0;iteratorResource<resourceIndexToRetain.length;iteratorResource++)
+			{
+				
+				var indexToAdd=resourceIndexToRetain[iteratorResource];
+				//console.log("id resource retained:"+responseBundle.entry[indexToAdd].resource.id);
+				globalStoredList.push(responseBundle.entry[indexToAdd].resource);
+			}
+			//globalStoredList.push();
+			
+			if(responseBundle.link.length>0)
+			{
+				//console.log("responsebundle size: "+responseBundle.link.length);
+				var hasNextPageBundle=false;
+				var iterator=0;
+				var nextPageUrl="";
+				//console.log(responseBundle.link);
+				//console.log("////////////////////////////////////////////////////////////////////////");
+				for(;iterator <responseBundle.link.length;iterator++)
+				{
+					if(responseBundle.link[iterator].relation=="next")
+					{
+						
+						hasNextPageBundle=true;
+						nextPageUrl=responseBundle.link[iterator].url;
+						break;
+						//GetOrgUnitId(myArr.link[iterator].url,listAssociatedDataRow,listAssociatedResource,callback);
+					}
+				}
+				if(hasNextPageBundle==true)
+				//if(false)
+				{
+					//console.log();
+					//onsole.log("---------------------------------");
+					getAllProductsCurl(nextPageUrl,globalStoredList,callback);
+				}
+				else
+				{
+					 return callback(globalStoredList);
+				}
+				
+			}
+		}//end if responseBundle.entry
+      //callback();
+    });
+}
+
+
 //return the list of Programs from fhir based on the filter content
 //@@ bundleParam callback parameter for recursive call
 //@@ globalStoredList store list of entries in every iterations
@@ -1385,7 +1549,8 @@ function getAllPrograms(bundleParam,globalStoredList,callback)
 	var urlRequest="";
 	if(bundleParam=="")
 	{
-		var filter="_format=json&_count=1";
+		//var filter="_format=json&_count="+mediatorConfig.config.resourceCountFhir;
+		var filter="_format=json&_count="+1;
 		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/OrganizationAffiliation?${filter}`;
 		
 		winston.info("First iteration!")
@@ -1394,7 +1559,7 @@ function getAllPrograms(bundleParam,globalStoredList,callback)
 	{
 		urlRequest=`${bundleParam}`;
 		//console.log(bundleParam);
-		winston.info("Looping througth bundle response to build organization list!");
+		winston.info("Looping througth bundle response to build program list!");
 		
 	}
 	var needle = require('needle');
@@ -1458,8 +1623,365 @@ function getAllPrograms(bundleParam,globalStoredList,callback)
 	});//end of needle
 	
 }
+function getAllProgramsCurl(bundleParam,globalStoredList,callback)
+{
+	var urlRequest="";
+	if(bundleParam=="")
+	{
+		var filter="_format=json&_count="+1;
+		urlRequest="'"+`${mediatorConfig.config.hapiServer.url}/fhir/OrganizationAffiliation?${filter}`+"'";
+	}
+	else
+	{
+		urlRequest="'"+`${bundleParam}`+"'";
+		winston.info("Looping througth bundle response to construct requisitions list!");
+	}
+	console.log(urlRequest);
+	var args = "-X GET  -H 'Content-Type: application/fhir+json' "+urlRequest;
+	var exec = require('child_process').exec;
+	exec('curl ' + args, function (error, stdout, stderr) {
+      //console.log('stdout: ' + stdout);
+      console.log('stderr: ' + stderr);
+      if (error !== null) {
+        console.log('exec error: ' + error);
+        callback(error);
+      }
+      var responseBundle=JSON.parse(stdout);
+		if(responseBundle.entry!=null)
+		{
+			//console.log("Has entries!!!!!");
+			var resourceIndexToRetain=[];
+			for(var iterator=0;iterator<responseBundle.entry.length;iterator++)
+			{
+				//if(esponseBundle.entry[iterator].resource)
+				//check if the ressource is already in the globalStoredList
+				//console.log("Resource returned :"+responseBundle.entry[iterator].resource.id);
+				var itemFound=false;
+				for(var itStoreList=0; itStoreList<globalStoredList.length;itStoreList++)
+				{
+					//console.log(`Compare ${globalStoredList[itStoreList].id} == ${responseBundle.entry[iterator].resource.id}`)
+					if(globalStoredList[itStoreList].id==responseBundle.entry[iterator].resource.id)
+					{
+						
+						itemFound=true;
+						break;
+					}
+				}
+				//console.log("res :"+itemFound);
+				//console.log("******************************************");
+				if(!itemFound)
+				{
+					resourceIndexToRetain.push(iterator);
+					//itemFound=false;
+				}
+				
+			}//end for iterator responseBundle
+			//Now getall resources retained
+			for(var iteratorResource=0;iteratorResource<resourceIndexToRetain.length;iteratorResource++)
+			{
+				
+				var indexToAdd=resourceIndexToRetain[iteratorResource];
+				//console.log("id resource retained:"+responseBundle.entry[indexToAdd].resource.id);
+				globalStoredList.push(responseBundle.entry[indexToAdd].resource);
+			}
+			//globalStoredList.push();
+			
+			if(responseBundle.link.length>0)
+			{
+				//console.log("responsebundle size: "+responseBundle.link.length);
+				var hasNextPageBundle=false;
+				var iterator=0;
+				var nextPageUrl="";
+				//console.log(responseBundle.link);
+				//console.log("////////////////////////////////////////////////////////////////////////");
+				for(;iterator <responseBundle.link.length;iterator++)
+				{
+					if(responseBundle.link[iterator].relation=="next")
+					{
+						
+						hasNextPageBundle=true;
+						nextPageUrl=responseBundle.link[iterator].url;
+						break;
+						//GetOrgUnitId(myArr.link[iterator].url,listAssociatedDataRow,listAssociatedResource,callback);
+					}
+				}
+				if(hasNextPageBundle==true)
+				//if(false)
+				{
+					//console.log();
+					//onsole.log("---------------------------------");
+					getAllProgramsCurl(nextPageUrl,globalStoredList,callback);
+				}
+				else
+				{
+					 return callback(globalStoredList);
+				}
+				
+			}
+		}//end if responseBundle.entry
+      //callback();
+    });
+}
 
 
+
+
+//return the list of Requisitions based on the startPeriod and endPeriod from fhir based on the filter content
+//@@ bundleParam callback parameter for recursive call
+//@@ globalStoredList store list of entries in every iterations
+function getAllRequisitions(bundleParam,globalStoredList,callback)
+{
+	
+	
+	var urlRequest="";
+	if(bundleParam=="")
+	{
+		var startDate=mediatorConfig.config.periodStartDate;
+		var endDate=mediatorConfig.config.periodEndDate;
+		//var filter="code=requisition&_format=json&_count="+mediatorConfig.config.resourceCountFhir+"&created=>="+startDate+"&created=<="+endDate;
+		var filter="code=requisition&_count=1"+"&created=>="+startDate+"&created=<="+endDate;
+		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Basic?${filter}`;
+		
+		winston.info("First iteration!")
+	}
+	else
+	{
+		urlRequest=`${bundleParam}`;
+		//console.log(bundleParam);
+		winston.info("Looping througth bundle response to build Product list!");
+		
+	}
+	var needle = require('needle');
+	needle.defaults(
+	{
+		open_timeout: 600000
+	});
+	var headers= {'Content-Type': 'application/json'};
+	var options={headers:headers};
+	needle.get(urlRequest,options, function(err, resp) {
+		console.log(urlRequest);
+		console.log("-------------------------------------------------");
+		if ( err ){
+			//winston.error("Error occured while looping through bundle to construct the Fhir Product List");
+			winston.error(err);
+			callback(err);
+		}
+		//console.log(resp.statusCode);
+		if(resp.statusCode==200)
+		{
+			console.log(resp.body);
+			//var responseBundle=JSON.stringify(resp.body.toString('utf8'));
+			var responseBundle=JSON.parse(resp.body.toString('utf8'), null, 4);
+			//console.log(responseBundle);
+			if(responseBundle.entry!=null)
+			{
+				for(var iterator=0;iterator<responseBundle.entry.length;iterator++)
+				{
+					globalStoredList.push(responseBundle.entry[iterator].resource);
+				}
+				if(responseBundle.link.length>0)
+				{
+					//console.log("responsebundle size: "+responseBundle.link.length);
+					var hasNextPageBundle=false;
+					var iterator=0;
+					for(;iterator <responseBundle.link.length;iterator++)
+					{
+						if(responseBundle.link[iterator].relation=="next")
+						{
+							
+							hasNextPageBundle=true;
+							break;
+							//GetOrgUnitId(myArr.link[iterator].url,listAssociatedDataRow,listAssociatedResource,callback);
+						}
+					}
+					if(hasNextPageBundle==true)
+					//if(false)
+					{
+						//console.log();
+						//onsole.log("---------------------------------");
+						getAllRequisitions(responseBundle.link[iterator].url,globalStoredList,callback);
+					}
+					else
+					{
+						 return callback(globalStoredList);
+					}
+					
+				}
+			}//end if
+		
+		}
+	});//end of needle
+	
+}
+function getAllRequisitionsXHttpRequest(bundleParam,globalStoredList,callback)
+{
+	var urlRequest="";
+	if(bundleParam=="")
+	{
+		var startDate=mediatorConfig.config.periodStartDate;
+		var endDate=mediatorConfig.config.periodEndDate;
+		var filter="code=requisition&_format=json&_count="+mediatorConfig.config.resourceCountFhir+"&created=>="+startDate+"&created=<="+endDate;
+		//var filter="code=requisition&_count=1"+"&created=>="+startDate+"&created=<="+endDate;
+		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Basic?${filter}`;
+		
+		winston.info("First iteration!")
+	}
+	else
+	{
+		urlRequest=`${bundleParam}`;
+		//console.log(bundleParam);
+		winston.info("Looping througth bundle response to build Product list!");
+		
+	}
+	var request = new XMLHttpRequest();
+	request.open('GET',urlRequest, true);
+	console.log(urlRequest);
+	request.setRequestHeader( 'Content-Type','application/fhir+json' );
+	request.setRequestHeader( 'Accept','application/fhir+json' ); 
+	request.onreadystatechange = function() {
+		//console.log("Status:"+this.status);
+		//console.log("Status:"+this.readyState);
+		if (this.readyState == 4 && this.status == 200) {
+			//var responseBundle=JSON.parse(this.responseText);
+			console.log(this.response);
+			if(responseBundle.entry!=null)
+			{
+				for(var iterator=0;iterator<responseBundle.entry.length;iterator++)
+				{
+					globalStoredList.push(responseBundle.entry[iterator].resource);
+				}
+				if(responseBundle.link.length>0)
+				{
+					//console.log("responsebundle size: "+responseBundle.link.length);
+					var hasNextPageBundle=false;
+					var iterator=0;
+					for(;iterator <responseBundle.link.length;iterator++)
+					{
+						if(responseBundle.link[iterator].relation=="next")
+						{
+							
+							hasNextPageBundle=true;
+							break;
+							//GetOrgUnitId(myArr.link[iterator].url,listAssociatedDataRow,listAssociatedResource,callback);
+						}
+					}
+					if(hasNextPageBundle==true)
+					//if(false)
+					{
+						//console.log();
+						//onsole.log("---------------------------------");
+						getAllRequisitionsXHttpRequest(responseBundle.link[iterator].url,globalStoredList,callback);
+					}
+					else
+					{
+						 return callback(globalStoredList);
+					}
+					
+				}
+			}//end if
+		
+		}
+	}
+	request.send();
+}
+function getAllRequisitionsCurl(bundleParam,globalStoredList,callback)
+{
+	var urlRequest="";
+	if(bundleParam=="")
+	{
+		var startDate=mediatorConfig.config.periodStartDate;
+		var endDate=mediatorConfig.config.periodEndDate;
+		var filter="code=requisition&_format=json&_count="+mediatorConfig.config.resourceCountFhir+"&created=>="+startDate+"&created=<="+endDate;
+		urlRequest="'"+`${mediatorConfig.config.hapiServer.url}/fhir/Basic?${filter}`+"'";
+	}
+	else
+	{
+		urlRequest=`${bundleParam}`;
+		winston.info("Looping througth bundle response to construct requisitions list!");
+	}
+	console.log(urlRequest);
+	var args = "-X GET  -H 'Content-Type: application/fhir+json' "+urlRequest;
+	var exec = require('child_process').exec;
+	exec('curl ' + args, function (error, stdout, stderr) {
+      //console.log('stdout: ' + stdout);
+      console.log('stderr: ' + stderr);
+      if (error !== null) {
+        console.log('exec error: ' + error);
+        callback(error);
+      }
+      var responseBundle=JSON.parse(stdout);
+		if(responseBundle.entry!=null)
+		{
+			var resourceIndexToRetain=[];
+			for(var iterator=0;iterator<responseBundle.entry.length;iterator++)
+			{
+				//if(esponseBundle.entry[iterator].resource)
+				//check if the ressource is already in the globalStoredList
+				//console.log("Resource returned :"+responseBundle.entry[iterator].resource.id);
+				var itemFound=false;
+				for(var itStoreList=0; itStoreList<globalStoredList.length;itStoreList++)
+				{
+					//console.log(`Compare ${globalStoredList[itStoreList].id} == ${responseBundle.entry[iterator].resource.id}`)
+					if(globalStoredList[itStoreList].id==responseBundle.entry[iterator].resource.id)
+					{
+						
+						itemFound=true;
+						break;
+					}
+				}
+				//console.log("res :"+itemFound);
+				//console.log("******************************************");
+				if(!itemFound)
+				{
+					resourceIndexToRetain.push(iterator);
+					//itemFound=false;
+				}
+				
+			}//end for iterator responseBundle
+			//Now getall resources retained
+			for(var iteratorResource=0;iteratorResource<resourceIndexToRetain.length;iteratorResource++)
+			{
+				
+				var indexToAdd=resourceIndexToRetain[iteratorResource];
+				//console.log("id resource retained:"+responseBundle.entry[indexToAdd].resource.id);
+				globalStoredList.push(responseBundle.entry[indexToAdd].resource);
+			}
+			//globalStoredList.push();
+			
+			if(responseBundle.link.length>0)
+			{
+				//console.log("responsebundle size: "+responseBundle.link.length);
+				var hasNextPageBundle=false;
+				var iterator=0;
+				var nextPageUrl="";
+				for(;iterator <responseBundle.link.length;iterator++)
+				{
+					if(responseBundle.link[iterator].relation=="next")
+					{
+						
+						hasNextPageBundle=true;
+						nextPageUrl=responseBundle.link[iterator].url;
+						break;
+						//GetOrgUnitId(myArr.link[iterator].url,listAssociatedDataRow,listAssociatedResource,callback);
+					}
+				}
+				if(hasNextPageBundle==true)
+				//if(false)
+				{
+					//console.log();
+					//onsole.log("---------------------------------");
+					getAllRequisitionsCurl(nextPageUrl,globalStoredList,callback);
+				}
+				else
+				{
+					 return callback(globalStoredList);
+				}
+				
+			}
+		}//end if responseBundle.entry
+      //callback();
+    });
+}
 
 /**
  * start - starts the mediator

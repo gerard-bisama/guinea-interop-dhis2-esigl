@@ -13,7 +13,7 @@
       "txViewAcl": [],
       "properties": [],
       "matchContentTypes": [],
-      "pollingSchedule": "0 0 1 * *",
+      "pollingSchedule": "* 3-4 * 5 *",
       "timeout":"600000",
       "routes": [
         {
@@ -38,7 +38,7 @@
       "txViewAcl": [],
       "properties": [],
       "matchContentTypes": [],
-      "pollingSchedule": "0 0 1 * *",
+      "pollingSchedule": "* 3-4 * 5 *",
       "timeout":"600000",
       "routes": [
         {
@@ -64,7 +64,7 @@
       "txViewAcl": [],
       "properties": [],
       "matchContentTypes": [],
-      "pollingSchedule": "0 0 1 * *",
+      "pollingSchedule": "* 3-4 * 5 *",
       "timeout":"600000",
       "routes": [
         {
@@ -89,7 +89,7 @@
       "txViewAcl": [],
       "properties": [],
       "matchContentTypes": [],
-      "pollingSchedule": "0 0 1 * *",
+      "pollingSchedule": "* 3-4 * 5 *",
       "timeout":"600000",
       "routes": [
         {
@@ -98,6 +98,32 @@
           "port": "5022",
           "primary": true,
           "path": "/dispensingUnit2dhis2",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "polling"
+    }
+    ,
+    {
+      "name": "Sync requisitions to DHIS2",
+      "urlPattern": "^/requisition2dhis2/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "* 3-4 * 5 *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Sync requisitions  to DHIS2",
+          "host": "localhost",
+          "port": "5022",
+          "primary": true,
+          "path": "/requisition2dhis2",
           "type": "http"
         }
         
@@ -187,6 +213,14 @@
     }
     ,
     {
+      "param": "resourceCountFhir",
+      "displayName": "resourceCountFhir",
+      "description": "size of resources to pull from fhir in one call. Default :2",
+      "type": "string",
+      "template": []
+    }
+    ,
+    {
       "param": "programCategoryId",
       "displayName": "programCategoryId",
       "description": "id of the programme category in dhis2. this act as id of the collections of programme",
@@ -209,6 +243,21 @@
       "type": "string",
       "template": []
     }
+    ,
+    {
+      "param": "periodStartDate",
+      "displayName": "periodStartDate ",
+      "description": "Date from which to select requisitions to process - >= what is specified (format:2019-01-01)",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "periodEndDate",
+      "displayName": "periodEndDate ",
+      "description": "Date from which to select requisitions to process - <= what is specified (format:2019-01-01)",
+      "type": "string",
+      "template": []
+    }
   ],
  "config": {
     "upstreamUrl": "http://sampleApplication:7001",
@@ -222,9 +271,12 @@
 	"hapiServer":{
 		"url":"http://domain/hapi-fhir-jpaserver"
 		},
-	"productCategoryId":"pBrXHaZJRMV",
-	"programCategoryId":"mxdcavKYgFs",
-	"programProductCategoryId":"W7EVDisPmD8",
-	"dispensingUnitCategoryId":"TtwRlK52Mba"
+	"productCategoryId":"QTqrcHIowIR",
+	"programCategoryId":"XM6vblNV5ub",
+	"programProductCategoryId":"WbM83ZNrNAq",
+	"dispensingUnitCategoryId":"rWomCh9Seet",
+	"resourceCountFhir":"2",
+	"periodStartDate":"2019-04-01",
+	"periodEndDate":"2019-04-30"
   }
 }
