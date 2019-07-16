@@ -504,7 +504,7 @@ function getStockOutDaysFromRequisitionDetails(idRequisition,productCode, listRe
 }
 exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourcesNewApi(prefixIdResource,listFacility,listRequisitionDetails,listRequisitions,hrefDomaineSIGL,hrefDomainFhir)
 {
-	console.log(listFacility);
+	//console.log(listFacility);
 	var listRequisitionFhir=[];
 	var identifierCodingSystem=hrefDomaineSIGL+"/requisition-id";
 	var requisitionExtensionCodingSystem=hrefDomainFhir+"/fhir/StructureDefinition/Requisition";
@@ -520,7 +520,7 @@ exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourc
 		var createdDateZFormat=formatDateInZform(createdDate);
 		var startDate=dateTimeStartDate.split("T")[0];
 		var endDate=dateTimeEndDate.split("T")[0];
-		var OrganizationId=getOrganizationIdFromCode(requisitionDetails.agentCode,listFacility);
+		var OrganizationId=getOrganizationFhirIdFromCode(requisitionDetails.agentCode,listFacility);
 		var identifier=[{
 			use:"official",
 			type:{coding:[{system:identifierCodingSystem,code:"requisitioncode",display:"requisitioncode"}],text:"requisitioncode"},
@@ -662,6 +662,29 @@ function getOrganizationIdFromCode(eSiglCode,listOrganization)
 		}
 	}
 	return idFound;
+}
+function getOrganizationFhirIdFromCode(eSiglCode,listOrganizationFhir)
+{
+	var idFound=null;
+	for(var indexList=0;indexList<listOrganizationFhir.length;indexList++)
+	{
+		var organization=listOrganizationFhir[indexList];
+		for(var indexId=0;indexId<organization.identifier.length;indexId++)
+		{
+			oIdentifier=organization.identifier[indexId];
+			if(oIdentifier.type.coding[0].code=="siglcode" &&  oIdentifier.value==eSiglCode)
+			{
+				idFound=organization.id;
+				break;
+			}
+			
+		}
+		if(idFound!=null)
+		{
+			break;
+		}
+	}
+	return idFound
 }
 //returns the list of requisition filtered by the @startDate
 //@stardate: datestring in format "yyyy-mm-dd"
@@ -858,8 +881,8 @@ exports.getOrganizationsNotSynched=function getOrganizationsNotSynched(batchSize
 			var found=false;
 			for(var iteratorsync=0;iteratorsync<listSynchedOrganizations.length;iteratorsync++)
 			{
-				var organizationCode=getFacilityeSiGLCode(organization);
-				if (listSynchedOrganizations[iteratorsync].code==organizationCode)
+				//var organizationCode=getFacilityeSiGLCode(organization);
+				if (listSynchedOrganizations[iteratorsync].orgid==organization.id)
 				{
 					found=true;
 					break;
@@ -1016,6 +1039,12 @@ var requisitionSyncLogSchema=Schema({
 	minperiodstartdate:Date,
 	maxperiodstartdate:Date
 });
+var organizationSyncLogSchema=Schema({
+	orgid:String, //by default 1
+	minperiodstartdate:Date,
+	maxperiodstartdate:Date
+});
+
 var mappingSyncLogSchema=Schema({
 	facilityId:String, 
 	syncDate:Date
@@ -1035,6 +1064,7 @@ var facilitySiglSyncLogSchema=Schema({
 var synchedOrganizationDefinition=mongoose.model('synchedOrganization',organizationSchema);
 var synchedRequisitionDefinition=mongoose.model('synchedRequisition',requisitionSyncSchema);
 var requisitionSyncLogDefinition=mongoose.model('requisitionSyncLog',requisitionSyncLogSchema);//keep log of synched requisition new API
+var organizatinSyncLogDefinition=mongoose.model('organizationSyncLog',organizationSyncLogSchema);//keep log of synched organization within a specific period new API
 var facilitySyncLogDefinition=mongoose.model('facilitySyncLog',facilitySyncLogSchema);
 var facilitySIGLSyncLogDefinition=mongoose.model('facilitySiglSyncLog',facilitySiglSyncLogSchema);
 var mappingSyncLogDefinition=mongoose.model('mappingSyncLog',mappingSyncLogSchema);
@@ -1088,6 +1118,36 @@ var getAllRequisitionPeriodSynched=function(minStartDate,maxStartDate,callback)
 		if(error) return handleError(err);
 		//return callback(synchedMaxperiod.maxperiodstartdate);
 		return callback(synchedRequisitionsList);
+		});
+	}
+	
+}
+var getAllOrganizationPeriodSynched=function(minStartDate,maxStartDate,callback)
+{
+	var _minStartDate=new Date(minStartDate);
+	var _maxStartDate=new Date(maxStartDate);
+	if(maxStartDate!="")
+	{
+		var requestResult=organizatinSyncLogDefinition.find({"minperiodstartdate":{$gte:_minStartDate,$lte:_maxStartDate}},{"_id":0}).exec(function(error,synchedOrganizationList){
+		if(error) {return handleError(err);}
+		var async = require('async');
+		var arrayList=[];
+		async.each(synchedOrganizationList, function(synchedOrganization, callbackAsync) {
+			arrayList.push(synchedOrganization);
+			callbackAsync();
+		},function(err)
+		{
+			return callback(arrayList);
+			
+			});//end asynch
+		});
+	}
+	else
+	{
+		var requestResult=organizatinSyncLogDefinition.find({"minperiodstartdate":{$gte:_minStartDate}},{"_id":0}).exec(function(error,synchedOrganizationList){
+		if(error) return handleError(err);
+		//return callback(synchedMaxperiod.maxperiodstartdate);
+		return callback(synchedOrganizationList);
 		});
 	}
 	
@@ -1270,6 +1330,44 @@ var upsertSynchedRequisitionPeriod=function(minStartDate,maxStartDate,synchedReq
 				}
 			})//end of exec
 }
+var upsertSynchedOrganizationPeriod=function(minStartDate,maxStartDate,synchedFacilityId,callback)
+{
+	organizatinSyncLogDefinition.findOne({
+			orgid:synchedFacilityId,minperiodstartdate:{$gte:maxStartDate,$lte:maxStartDate}
+			}).exec(function(error,foundSynchedOrganization){
+				if(error) {
+					console.log(error);
+					callback(false)
+				}
+				else
+				{
+					console.log("------------------------------------------------");
+					console.log(foundSynchedOrganization);
+					if(!foundSynchedOrganization)
+					{
+						
+						var orgToUpdate= new organizatinSyncLogDefinition({orgid:synchedFacilityId,
+							minperiodstartdate:minStartDate,maxperiodstartdate:maxStartDate});
+						
+						var requestResult=orgToUpdate.save(function(err,result){
+							if(err)
+							{
+								console.log(err);
+								callback(false);
+							}
+							else
+							{
+								callback(true);
+							}
+						});
+					}
+					else
+					{
+						console.log("Organization already logged for requisition!");
+					}
+				}
+			})//end of exec
+}
 var upsertMappingSync=function(_syncDate,_facilityId,callback)
 {
 	requisitionSyncLogDefinition.findOne({
@@ -1422,6 +1520,46 @@ var saveAllSynchedRequisitionsPeriod=function (minStartDate,maxStartDate,synched
 		
 	});//end of asynch
 }
+var saveAllSynchedOrganizationPeriod=function (minStartDate,maxStartDate,synchedOrganizationsList,callBackReturn)
+{
+	const async = require("async"); 
+	var result=false;
+	var _minStartDate=new Date(minStartDate);
+	var _maxStartDate= new Date(maxStartDate);
+	//console.log(`requestString => ${_minStartDate} : ${_maxStartDate}`);
+	async.each(synchedOrganizationsList,function(synchedOrganization,callback)
+	{
+		upsertSynchedOrganizationPeriod(_minStartDate,_maxStartDate,synchedOrganization.id,function(response)
+		{
+			result=response;
+			if(response)
+			{
+				console.log(synchedOrganization.id +" inserted with success.");
+			}
+			else
+			{
+				console.log(synchedOrganization.id +" failed to be inserted!");
+			}
+			callback(response);
+		})
+	},function(err)
+	{
+		if(err)
+		{
+			console.log(err);
+			callBackReturn(false);
+		}
+		if(result)
+		{
+			callBackReturn(true);
+		}
+		else
+		{
+			callBackReturn(false);
+		}
+		
+	});//end of asynch
+}
 var saveAllSynchedMapping=function (syncDate,synchedMappingList,callBackReturn)
 {
 	const async = require("async"); 
@@ -1468,6 +1606,7 @@ exports.getFacilityeSiGLCode=getFacilityeSiGLCode;
 exports.getAllMappingSync=getAllMappingSync;
 //exports.getRequisitionMaxPeriodStartDateSynched=getRequisitionMaxPeriodStartDateSynched;
 exports.getAllRequisitionPeriodSynched=getAllRequisitionPeriodSynched;
+exports.getAllOrganizationPeriodSynched=getAllOrganizationPeriodSynched;                                                                          
 exports.saveAllSynchedRequisitionsPeriod=saveAllSynchedRequisitionsPeriod;
 exports.updateRequisitionMaxPeriodStartDateSynched=updateRequisitionMaxPeriodStartDateSynched;
 exports.upDateLogSyncFacility=upDateLogSyncFacility;
@@ -1475,3 +1614,4 @@ exports.upDateLogSyncFacilityeSigl=upDateLogSyncFacilityeSigl;
 exports.getSyncLogFacility=getSyncLogFacility;
 exports.getSyncLogFacilityeSigl=getSyncLogFacilityeSigl;
 exports.saveAllSynchedMapping=saveAllSynchedMapping;
+exports.saveAllSynchedOrganizationPeriod=saveAllSynchedOrganizationPeriod;

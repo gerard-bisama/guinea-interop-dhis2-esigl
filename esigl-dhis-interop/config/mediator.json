@@ -270,7 +270,7 @@
     {
       "param": "batchSizeRequisitionFacilities",
       "displayName": "batchSizeRequisitionFacilities ",
-      "description": "numbre of facility to process within each poll to get requisitions information (Starting from 5)",
+      "description": "numbre of facility to process within each poll to get requisitions information (Starting from 2)",
       "type": "string",
       "template": []
     }
@@ -293,7 +293,7 @@
     {
       "param": "batchSizeRequisitionToProcess",
       "displayName": "batchSizeRequisitionToProcess ",
-      "description": "Number of requisitions to process within each poll of synchronization (Starting from 10)",
+      "description": "Number of requisitions to process within each poll of synchronization (Defaut: 100, to Process every requisition of the facility)",
       "type": "string",
       "template": []
     },
@@ -359,13 +359,13 @@
 		"url":"https://domain",
 		"username":"user",
 		"password":"pwd",
-		"resourcespath":"/rest-api"
+		"resourcespath":"/                                                                            -api"
 		},
 	"mappingFile":"/home/exchange-server/guinea-interop-dhis2-esigl/esigl-dhis-interop/data/mappingstructure-esigl-dhis2_final.csv",
-	"batchSizeRequisitionFacilities":"5",
+	"batchSizeRequisitionFacilities":"2",
 	"batchSizeFacilityToSync":"100",
 	"batchSizeeSGLFacilityToSync":"10",
-	"batchSizeRequisitionToProcess":"10",
+	"batchSizeRequisitionToProcess":"100",
 	"facilityLevesForRequisitions":"level_4,level_5",
 	"periodStartDate":"2019-04-01",
 	"periodEndDate":"2019-04-30",
