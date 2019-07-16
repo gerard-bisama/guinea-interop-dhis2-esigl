@@ -516,6 +516,8 @@ exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourc
 		var requisitionDetails=getRequisitionDetailsById(prefixIdResource,idRequisition,listRequisitionDetails);
 		var dateTimeStartDate=new Date(requisitionDetails.periodStartDate).toJSON();
 		var dateTimeEndDate=new Date(requisitionDetails.periodEndDate).toJSON();
+		var createdDate=moment().format(dateTimeStartDate);
+		var createdDateZFormat=formatDateInZform(createdDate);
 		var startDate=dateTimeStartDate.split("T")[0];
 		var endDate=dateTimeEndDate.split("T")[0];
 		var OrganizationId=getOrganizationIdFromCode(requisitionDetails.agentCode,listFacility);
@@ -622,6 +624,7 @@ exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourc
 			id:idRequisition,
 			identifier:identifier,
 			code:requisitionCode,
+			created:createdDateZFormat,
 			extension:requisitionDetails};
 		listRequisitionFhir.push(oRequisition);
 	}//end for requisition

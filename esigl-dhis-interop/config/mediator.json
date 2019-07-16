@@ -343,7 +343,7 @@
       "template": []
     }
   ],
-   "config": {
+  "config": {
     "upstreamUrl": "http://sampleApplication:7001",
     "clientPassword":"pwd",
     "dhis2Server":{
@@ -353,7 +353,7 @@
 		"orgunitapipath":"/dhis/api"
 		},
 	"hapiServer":{
-		"url":"http://ip:port/hapi-fhir-jpaserver"
+		"url":"http://domain/hapi-fhir-jpaserver"
 		},
 	"esiglServer":{
 		"url":"https://domain",
@@ -367,8 +367,8 @@
 	"batchSizeeSGLFacilityToSync":"10",
 	"batchSizeRequisitionToProcess":"10",
 	"facilityLevesForRequisitions":"level_4,level_5",
-	"periodStartDate":"2017-04-01",
-	"periodEndDate":"2017-04-30",
+	"periodStartDate":"2019-04-01",
+	"periodEndDate":"2019-04-30",
 	"maxNumberDayRequisitionsToPull":"5",
 	"pgStringConnection":"postgresql://user:pwd@localhost:5432/db",
 	"prefixResourceId":"fhir-"
