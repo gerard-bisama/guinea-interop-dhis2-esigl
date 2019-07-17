@@ -502,7 +502,7 @@ function getStockOutDaysFromRequisitionDetails(idRequisition,productCode, listRe
 	}
 	return stockOutDays;
 }
-exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourcesNewApi(prefixIdResource,listFacility,listRequisitionDetails,listRequisitions,hrefDomaineSIGL,hrefDomainFhir)
+exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourcesNewApi(requisitionStatusToProcess,prefixIdResource,listFacility,listRequisitionDetails,listRequisitions,hrefDomaineSIGL,hrefDomainFhir)
 {
 	//console.log(listFacility);
 	var listRequisitionFhir=[];
@@ -514,6 +514,11 @@ exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourc
 	{
 		var idRequisition=prefixIdResource+listRequisitions[iteratorReq].id;
 		var requisitionDetails=getRequisitionDetailsById(prefixIdResource,idRequisition,listRequisitionDetails);
+		//Skip all requisition with status different from requisitionStatuus to process.Default to "APPROVED"
+		if(requisitionDetails.requisitionStatus!=requisitionStatusToProcess)
+		{
+			continue;
+		}
 		var dateTimeStartDate=new Date(requisitionDetails.periodStartDate).toJSON();
 		var dateTimeEndDate=new Date(requisitionDetails.periodEndDate).toJSON();
 		var createdDate=moment().format(dateTimeStartDate);

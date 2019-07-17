@@ -1255,7 +1255,7 @@ function setupApp () {
 			//console.log(ctx);
 			listProgramsFromeSIGL=ctxObject.programs.programs;
 			listProductCategories=ctxObject.productCategories['product-categories']
-			//console.log(listProductCategories);
+			//console.log(listProgramsFromeSIGL);
 			//return;
 			//var listProgramsFhir=customLibrairy.buildProgramFhirResources(listProgramsFromeSIGL,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
 			
@@ -1371,7 +1371,7 @@ function setupApp () {
 						// if error occured
 						if ( err ){
 							
-							console.log(productToPush);
+							//console.log(productToPush);
 							winston.error(err);
 							winston.info("url: "+orchUrl);
 							callbackFhirUpdate(err);
@@ -1709,7 +1709,7 @@ function setupApp () {
 			}
 		});*/
 	});//end app.get syncrequisition2fhir
-	app.get('/syncrequisition2fhir_new_old', (req, res) => {
+	app.get('/syncrequisition2fhir_apiold', (req, res) => {
 		winston.info("***********************Channel for getting requisition triggered*******************************");
 		needle.defaults(
 		{
@@ -2093,6 +2093,7 @@ function setupApp () {
 		{
 			open_timeout: 600000
 		});
+		var requisitionStatusToProcess="APPROVED";
 		const basicClientToken = `Basic ${btoa(mediatorConfig.config.esiglServer.username+':'+mediatorConfig.config.esiglServer.password)}`;
 		var globalSharedOrganisation=[];
 		winston.info("Start extraction of requisitions from eSIGL...!");
@@ -2287,7 +2288,7 @@ function setupApp () {
 							}
 							//Then  facilityId (dhis2 id) for {Reference:Organization/id}
 							//Now build the bundle Requisition ressources                                                                                                                                                                                                                                                                                                                                                            
-							var listRequisitionToPush=customLibrairy.buildRequisitionFhirResourcesNewApi(mediatorConfig.config.prefixResourceId,listOrganizationToSync,
+							var listRequisitionToPush=customLibrairy.buildRequisitionFhirResourcesNewApi(requisitionStatusToProcess,mediatorConfig.config.prefixResourceId,listOrganizationToSync,
 							listRequisitionsDetails,listRequisition2Process,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
 							winston.info("Requisitions transformed to Requisition resources done");	
 							//console.log(JSON.stringify(listRequisitionToPush));
