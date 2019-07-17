@@ -1811,17 +1811,83 @@ function setupApp () {
 		var globalStoredList=[];
 		//getAllRequisitions("",globalStoredList,function(requisitionLists)
 		getAllRequisitionsCurl("",globalStoredList,function(requisitionsList)
-		//getAllRequisitionsCurl(function(res)
 		{
-			winston.info("Requisitions resources returned from Fhir..");
-			//console.log(requisitionLists.length);
-			var builder = require('xmlbuilder');
-			var listPayLoad=[];
-			for(var  iteratorReq =0;iteratorReq<requisitionsList.length;iteratorReq++)
+			winston.info("Requisitions resources returned from Fhir.."+requisitionsList.length);
+			var listRequisitionsBySetProgram=[];
+			var listProgramToProcess=mediatorConfig.config.programsToSync.split(",");
+			//Now get Requisition for the program set
+			for(var iteratorProg=0;iteratorProg<listProgramToProcess.length;iteratorProg++)
 			{
-				//console.log("id: "+requisitionsList[iteratorReq].id);
-				//Buid ADX payload to submit data set
+				var progRequisitions=customLibrairy.getRequisitionByProgram(listProgramToProcess[iteratorProg],requisitionsList);
+				console.log(progRequisitions.length);
+				console.log("---------------------------------------------------");
+				//console.log(progRequisitions);
+				for(var iteratorReq=0;iteratorReq<progRequisitions.length;iteratorReq++)
+				{
+					listRequisitionsBySetProgram.push(progRequisitions[iteratorReq]);
+				}
 			}
+			if(listRequisitionsBySetProgram.length>0)
+			{
+				winston.info("Requisitions selected based on the  Program ");
+				//listRequisitionsBySetProgram=customLibrairy.getRequisitionByProgram(requisitionsList);
+				
+				//console.log(requisitionLists.length);
+				var builder = require('xmlbuilder');
+				var listPayLoad=[];
+				var listProductsPresentInTheRequisitons=[];
+				listProductsPresentInTheRequisitons=customLibrairy.getAllProductsInRequisition(listRequisitionsBySetProgram);
+				console.log(listProductsPresentInTheRequisitons);
+				return;
+				
+			}//end if listRequisitionsBySetProgram>>0
+			else
+			{
+				//send to the consol the notification for no requisition to process
+				winston.warn("No requisition information to push in dhis2");
+				var urn = mediatorConfig.urn;
+				var status = 'Successful';
+				var response = {
+				  status: 200,
+				  headers: {
+					'content-type': 'application/json'
+				  },
+				  body:JSON.stringify( {'OperationResult':'No requisition information to push in dhis2'}),
+				  timestamp: new Date().getTime()
+				};
+				var properties = {};
+				properties['Number of requisition pushed'] =0;
+				var orchestrationToReturn=[
+				{
+					name: "requisitionHapi2Dhis2Sync",
+					request: {
+					  path :"/dhis/api",
+					  headers: {'Content-Type': 'application/json'},
+					  querystring: "",
+					  body:JSON.stringify( {'Process sync':'succeded'}),
+					  method: "POST",
+					  timestamp: new Date().getTime()
+					},
+					response: {
+					  status: 200,
+					  body:JSON.stringify({'OperationResult':'Not performed'}),
+					  timestamp: new Date().getTime()
+					}
+				}
+				];
+				var returnObject = {
+				  "x-mediator-urn": urn,
+				  "status": status,
+				  "response": response,
+				  "orchestrations": orchestrationToReturn,
+				  "properties": properties
+				}
+				winston.info("End of Hapi=>DHIS2 dispensingunit orchestration");
+				res.set('Content-Type', 'application/json+openhim');
+				res.send(returnObject);
+				
+			}//end else. No requisition to process
+			
 			//return;
 		})//end getAllRequisitions
 	})//end app.get requisition2dhis2

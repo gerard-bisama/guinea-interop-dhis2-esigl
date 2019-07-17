@@ -44,6 +44,88 @@ exports.getAllDispensingUnitFormProduct=function(ListProductFhir)
 	}//end for iterator
 	return listDispensingUnit;
 }
+//this will return an object will id of facility and the list of requisition 
+//Not finished implementation
+exports.groupRequisitionsByFacility=function (listRequisitions)
+{
+	listRequisitionsByFacility=[];
+	var selectedFacility="";
+	for(var iteratorExt=0;iteratorExt<listRequisitions[0].extension[0].extension.length;iteratorExt++)
+	{
+		if(listRequisitions[iteratorReq].extension[0].extension[iteratorExt].url=="organization")
+		{
+			var valueReference=listRequisitions[0].extension[0].extension[iteratorExt].valueReference.reference;
+			var organizationId=valueReference.split("/")[1];
+			selectedFacility.push(organizationId);
+			break;
+		}
+	}
+	
+	
+	//listSelectedFacilities.push(listRequisitions[0])
+	
+}
+exports.getAllProductsInRequisition=function(listRequisition)
+{
+	listIdProducts=[];
+	for(var iteratorReq=0;iteratorReq<listRequisitions.length;iteratorReq++)
+	{
+		for(var iteratorExt=0;iteratorExt<listRequisitions[iteratorReq].extension[0].extension.length;iteratorExt++)
+		{
+			if(listRequisitions[iteratorReq].extension[0].extension[iteratorExt].url=="product")
+			{
+				var valueReference=listRequisitions[iteratorReq].extension[0].extension[iteratorExt].valueReference.reference;
+				var productId=valueReference.split("/")[1];
+				if(!listIdProducts.includes(productId))
+				{
+					listIdProducts.push(productId);
+				break;
+			}
+			}
+		}
+	}
+	return listIdProducts;
+}
+exports.getRequisitionByProgram=function(programId,listRequisitions)
+{
+	var listRequisitionsFound=[];
+	for(var iteratorReq=0;iteratorReq<listRequisitions.length;iteratorReq++)
+	{
+		//console.log("Level 1:"+listRequisitions[iteratorReq].extension.length);
+		for(var iteratorExt=0;iteratorExt<listRequisitions[iteratorReq].extension.length;iteratorExt++)
+		{
+			//console.log(`Level :${iteratorExt}`);
+			//console.log(listRequisitions[iteratorReq].extension[iteratorExt].extension);
+			//console.log("---------------------------------------------------");
+			for(var iteratorExtDetails=0;iteratorExtDetails<listRequisitions[iteratorReq].extension[iteratorExt].extension.length;iteratorExtDetails++)
+			{
+				if(listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].url=="program")
+				{
+					//Now check int the program matches the program id
+					var valueReference=listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueReference.reference;
+					
+					var _programId=valueReference.split("/")[1];
+					//console.log("found requisition program :"+valueReference);
+					if(_programId==programId)
+					{
+						listRequisitionsFound.push(listRequisitions[iteratorReq]);
+						break;
+					}
+					else
+					{
+						continue;
+					}
+				}
+				else
+				{
+					//console.log("Not found requisition program ");
+				}
+			}
+		}
+	}
+	return listRequisitionsFound;
+}
+
 exports.getProgramName=function(ProgramFhir)
 {
 	var name="";
