@@ -57,6 +57,20 @@ exports.getProgramName=function(ProgramFhir)
 	}
 	return name;
 }
+//Return the list of Product Id managed by a program
+exports.getProgramProductsList=function(ProgramFhir)
+{
+	var listProduct=[];
+	for(var iteratorExt=0;iteratorExt<ProgramFhir.extension[0].extension.length;iteratorExt++)
+	{
+		if(ProgramFhir.extension[0].extension[iteratorExt].url=="providedProducts")
+		{
+			//categoryName=ProgramFhir.extension[0].extension[iteratorExt].valueCodeableConcept.text;
+			listProduct.push(ProgramFhir.extension[0].extension[iteratorExt].valueReference.reference);
+		}
+	}
+	return listProduct;
+}
 exports.getCategoryProduct=function(ProgramFhir)
 {
 	var category=null;

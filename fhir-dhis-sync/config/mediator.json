@@ -53,6 +53,31 @@
       ],
       "allow": ["exchange"],
       "type": "polling"
+    },
+    {
+      "name": "Sync programs and associated products list to DHIS2",
+      "urlPattern": "^/programProduct2dhis2/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "* 3-4 * 5 *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Sync programs and associated products list to DHIS2",
+          "host": "localhost",
+          "port": "5022",
+          "primary": true,
+          "path": "/programProduct2dhis2",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "polling"
     }
     ,
      {
@@ -257,11 +282,88 @@
       "description": "Date from which to select requisitions to process - <= what is specified (format:2019-01-01)",
       "type": "string",
       "template": []
+    },
+    {
+      "param": "programsToSync",
+      "displayName": "Porgram to synchronize ",
+      "description": "List of program by id to push data to dhis2.Comma separated (p.e:SIGL-INTEGRE-VIH,SIGL-INTEGRE-PNMSR)",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "DataelementsRequisitionAttributeMapping",
+      "displayName": "Data Element Ids => Requisition attribute mapping to push ADX payload",
+      "description": "Data Element Ids => Requisition attribute mapping to push ADX payload",
+      "type": "struct",
+      "template": [
+		{
+			"param": "quantiteUtilisee",
+			"displayName": "Quantite utilisee",
+			"description": "Id of dataElement mapping with quantiteUtilisee (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		},
+		{
+			"param": "stockInitial",
+			"displayName": "Stock initial",
+			"description": "Id of dataElement mapping with StockInitialStockInitial (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		}
+		,
+		{
+			"param": "quantiteRecue",
+			"displayName": "Quantite recue",
+			"description": "Id of dataElement mapping with quantiteRecue (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		}
+		,
+		{
+			"param": "sdu",
+			"displayName": "Stock disponible utilisable",
+			"description": "Id of dataElement mapping with sdu (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		}
+		,
+		{
+			"param": "ajustementPositive",
+			"displayName": "Ajustement Positive",
+			"description": "Id of dataElement mapping with ajustementPositive (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		}
+		,
+		{
+			"param": "ajustementNegative",
+			"displayName": "Ajustement Negative",
+			"description": "Id of dataElement mapping with ajustementNegative (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		}
+		,
+		{
+			"param": "cmm",
+			"displayName": "Consommation Mensuelle Moyenne",
+			"description": "Id of dataElement mapping with cmm (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		}
+		,
+		{
+			"param": "nbJoursRupture",
+			"displayName": "Nombre de jours Rupture",
+			"description": "Id of dataElement mapping with nbJoursRupture (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		}
+		,
+		{
+			"param": "pertes",
+			"displayName": "Pertes",
+			"description": "Id of dataElement mapping with Pertes (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		}
+      ]
     }
+    
   ],
  "config": {
     "upstreamUrl": "http://sampleApplication:7001",
-    "clientPassword":"pwed",
+    "clientPassword":"pws",
     "dhis2Server":{
 		"url":"http://domain",
 		"username":"user",
@@ -271,12 +373,26 @@
 	"hapiServer":{
 		"url":"http://domain/hapi-fhir-jpaserver"
 		},
-	"productCategoryId":"QTqrcHIowIR",
-	"programCategoryId":"XM6vblNV5ub",
-	"programProductCategoryId":"WbM83ZNrNAq",
-	"dispensingUnitCategoryId":"rWomCh9Seet",
+	"productCategoryId":"Bqhkqw8s5rt",
+	"programCategoryId":"RKtSamVHREQ",
+	"programProductCategoryId":"",
+	"dispensingUnitCategoryId":"juH0zEJ3vtT",
 	"resourceCountFhir":"2",
 	"periodStartDate":"2019-04-01",
-	"periodEndDate":"2019-04-30"
+	"periodEndDate":"2019-04-30",
+	"programsToSync":"SIGL-INTEGRE-PNLP",
+	"DataelementsRequisitionAttributeMapping":{
+		"quantiteUtilisee":"ujytCs3xoDe",
+		"stockInitial":"JEyob0z6TZS",
+		"quantiteRecue":"miIoouEE2kL",
+		"sdu":"qf1BH5SXr3M",
+		"ajustementPositive":"KZmaYz7G06e",
+		"ajustementNegative":"KUOtHOlrXWm",
+		"cmm":"LAQJlCsWz8Z",
+		"nbJoursRupture":"ZMQrpFgq2Q0",
+		"pertes":"ZrhZvXzUP16"
+		
+	}
+	
   }
 }
