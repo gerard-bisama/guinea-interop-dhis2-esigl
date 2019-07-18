@@ -2296,7 +2296,7 @@ function setupApp () {
 							console.log(listRequisitionToPush.length);
 							console.log("---------------------------------------");
 							console.log(JSON.stringify(listRequisitionToPush[0]));
-							return;
+							//return;
 							var orchestrationsRequistition2Push=[];
 							for(var iteratorReq=0;iteratorReq<listRequisitionToPush.length;iteratorReq++)
 							{
