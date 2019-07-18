@@ -21,28 +21,148 @@ exports.getProductName=function(ProductFhir)
 	}
 	return name;
 }
-exports.getAllDispensingUnitFormProduct=function(ListProductFhir)
+//return the CategoryOption of the @programCode
+exports.getResourceCategoryIdFromCode=function(resourceCode,listResolvedCategoryOptions)
 {
-	var listDispensingUnit=[];
-	for(var iterator=0;iterator<ListProductFhir.length;iterator++)
+	var resourceId="";
+	for(var iteratorCat=0;iteratorCat<listResolvedCategoryOptions.length;iteratorCat++)
 	{
-		//if(ListProductFhir[iterator].extension[0].)
-		for(var iteratorExt=0;iteratorExt<ListProductFhir[iterator].extension[0].extension.length;iteratorExt++)
+		if(listResolvedCategoryOptions[iteratorCat].code==resourceCode)
 		{
-			if(ListProductFhir[iterator].extension[0].extension[iteratorExt].url=="dispensingUnit")
+			resourceId=listResolvedCategoryOptions[iteratorCat].id;
+			break;
+		}
+	}
+	return resourceId;
+}
+var getDispensingUnitFromProduct=function(productCode,ListProductFhir)
+{
+	var dispensingUnit="";
+	for(var iteratorReq=0;iteratorReq<ListProductFhir.length;iteratorReq++)
+	{
+		if(ListProductFhir[iteratorReq].id!=productCode)
+		{
+			continue;
+		}
+		for(var iteratorExt=0;iteratorExt<ListProductFhir[iteratorReq].extension.length;iteratorExt++)
+		{
+			for(var iteratorExtDetails=0;iteratorExtDetails<ListProductFhir[iteratorReq].extension[iteratorExt].extension.length;iteratorExtDetails++)
 			{
-				if(listDispensingUnit.includes(ListProductFhir[iterator].extension[0].extension[iteratorExt].valueString))
+				if(ListProductFhir[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].url=="dispensingUnit")
 				{
-					continue;
-				}
-				else
-				{
-					listDispensingUnit.push(ListProductFhir[iterator].extension[0].extension[iteratorExt].valueString);
+					dispensingUnit=ListProductFhir[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueString;
+					found=true;
+					break;
 				}
 			}
+			if(found)
+			{
+				break;
+			}
 		}
-	}//end for iterator
-	return listDispensingUnit;
+		if(found)
+		{
+			break;
+		}
+	}
+	
+	return dispensingUnit;
+}
+//Build ADX xml file from requisitionObject
+exports.buildADXPayloadFromRequisition=function(requisitionObject)
+{
+	
+}
+//return customized list of object DetailsRequisitions
+exports.buildObjectDetailsRequisitionList=function(listRequisitions,listProductWithDetails)
+{
+	listObjectDetailsRequisitions=[];
+	for(var iteratorReq=0;iteratorReq<listRequisitions.length;iteratorReq++)
+	{
+		for(var iteratorExt=0;iteratorExt<listRequisitions[iteratorReq].extension.length;iteratorExt++)
+		{
+			var requisitionDetails={
+				reqId:listRequisitions[iteratorReq].id,
+				product:"",
+				dispensingUnit:"",
+				program:"",
+				organization:"",
+				initialStock:"",
+				receivedQuantity:"",
+				consumedQuantity:"",
+				losses:"",
+				positiveAdjustment:"",
+				negativeAdjustment:"",
+				stockOnHand:"",
+				averageMonthConsumption:"",
+				stockOutDay:"",
+				startDate:"",
+				endDate:""
+				};
+			for(var iteratorExtDetails=0;iteratorExtDetails<listRequisitions[iteratorReq].extension[iteratorExt].extension.length;iteratorExtDetails++)
+			{
+				var fieldName=listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].url;
+				//var dispensingUnit
+				switch(fieldName)
+				{
+					case "product":
+						var productId=listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueReference.reference;
+						var codeProduct=productId.split("/")[1];
+						//now get the product dispensing unit
+						var dispensingUnit=getDispensingUnitFromProduct(codeProduct,listProductWithDetails);
+						requisitionDetails.product=codeProduct;
+						requisitionDetails.dispensingUnit=dispensingUnit;
+						break;
+					case "program":
+						var programId=listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueReference.reference;
+						var codeProgram=programId.split("/")[1];
+						requisitionDetails.program=codeProgram;
+						break;
+					case "organization":
+						var valueReference=listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueReference.reference;
+						var orgid=valueReference.split("/")[1];
+						requisitionDetails.organization=orgid;
+						break;
+					case "initialStock":
+						requisitionDetails.initialStock=parseInt(listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueDecimal);
+						break;
+					case "receivedQuantity":
+						requisitionDetails.receivedQuantity=parseInt(listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueDecimal);
+						break;
+					case "consumedQuantity":
+						requisitionDetails.consumedQuantity=parseInt(listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueDecimal);
+						break;
+					case "losses":
+						requisitionDetails.losses=parseInt(listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueDecimal);
+						break;
+					case "positiveAdjustment":
+						requisitionDetails.positiveAdjustment=parseInt(listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueDecimal);
+						break;
+					case "negativeAdjustment":
+						requisitionDetails.negativeAdjustment=parseInt(listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueDecimal);
+						break;
+					case "stockOnHand":
+						requisitionDetails.stockOnHand=parseInt(listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueDecimal);
+						break;
+					case "averageMonthConsumption":
+						requisitionDetails.averageMonthConsumption=parseInt(listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueDecimal);
+						break;
+					case "stockOutDay":
+						requisitionDetails.stockOutDay=parseInt(listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueDecimal);
+						break;
+					case "startDate":
+						requisitionDetails.startDate=listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueDate;
+						break;
+					case "endDate":
+						requisitionDetails.endDate=listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueDate;
+						
+				}//end switch
+				//listObjectDetailsRequisitions.push(requisitionDetails);
+			}
+			listObjectDetailsRequisitions.push(requisitionDetails);
+		}
+	}
+	return listObjectDetailsRequisitions;
 }
 //this will return an object will id of facility and the list of requisition 
 //Not finished implementation
@@ -65,22 +185,25 @@ exports.groupRequisitionsByFacility=function (listRequisitions)
 	//listSelectedFacilities.push(listRequisitions[0])
 	
 }
-exports.getAllProductsInRequisition=function(listRequisition)
+exports.getAllProductsInRequisition=function(listRequisitions)
 {
 	listIdProducts=[];
 	for(var iteratorReq=0;iteratorReq<listRequisitions.length;iteratorReq++)
 	{
-		for(var iteratorExt=0;iteratorExt<listRequisitions[iteratorReq].extension[0].extension.length;iteratorExt++)
+		for(var iteratorExt=0;iteratorExt<listRequisitions[iteratorReq].extension.length;iteratorExt++)
 		{
-			if(listRequisitions[iteratorReq].extension[0].extension[iteratorExt].url=="product")
+			for(var iteratorExtDetails=0;iteratorExtDetails<listRequisitions[iteratorReq].extension[iteratorExt].extension.length;iteratorExtDetails++)
 			{
-				var valueReference=listRequisitions[iteratorReq].extension[0].extension[iteratorExt].valueReference.reference;
-				var productId=valueReference.split("/")[1];
-				if(!listIdProducts.includes(productId))
+				if(listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].url=="product")
 				{
-					listIdProducts.push(productId);
-				break;
-			}
+					var valueReference=listRequisitions[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueReference.reference;
+					var productId=valueReference.split("/")[1];
+					if(!listIdProducts.includes(productId))
+					{
+						listIdProducts.push(productId);
+					}
+					break;
+				}
 			}
 		}
 	}

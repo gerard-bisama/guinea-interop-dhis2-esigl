@@ -1819,8 +1819,8 @@ function setupApp () {
 			for(var iteratorProg=0;iteratorProg<listProgramToProcess.length;iteratorProg++)
 			{
 				var progRequisitions=customLibrairy.getRequisitionByProgram(listProgramToProcess[iteratorProg],requisitionsList);
-				console.log(progRequisitions.length);
-				console.log("---------------------------------------------------");
+				//console.log(progRequisitions.length);
+				//console.log("---------------------------------------------------");
 				//console.log(progRequisitions);
 				for(var iteratorReq=0;iteratorReq<progRequisitions.length;iteratorReq++)
 				{
@@ -1833,12 +1833,194 @@ function setupApp () {
 				//listRequisitionsBySetProgram=customLibrairy.getRequisitionByProgram(requisitionsList);
 				
 				//console.log(requisitionLists.length);
-				var builder = require('xmlbuilder');
+				//var builder = require('xmlbuilder');
 				var listPayLoad=[];
 				var listProductsPresentInTheRequisitons=[];
 				listProductsPresentInTheRequisitons=customLibrairy.getAllProductsInRequisition(listRequisitionsBySetProgram);
-				console.log(listProductsPresentInTheRequisitons);
-				return;
+				//console.log(listProductsPresentInTheRequisitons);
+				//Now get the list of all product details in the requisitions
+				var stringProductIdsList="";
+				for(var iteratorProd=0;iteratorProd<listProductsPresentInTheRequisitons.length;iteratorProd++)
+				{
+					if(iteratorProd==0)
+					{
+						stringProductIdsList=stringProductIdsList+listProductsPresentInTheRequisitons[iteratorProd];
+					}
+					else
+					{
+						stringProductIdsList=stringProductIdsList+","+listProductsPresentInTheRequisitons[iteratorProd];
+					}
+					
+				}
+				var bundleRequest=mediatorConfig.config.hapiServer.url+"/fhir/Basic?_id:in="+stringProductIdsList+"&_format=json&_count="+mediatorConfig.config.resourceCountFhir;
+				var temBuildListProduct=[];
+				getAllProductsCurl(bundleRequest,temBuildListProduct,function(listProductDetailsInRequisitions)
+				{
+					//console.log(listProductDetailsInRequisitions[0]);
+					//Now loop throup requisitions line to build the adx request
+					//Resolve first the related dhis2 id of proogram,product,dispensingunit
+					var listCustomRequisitionObjects=customLibrairy.buildObjectDetailsRequisitionList(listRequisitionsBySetProgram,listProductDetailsInRequisitions);
+					//console.log(listCustomRequisitionObjects.slice(0,5));
+					var listCategoryOptionsToResolve=[];
+					for(var iteratorOjectReq=0;iteratorOjectReq<listCustomRequisitionObjects.length;iteratorOjectReq++)
+					{
+						if(!listCategoryOptionsToResolve.includes(listCustomRequisitionObjects[iteratorOjectReq].product))
+						{
+							listCategoryOptionsToResolve.push(listCustomRequisitionObjects[iteratorOjectReq].product);
+						}
+						if(!listCategoryOptionsToResolve.includes(listCustomRequisitionObjects[iteratorOjectReq].program))
+						{
+							listCategoryOptionsToResolve.push(listCustomRequisitionObjects[iteratorOjectReq].product);
+						}
+						if(!listCategoryOptionsToResolve.includes(listCustomRequisitionObjects[iteratorOjectReq].dispensingUnit))
+						{
+							listCategoryOptionsToResolve.push(listCustomRequisitionObjects[iteratorOjectReq].product);
+						}
+					}
+					
+					var pathQueryCategoryOptions="";
+					for(var iteratorOption=0;iteratorOption< listCategoryOptionsToResolve.length;iteratorOption++)
+					{
+						if(iteratorOption==0)
+						{
+							pathQueryCategoryOptions=pathQueryCategoryOptions+listCategoryOptionsToResolve[iteratorOption];
+						}
+						else
+						{
+							pathQueryCategoryOptions=pathQueryCategoryOptions+","+listCategoryOptionsToResolve[iteratorOption];
+							
+						}
+					}
+					//console.log();
+					var orchestrationCategories=[];
+					orchestrationCategories.push(
+					{ 
+						ctxObjectRef: "categoryOptions",
+						name: "categoryOptions", 
+						domain: mediatorConfig.config.dhis2Server.url,
+						path:mediatorConfig.config.dhis2Server.apiPath+"/categoryOptions?fields=id,code&filter=code:in:["+pathQueryCategoryOptions+"]&paging=false",
+						params: "",
+						body:  "",
+						method: "GET",
+						headers: {'Content-Type': 'application/json','Authorization': basicClientToken}
+					});
+					var asyncCategory = require('async');
+					var ctxObject2Get = []; 
+					var orchestrationsResultsCategory=[];
+					//var counterPush=1;
+					asyncCategory.each(orchestrationCategories, function(orchestration, callback) {
+					var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
+					console.log(orchUrl);
+					var options={headers:orchestration.headers};
+					needle.get(orchUrl,options, function(err, resp) {
+						if ( err ){
+							winston.error(err);
+						}
+						orchestrationsResults.push({
+						name: orchestration.name,
+						request: {
+						  path : orchestration.path,
+						  headers: orchestration.headers,
+						  querystring: orchestration.params,
+						  body: "",
+						  method: orchestration.method,
+						  timestamp: new Date().getTime()
+						},
+						response: {
+						  status: resp.statusCode,
+						  body: resp.body,
+						  timestamp: new Date().getTime()
+						}
+						});
+						// add orchestration response to context object and return callback
+						ctxObject[orchestration.ctxObjectRef] = resp.body;
+						callback();
+					});//end of needle orchUrl
+				},function(err)
+				{
+			
+					if(err)
+					{
+						winston.error(err);
+					}
+					winston.info("CategoryOptions resolve");
+					var listCategorieOptions=resp.body.categoryOptions;
+					if(listCategorieOptions.length>0)
+					{
+						//Now build adx request
+						for(var iteratorReqObject=0;iteratorReqObject<listCustomRequisitionObjects.length;iteratorReqObject++)
+						{
+							//get Program Id
+							var oRequisition=listCustomRequisitionObjects[iteratorReqObject];
+							var programId=customLibrairy.getResourceCategoryIdFromCode(oRequisition.program,listCategorieOptions);
+							var productId=customLibrairy.getResourceCategoryIdFromCode(oRequisition.product,listCategorieOptions);
+							var dispensingUnitId=customLibrairy.getResourceCategoryIdFromCode(oRequisition.dispensingUnit,listCategorieOptions);
+							//new build the ADX associated;
+						}
+					}
+					else
+					{
+						winston.warn("No categoryOptions correspondance found ");
+						var urn = mediatorConfig.urn;
+						var status = 'Successful';
+						var response = {
+						  status: 200,
+						  headers: {
+							'content-type': 'application/json'
+						  },
+						  body:JSON.stringify( {'OperationResult':'No categoryOptions correspondance found'}),
+						  timestamp: new Date().getTime()
+						};
+						var properties = {};
+						properties['Numner requisition pushed'] =0;
+						var orchestrationToReturn=[
+						{
+							name: "requisition2dhis2",
+							request: {
+							  path :"/requisition2dhis2",
+							  headers: {'Content-Type': 'application/json'},
+							  querystring: "",
+							  body:JSON.stringify( {'Process sync':'succeded'}),
+							  method: "GET",
+							  timestamp: new Date().getTime()
+							},
+							response: {
+							  status: 200,
+							  body:JSON.stringify({'OperationResult':'Not performed'}),
+							  timestamp: new Date().getTime()
+							}
+						}
+						];
+						var returnObject = {
+						  "x-mediator-urn": urn,
+						  "status": status,
+						  "response": response,
+						  "orchestrations": orchestrationToReturn,
+						  "properties": properties
+						}
+						winston.info("End of Hapi=>DHIS2 requisitions orchestration");
+						res.set('Content-Type', 'application/json+openhim');
+						res.send(returnObject);
+						}
+					
+				});//end asyncCategory
+					
+					
+					
+					
+					
+					
+					
+					
+					
+					return;
+					//return;
+				})//end of getAllProductsCurl
+				
+				
+				
+				
+				//return;
 				
 			}//end if listRequisitionsBySetProgram>>0
 			else
