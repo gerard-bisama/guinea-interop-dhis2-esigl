@@ -2288,12 +2288,15 @@ function setupApp () {
 							}
 							//Then  facilityId (dhis2 id) for {Reference:Organization/id}
 							//Now build the bundle Requisition ressources                                                                                                                                                                                                                                                                                                                                                            
-							var listRequisitionToPush=customLibrairy.buildRequisitionFhirResourcesNewApi(requisitionStatusToProcess,mediatorConfig.config.prefixResourceId,listOrganizationToSync,
+							//var listRequisitionToPush=customLibrairy.buildRequisitionFhirResourcesNewApi(requisitionStatusToProcess,mediatorConfig.config.prefixResourceId,listOrganizationToSync,
+							//listRequisitionsDetails,listRequisition2Process,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
+							var listRequisitionToPush=customLibrairy.buildRequisitionFhirResourcesNewApiByProducts(requisitionStatusToProcess,mediatorConfig.config.prefixResourceId,listOrganizationToSync,
 							listRequisitionsDetails,listRequisition2Process,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
 							winston.info("Requisitions transformed to Requisition resources done");	
-							//console.log(JSON.stringify(listRequisitionToPush));
-							
-							//return;
+							console.log(listRequisitionToPush.length);
+							console.log("---------------------------------------");
+							console.log(JSON.stringify(listRequisitionToPush[0]));
+							return;
 							var orchestrationsRequistition2Push=[];
 							for(var iteratorReq=0;iteratorReq<listRequisitionToPush.length;iteratorReq++)
 							{

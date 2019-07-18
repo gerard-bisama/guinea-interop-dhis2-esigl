@@ -635,6 +635,149 @@ exports.buildRequisitionFhirResourcesNewApi=function buildRequisitionFhirResourc
 	}//end for requisition
 	return listRequisitionFhir;
 }
+exports.buildRequisitionFhirResourcesNewApiByProducts=function buildRequisitionFhirResourcesNewApi(requisitionStatusToProcess,prefixIdResource,listFacility,listRequisitionDetails,listRequisitions,hrefDomaineSIGL,hrefDomainFhir)
+{
+	//console.log(listFacility);
+	var listRequisitionFhir=[];
+	var identifierCodingSystem=hrefDomaineSIGL+"/requisition-id";
+	var requisitionExtensionCodingSystem=hrefDomainFhir+"/fhir/StructureDefinition/Requisition";
+	var requisitionCode={coding:[{system:requisitionExtensionCodingSystem,code:"requisition",display:"requisition"}],text:"requisition"};
+	
+	for(var iteratorReq=0;iteratorReq<listRequisitions.length;iteratorReq++)
+	{
+		var idRequisition=prefixIdResource+listRequisitions[iteratorReq].id;
+		var requisitionDetails=getRequisitionDetailsById(prefixIdResource,idRequisition,listRequisitionDetails);
+		//Skip all requisition with status different from requisitionStatuus to process.Default to "APPROVED"
+		if(requisitionDetails.requisitionStatus!=requisitionStatusToProcess)
+		{
+			continue;
+		}
+		var dateTimeStartDate=new Date(requisitionDetails.periodStartDate).toJSON();
+		var dateTimeEndDate=new Date(requisitionDetails.periodEndDate).toJSON();
+		var createdDate=moment().format(dateTimeStartDate);
+		var createdDateZFormat=formatDateInZform(createdDate);
+		var startDate=dateTimeStartDate.split("T")[0];
+		var endDate=dateTimeEndDate.split("T")[0];
+		var OrganizationId=getOrganizationFhirIdFromCode(requisitionDetails.agentCode,listFacility);
+		
+		//now loop through the product list to build requisitionDetail
+		
+		for(var iteratorProduct=0;iteratorProduct<listRequisitions[iteratorReq].products.length;iteratorProduct++)
+		{
+			var requisitionDetails=[];
+			var newIdRequisition=idRequisition+listRequisitions[iteratorReq].products[iteratorProduct].productCode+listRequisitions[iteratorReq].programCode;
+			var identifier=[{
+			use:"official",
+			type:{coding:[{system:identifierCodingSystem,code:"fhirrequisitioncode",display:"fhirrequisitioncode"}],text:"fhirrequisitioncode"},
+			value:idRequisition+listRequisitions[iteratorReq].products[iteratorProduct].productCode+listRequisitions[iteratorReq].programCode
+		},
+		{
+			use:"official",
+			type:{coding:[{system:identifierCodingSystem,code:"siglrequisitioncode",display:"siglrequisitioncode"}],text:"siglrequisitioncode"},
+			value:idRequisition
+		}
+		];
+			oProduct=listRequisitions[iteratorReq].products[iteratorProduct];
+			requisitionDetails.push(
+			//[
+				{
+					url: hrefDomainFhir+"/fhir/requisitionDetail",
+					extension:[{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/product",
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/product",
+					url:"product",
+					valueReference:{reference:"Basic/"+oProduct.productCode}
+				},
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/program",
+					url:"program",
+					valueReference:{reference:"OrganizationAffiliation/"+listRequisitions[iteratorReq].programCode}
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/organization",
+					url:"organization",
+					valueReference:{reference:"Organization/"+OrganizationId}
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/initialStock",
+					url:"initialStock",
+					valueDecimal:oProduct.beginningBalance
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/receivedQuantity",
+					url:"receivedQuantity",
+					valueDecimal:oProduct.quantityReceived
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/consumedQuantity",
+					url:"consumedQuantity",
+					valueDecimal:oProduct.quantityDispensed
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/losses",
+					url:"losses",
+					valueDecimal:oProduct.totalLossesAndAdjustments
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/losses",
+					url:"positiveAdjustment",
+					valueDecimal:0
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/losses",
+					url:"negativeAdjustment",
+					valueDecimal:0
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/stockOnHand",
+					url:"stockOnHand",
+					valueDecimal:oProduct.stockInHand
+				}
+				,
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/stockOnHand",
+					url:"averageMonthConsumption",
+					valueDecimal:oProduct.amc
+				},
+				{
+					//url:hrefDomainFhir+"/fhir/requisitionDetail/stockOnHand",
+					url:"stockOutDay",
+					valueDecimal:getStockOutDaysFromRequisitionDetails(listRequisitions[iteratorReq].id,oProduct.productCode,listRequisitionDetails)
+				}
+				,
+				{
+					url:"startDate",
+					valueDate:formatDateInZform(startDate)
+				}
+				,
+				{
+					url:"endDate",
+					valueDate:formatDateInZform(endDate)
+				}]}
+			//]
+			);
+			//break;
+			var oRequisition={
+			resourceType:"Basic",
+			id:newIdRequisition,
+			identifier:identifier,
+			code:requisitionCode,
+			created:createdDateZFormat,
+			extension:requisitionDetails};
+			listRequisitionFhir.push(oRequisition);
+		}//end for products
+		
+	}//end for requisition
+	return listRequisitionFhir;
+}
 
 //return the requisitions details by id 
 //@id of the requisition to search in the lists
