@@ -1870,11 +1870,11 @@ function setupApp () {
 						}
 						if(!listCategoryOptionsToResolve.includes(listCustomRequisitionObjects[iteratorOjectReq].program))
 						{
-							listCategoryOptionsToResolve.push(listCustomRequisitionObjects[iteratorOjectReq].product);
+							listCategoryOptionsToResolve.push(listCustomRequisitionObjects[iteratorOjectReq].program);
 						}
 						if(!listCategoryOptionsToResolve.includes(listCustomRequisitionObjects[iteratorOjectReq].dispensingUnit))
 						{
-							listCategoryOptionsToResolve.push(listCustomRequisitionObjects[iteratorOjectReq].product);
+							listCategoryOptionsToResolve.push(listCustomRequisitionObjects[iteratorOjectReq].dispensingUnit);
 						}
 					}
 					
@@ -1898,7 +1898,7 @@ function setupApp () {
 						ctxObjectRef: "categoryOptions",
 						name: "categoryOptions", 
 						domain: mediatorConfig.config.dhis2Server.url,
-						path:mediatorConfig.config.dhis2Server.apiPath+"/categoryOptions?fields=id,code&filter=code:in:["+pathQueryCategoryOptions+"]&paging=false",
+						path:mediatorConfig.config.dhis2Server.apiPath+"/categoryOptions.json?fields=id,code&filter=code:in:["+pathQueryCategoryOptions+"]&paging=false",
 						params: "",
 						body:  "",
 						method: "GET",
@@ -1916,7 +1916,7 @@ function setupApp () {
 						if ( err ){
 							winston.error(err);
 						}
-						orchestrationsResults.push({
+						orchestrationsResultsCategory.push({
 						name: orchestration.name,
 						request: {
 						  path : orchestration.path,
@@ -1933,7 +1933,7 @@ function setupApp () {
 						}
 						});
 						// add orchestration response to context object and return callback
-						ctxObject[orchestration.ctxObjectRef] = resp.body;
+						ctxObject2Get[orchestration.ctxObjectRef] = resp.body;
 						callback();
 					});//end of needle orchUrl
 				},function(err)
@@ -1944,10 +1944,11 @@ function setupApp () {
 						winston.error(err);
 					}
 					winston.info("CategoryOptions resolve");
-					var listCategorieOptions=resp.body.categoryOptions;
+					var listCategorieOptions=ctxObject2Get.categoryOptions.categoryOptions;
 					if(listCategorieOptions.length>0)
 					{
 						//Now build adx request
+						var listPayLoadToPushToDHIS2=[];
 						for(var iteratorReqObject=0;iteratorReqObject<listCustomRequisitionObjects.length;iteratorReqObject++)
 						{
 							//get Program Id
@@ -1956,7 +1957,126 @@ function setupApp () {
 							var productId=customLibrairy.getResourceCategoryIdFromCode(oRequisition.product,listCategorieOptions);
 							var dispensingUnitId=customLibrairy.getResourceCategoryIdFromCode(oRequisition.dispensingUnit,listCategorieOptions);
 							//new build the ADX associated;
+							var adxRequisitionPayload=customLibrairy.buildADXPayloadFromRequisition(oRequisition,productId,programId,dispensingUnitId,
+							mediatorConfig);
+							listPayLoadToPushToDHIS2.push(adxRequisitionPayload);
 						}
+						
+						//console.log(listPayLoadToPushToDHIS2);
+						//return;
+						var orchestrationsADX2Push=[];
+						for(var iteratorADX=0;iteratorADX<listPayLoadToPushToDHIS2.length;iteratorADX++)
+						{
+							orchestrationsADX2Push.push(
+							{ 
+								ctxObjectRef: "adx"+iteratorADX,
+								name: "adx"+iteratorADX,
+								domain: mediatorConfig.config.dhis2Server.url,
+								path:mediatorConfig.config.dhis2Server.apiPath+"/dataValueSets?dataElementIdScheme=UID&orgUnitIdScheme=UID",
+								params: "",
+								body:listPayLoadToPushToDHIS2[iteratorADX],
+								method: "POST",
+								headers: {'Content-Type': 'application/adx+xml','Authorization': basicClientToken}
+							});
+						}
+						var asyncAdx2Push = require('async');
+						var ctxObject2Update = []; 
+						var orchestrationsResultsADX=[];
+						var counterPush=1;
+						asyncAdx2Push.each(orchestrationsADX2Push, function(orchestrationADX, callbackADX) {
+							var orchUrl = orchestrationADX.domain + orchestrationADX.path + orchestrationADX.params;
+							var options={
+								headers:orchestrationADX.headers
+								};
+							var adx2Push=orchestrationADX.body;
+							//console.log(orchUrl);
+							needle.post(orchUrl,adx2Push,options, function(err, resp) {
+								// if error occured
+								
+								if ( err ){
+									winston.error("Needle: error when pushing product data to dhis2");
+									callbackADX(err);
+								}
+								//console.log(resp);
+								console.log("********************************************************");
+								winston.info(counterPush+"/"+orchestrationsADX2Push.length);
+								winston.info("...Inserting "+orchestrationADX.path);
+								orchestrationsResultsADX.push({
+								name: orchestrationADX,
+								request: {
+								  path : orchestrationADX.path,
+								  headers: orchestrationADX.headers,
+								  querystring: orchestrationADX.params,
+								  body: orchestrationADX.body,
+								  method: orchestrationADX.method,
+								  timestamp: new Date().getTime()
+								},
+								response: {
+								  status: resp.statusCode,
+								  //body: JSON.stringify(resp.body.toString('utf8'), null, 4),
+								  body: resp.body,
+								  timestamp: new Date().getTime()
+								}
+								});
+								//console.log(resp.body);
+								// add orchestration response to context object and return callback
+								ctxObject2Update[orchestrationsADX2Push.ctxObjectRef] = resp.body;
+								counterPush++;
+								callbackADX();
+							});
+						},function(err)
+						{
+							
+								if(err)
+								{
+									winston.error(err);
+								}
+								winston.info("Creation of requisition => pushed quantities in dhis2!")
+								//console.log(orchestrationsResultsADX[0]);
+								//return;
+								var urn = mediatorConfig.urn;
+								var status = 'Successful';
+								var response = {
+								  status: 200,
+								  headers: {
+									'content-type': 'application/json'
+								  },
+								  body:JSON.stringify( {'OperationResult':'Requisitions synched successfully into dhis2'}),
+								  timestamp: new Date().getTime()
+								};
+								var orchestrationToReturn=[
+								{
+									name: "requisition2dhis2",
+									request: {
+									  path :"/requisition2dhis2",
+									  headers: {'Content-Type': 'application/json'},
+									  querystring: "",
+									  body:JSON.stringify( {'Process sync':'succeded'}),
+									  method: "GET",
+									  timestamp: new Date().getTime()
+									},
+									response: {
+									  status: 200,
+									  body:JSON.stringify({'OperationResult':'Performed successfully'}),
+									  timestamp: new Date().getTime()
+									}
+								}
+								];
+								var properties = {};
+								properties['Number requisition pushed'] =orchestrationsADX2Push.length;
+								var returnObject = {
+								  "x-mediator-urn": urn,
+								  "status": status,
+								  "response": response,
+								  "orchestrations": orchestrationToReturn,
+								  "properties": properties
+								}
+								winston.info("End of Hapi=>DHIS2 requisition orchestration");
+								res.set('Content-Type', 'application/json+openhim');
+								res.send(returnObject);
+						})//end of asyncAdx2Push
+						
+						
 					}
 					else
 					{
@@ -2013,7 +2133,7 @@ function setupApp () {
 					
 					
 					
-					return;
+					//return;
 					//return;
 				})//end of getAllProductsCurl
 				
@@ -2699,7 +2819,7 @@ function getAllRequisitionsCurl(bundleParam,globalStoredList,callback)
 	}
 	else
 	{
-		urlRequest=`${bundleParam}`;
+		urlRequest="'"+`${bundleParam}`+"'";
 		winston.info("Looping througth bundle response to construct requisitions list!");
 	}
 	console.log(urlRequest);

@@ -5,6 +5,7 @@ const uuidv1 = require('uuid/v1');
 var csvUtil = require('csv-util');
 var mongoose = require('mongoose');
 mongoose.connect('mongodb://localhost:27017/interopmediator');
+var xml = require('xml');
 var Schema=mongoose.Schema;
 
 
@@ -69,8 +70,83 @@ var getDispensingUnitFromProduct=function(productCode,ListProductFhir)
 	return dispensingUnit;
 }
 //Build ADX xml file from requisitionObject
-exports.buildADXPayloadFromRequisition=function(requisitionObject)
+exports.buildADXPayloadFromRequisition=function(requisitionObject,productId,programId,dispensingUnitId,mediatorConfig)
 {
+	//[{"adx":[{"_attr":{"xmlns":"urn:ihe:qrph:adx:2015"}},{"group":[{"dataValue":1},{"dataValue":2}]}]}]
+	var currentDate=moment().format(new Date().toJSON());
+	var currentZFormatDate=formatDateInZform(currentDate);
+	var validPeridoReported=requisitionObject.startDate.split("T")[0];
+	
+	var xmlObject=[{adx:[{_attr:{xmlns:'urn:ihe:qrph:adx:2015','xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
+			'xsi:schemaLocation':'urn:ihe:qrph:adx:2015 ../schema/adx_loose.xsd',exported:currentZFormatDate}},
+			{group:[{_attr:{orgUnit:requisitionObject.organization,period:validPeridoReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.quantiteUtilisee,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.consumedQuantity}}]},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.stockInitial,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.initialStock}}]},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.quantiteRecue,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.receivedQuantity}}]},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.sdu,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.stockOnHand}}]},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.ajustementPositive,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.positiveAdjustment}}]},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.ajustementNegative,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.negativeAdjustment}}]},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.cmm,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.averageMonthConsumption}}]},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.nbJoursRupture,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.stockOutDay}}]},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.pertes,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.losses}}]},
+				]}]}]
+	//console.log(xmlObject[0]);
+	/*
+	var xmlObject=[
+		[{adx:[{_attr:{xmlns:'urn:ihe:qrph:adx:2015','xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
+			'xsi:schemaLocation':'urn:ihe:qrph:adx:2015 ../schema/adx_loose.xsd',exported:currentZFormatDate}},
+			{group:[{_attr:{orgUnit:requisitionObject.organization,period:validPeridoReported+"/P1M",completeDate:validPeridoReported,
+				dataSet:mediatorConfig.config.datasetId}},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.quantiteUtilisee,
+					programme:programId,produit:productId,formes:dispensingUnitId}},requisitionObject.consumedQuantity]}
+				]}]}]
+		
+		]
+	var dataValueQuantiteUtilise={dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.quantiteUtilisee,
+		programme:programId,produit:productId,formes:dispensingUnitId}},requisitionObject.consumedQuantity]};
+		
+	var dataValuestockInitial={dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.stockInitial,
+		programme:programId,produit:productId,formes:dispensingUnitId}},requisitionObject.initialStock]};
+		
+	var dataValuequantiteRecue={dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.quantiteRecue,
+		programme:programId,produit:productId,formes:dispensingUnitId}},requisitionObject.receivedQuantity]};
+	
+	var dataValuesdu={dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.sdu,
+		programme:programId,produit:productId,formes:dispensingUnitId}},requisitionObject.stockOnHand]};
+	
+	var dataValueajustementPositive={dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.ajustementPositive,
+		programme:programId,produit:productId,formes:dispensingUnitId}},requisitionObject.positiveAdjustment]};
+		
+	var dataValueajustementNegative={dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.ajustementNegative,
+		programme:programId,produit:productId,formes:dispensingUnitId}},requisitionObject.negativeAdjustment]};
+		
+	var dataValuecmm={dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.cmm,
+		programme:programId,produit:productId,formes:dispensingUnitId}},requisitionObject.averageMonthConsumption]};
+	
+	var dataValuenbJoursRupture={dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.nbJoursRupture,
+		programme:programId,produit:productId,formes:dispensingUnitId}},requisitionObject.stockOutDay]};
+		
+	var dataValuenpertes={dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.pertes,
+		programme:programId,produit:productId,formes:dispensingUnitId}},requisitionObject.pertes]};
+	
+	xmlObject[0][0].adx[0].group.push(dataValueQuantiteUtilise);
+	* */
+	
+	var resAdxPayLoad=xml(xmlObject);
+	//console.log(resAdxPayLoad);
+	return resAdxPayLoad;
+	//validPeridoReported=validPeridoReported+"/P1M";
+	
+	
 	
 }
 //return customized list of object DetailsRequisitions

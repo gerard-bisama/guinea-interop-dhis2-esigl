@@ -4,56 +4,7 @@
   "name": "Fhir Resources from HAPI to DHIS2",
   "description": "Pull Fhir resources form HAPI and push them to DHIS2 ",
   "defaultChannelConfig": [
-    {
-      "name": "Sync product list to DHIS2",
-      "urlPattern": "^/product2dhsi2/$",
-      "alerts": [],
-      "txRerunAcl": [],
-      "txViewFullAcl": [],
-      "txViewAcl": [],
-      "properties": [],
-      "matchContentTypes": [],
-      "pollingSchedule": "* 3-4 * 5 *",
-      "timeout":"600000",
-      "routes": [
-        {
-          "name": "products list to DHIS2",
-          "host": "localhost",
-          "port": "5022",
-          "primary": true,
-          "path": "/product2dhsi2",
-          "type": "http"
-        }
-        
-      ],
-      "allow": ["exchange"],
-      "type": "polling"
-    },
-     {
-      "name": "Sync programs list to DHIS2",
-      "urlPattern": "^/program2dhis2/$",
-      "alerts": [],
-      "txRerunAcl": [],
-      "txViewFullAcl": [],
-      "txViewAcl": [],
-      "properties": [],
-      "matchContentTypes": [],
-      "pollingSchedule": "* 3-4 * 5 *",
-      "timeout":"600000",
-      "routes": [
-        {
-          "name": "Sync programs list to DHIS2",
-          "host": "localhost",
-          "port": "5022",
-          "primary": true,
-          "path": "/program2dhis2",
-          "type": "http"
-        }
-        
-      ],
-      "allow": ["exchange"],
-      "type": "polling"
-    },
+    
     {
       "name": "Sync programs and associated products list to DHIS2",
       "urlPattern": "^/programProduct2dhis2/$",
@@ -80,31 +31,6 @@
       "type": "polling"
     }
     ,
-     {
-      "name": "Sync products-category list to DHIS2",
-      "urlPattern": "^/catproduct2dhis2/$",
-      "alerts": [],
-      "txRerunAcl": [],
-      "txViewFullAcl": [],
-      "txViewAcl": [],
-      "properties": [],
-      "matchContentTypes": [],
-      "pollingSchedule": "* 3-4 * 5 *",
-      "timeout":"600000",
-      "routes": [
-        {
-          "name": "Sync products-category list to DHIS2",
-          "host": "localhost",
-          "port": "5022",
-          "primary": true,
-          "path": "/catproduct2dhis2",
-          "type": "http"
-        }
-        
-      ],
-      "allow": ["exchange"],
-      "type": "polling"
-    },
     {
       "name": "Sync dispensingUnits list to DHIS2",
       "urlPattern": "^/dispensingUnit2dhis2/$",
@@ -291,6 +217,13 @@
       "template": []
     },
     {
+      "param": "datasetId",
+      "displayName": "dataset Id used to report requisition data",
+      "description": "dataset Id used to report requisition data",
+      "type": "string",
+      "template": []
+    },
+    {
       "param": "DataelementsRequisitionAttributeMapping",
       "displayName": "Data Element Ids => Requisition attribute mapping to push ADX payload",
       "description": "Data Element Ids => Requisition attribute mapping to push ADX payload",
@@ -363,7 +296,7 @@
   ],
  "config": {
     "upstreamUrl": "http://sampleApplication:7001",
-    "clientPassword":"pws",
+    "clientPassword":"pwd",
     "dhis2Server":{
 		"url":"http://domain",
 		"username":"user",
@@ -371,16 +304,17 @@
 		"apiPath":"/api"
 		},
 	"hapiServer":{
-		"url":"http://domain/hapi-fhir-jpaserver"
+		"url":"http://ip:port/hapi-fhir-jpaserver"
 		},
 	"productCategoryId":"Bqhkqw8s5rt",
 	"programCategoryId":"RKtSamVHREQ",
 	"programProductCategoryId":"",
 	"dispensingUnitCategoryId":"juH0zEJ3vtT",
-	"resourceCountFhir":"2",
+	"resourceCountFhir":"5",
 	"periodStartDate":"2019-04-01",
 	"periodEndDate":"2019-04-30",
 	"programsToSync":"SIGL-INTEGRE-PNLP",
+	"datasetId":"lL5mTZHD6lb",
 	"DataelementsRequisitionAttributeMapping":{
 		"quantiteUtilisee":"ujytCs3xoDe",
 		"stockInitial":"JEyob0z6TZS",
