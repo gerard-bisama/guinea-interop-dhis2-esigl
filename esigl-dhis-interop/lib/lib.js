@@ -160,7 +160,11 @@ exports.updateOrganizationFromeSIGL=function updateOrganizationFromeSIGL(eSIGLFa
 	oIdentifier.push(identifier[1]);
 
 	var organizationType=[];
-	var organizationType=oOrganization.type;
+	if(oOrganization.type!=null)
+	{
+		organizationType=oOrganization.type;
+	}
+	//var organizationType=oOrganization.type;
 	organizationType.push(eSIGLType);
 	var updatedOrganization={
 		resourceType:"Organization",
