@@ -149,6 +149,7 @@ exports.updateOrganizationFromeSIGL=function updateOrganizationFromeSIGL(eSIGLFa
 				type:{coding:[{system:identifierCodingSystem,code:"siglid",display:"siglid"}],text:"siglid"},
 				value:eSIGLFacility.id}
 			];
+	//console.log(identifier);
 	var oIdentifier=[];
 	oIdentifier=oOrganization.identifier;
 	oIdentifier.push(identifier[0]);
@@ -1068,7 +1069,7 @@ exports.getOrganizationsNotSynched=function getOrganizationsNotSynched(batchSize
 //@@ batchSize : the limit size of the returned result
 //@@ listSynchedRequisitions the list of {code,date} from mongodb log
 //@@ listRequisitions the list of all requisitions from fhir
-exports.getRequisitionsNotSynched=function getRequisitionsNotSynched(prefixIdResource,batchSize,listSynchedRequisitions,listRequisitions)
+exports.getRequisitionsNotSynched=function getRequisitionsNotSynched(prefixIdResource,batchSize,listSynchedRequisitions,listRequisitions,listProgramToProcess)
 {
 	var listSelectedRequisitions=[];
 	if(listSynchedRequisitions.length>0)
@@ -1076,6 +1077,10 @@ exports.getRequisitionsNotSynched=function getRequisitionsNotSynched(prefixIdRes
 		for(var iterator=0;iterator<listRequisitions.length;iterator++)
 		{
 			var requisition=listRequisitions[iterator];
+			if(!listProgramToProcess.includes(requisition.programCode))
+			{
+				continue;
+			}
 			var found=false;
 			for(var iteratorSync=0;iteratorSync<listSynchedRequisitions.length;iteratorSync++)
 			{
@@ -1214,8 +1219,8 @@ var synchedRequisitionDefinition=mongoose.model('synchedRequisition',requisition
 var requisitionSyncLogDefinition=mongoose.model('requisitionSyncLog',requisitionSyncLogSchema);//keep log of synched requisition new API
 var organizatinSyncLogDefinition=mongoose.model('organizationSyncLog',organizationSyncLogSchema);//keep log of synched organization within a specific period new API
 var facilitySyncLogDefinition=mongoose.model('facilitySyncLog',facilitySyncLogSchema);
-var facilitySIGLSyncLogDefinition=mongoose.model('facilitySiglSyncLog',facilitySiglSyncLogSchema);
-var mappingSyncLogDefinition=mongoose.model('mappingSyncLog',mappingSyncLogSchema);
+var facilitySIGLSyncLogDefinition=mongoose.model('facilitySiglSyncLog',facilitySiglSyncLogSchema);//keep log of counter interation when looping though the esigl facilityList API, since it return a set of repeated facility for each page
+var mappingSyncLogDefinition=mongoose.model('mappingSyncLog',mappingSyncLogSchema);//keep esigklfacilityid of mapped facility
 //return the list of organization which requisition has been already synched
 var getAllSynchedOrganization=function (callback)
 {
@@ -1518,7 +1523,7 @@ var upsertSynchedOrganizationPeriod=function(minStartDate,maxStartDate,synchedFa
 }
 var upsertMappingSync=function(_syncDate,_facilityId,callback)
 {
-	requisitionSyncLogDefinition.findOne({
+	mappingSyncLogDefinition.findOne({
 			facilityId:_facilityId,
 			}).exec(function(error,foundSynchedMapping){
 				if(error) {
@@ -1721,11 +1726,11 @@ var saveAllSynchedMapping=function (syncDate,synchedMappingList,callBackReturn)
 			result=response;
 			if(response)
 			{
-				console.log(synchedMapping +"inserted with success.");
+				//console.log(synchedMapping +"inserted with success.");
 			}
 			else
 			{
-				console.log(synchedMapping +"failed to be inserted!");
+				//console.log(synchedMapping +"failed to be inserted!");
 			}
 			callback(response);
 		})

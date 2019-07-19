@@ -1,6 +1,6 @@
 {
   "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60b41c05c",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "name": "Push DHIS2 and eSIGL to FHIR HAPI Server",
   "description": "Pull DHIS2 and eSIGL resources, convert them to Fhir Related resources and push in HAPI",
   "defaultChannelConfig": [
@@ -293,7 +293,7 @@
     {
       "param": "batchSizeRequisitionToProcess",
       "displayName": "batchSizeRequisitionToProcess ",
-      "description": "Number of requisitions to process within each poll of synchronization (Defaut: 100, to Process every requisition of the facility)",
+      "description": "Number of requisitions to process within each poll of synchronization (Defaut: 100, to Process every requisitions of the facility)",
       "type": "string",
       "template": []
     },
@@ -341,27 +341,34 @@
       "description": "Prefix of the fhir resource id,if the id coming fron subsystem are only digit (default:fhir-)",
       "type": "string",
       "template": []
+    },
+    {
+      "param": "programsToSync",
+      "displayName": "Porgram to synchronize ",
+      "description": "List of program by id to push data to dhis2.Comma separated (p.e:SIGL-INTEGRE-VIH,SIGL-INTEGRE-PNMSR)",
+      "type": "string",
+      "template": []
     }
   ],
   "config": {
     "upstreamUrl": "http://sampleApplication:7001",
     "clientPassword":"pwd",
     "dhis2Server":{
-		"url":"https://domain",
+		"url":"http://localhost:8082",
 		"username":"user",
 		"password":"pwd",
-		"orgunitapipath":"/dhis/api"
+		"orgunitapipath":"/api"
 		},
 	"hapiServer":{
-		"url":"http://domain/hapi-fhir-jpaserver"
+		"url":"http://localhost:8083/hapi-fhir-jpaserver"
 		},
 	"esiglServer":{
-		"url":"https://domain",
+		"url":"https://localhost",
 		"username":"user",
 		"password":"pwd",
-		"resourcespath":"/                                                                            -api"
+		"resourcespath":"/rest-api"
 		},
-	"mappingFile":"/home/exchange-server/guinea-interop-dhis2-esigl/esigl-dhis-interop/data/mappingstructure-esigl-dhis2_final.csv",
+	"mappingFile":"/home/interop/guinea-interop-dhis2-esigl/esigl-dhis-interop/data/mappingstructure-esigl-dhis2_final.csv",
 	"batchSizeRequisitionFacilities":"2",
 	"batchSizeFacilityToSync":"100",
 	"batchSizeeSGLFacilityToSync":"10",
@@ -370,7 +377,8 @@
 	"periodStartDate":"2019-04-01",
 	"periodEndDate":"2019-04-30",
 	"maxNumberDayRequisitionsToPull":"5",
-	"pgStringConnection":"postgresql://user:pwd@localhost:5432/db",
-	"prefixResourceId":"fhir-"
+	"pgStringConnection":"",
+	"prefixResourceId":"",
+	"programsToSync":"SIGL-INTEGRE-PNLP"
   }
 }
