@@ -1085,6 +1085,7 @@ exports.getRequisitionsNotSynched=function getRequisitionsNotSynched(prefixIdRes
 		for(var iterator=0;iterator<listRequisitions.length;iterator++)
 		{
 			var requisition=listRequisitions[iterator];
+			console.log("ProgramCode: "+requisition.programCode);
 			if(!listProgramToProcess.includes(requisition.programCode))
 			{
 				continue;
@@ -1118,6 +1119,12 @@ exports.getRequisitionsNotSynched=function getRequisitionsNotSynched(prefixIdRes
 	{
 		for(var iteratorSync=0;iteratorSync<listRequisitions.length;iteratorSync++)
 		{
+			var requisition=listRequisitions[iteratorSync];
+			//console.log("ProgramCode: "+requisition.programCode);
+			if(!listProgramToProcess.includes(requisition.programCode))
+			{
+				continue;
+			}
 			listSelectedRequisitions.push(listRequisitions[iteratorSync]);
 			if(listSelectedRequisitions.length>=batchSize)
 			{

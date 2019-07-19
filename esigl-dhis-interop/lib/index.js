@@ -2178,7 +2178,7 @@ function setupApp () {
 		winston.info("Start extraction of requisitions from eSIGL...!");
 		//Only facility with the set levele and which the boby contains siglcode will be considered
 		var levelOrganizationCode=mediatorConfig.config.facilityLevesForRequisitions;
-		var filter="identifier:text=siglcode&_sort=type&_pretty=true&_count=10";
+		var filter="identifier:text=siglcode&_sort=type&_pretty=true&_count=2";
 		var operationType=0 //0 to get requisition from API and one to get requisition from dbs
 		getAllOrganizationsCurl("",filter,globalSharedOrganisation,function(listOrganizations)
 		{
@@ -2722,7 +2722,7 @@ function getAllOrganizationsCurl(bundleParam,filter,globalStoredList,callback)
 						//GetOrgUnitId(myArr.link[iterator].url,listAssociatedDataRow,listAssociatedResource,callback);
 					}
 				}
-				if(hasNextPageBundle==true)
+				if(hasNextPageBundle==true && globalStoredList.length<300)
 				//if(false)
 				{
 					//console.log();
