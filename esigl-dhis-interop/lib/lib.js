@@ -151,7 +151,11 @@ exports.updateOrganizationFromeSIGL=function updateOrganizationFromeSIGL(eSIGLFa
 			];
 	//console.log(identifier);
 	var oIdentifier=[];
-	oIdentifier=oOrganization.identifier;
+	if(oOrganization.identifier!=null)
+	{
+		oIdentifier=oOrganization.identifier;
+	}
+	
 	oIdentifier.push(identifier[0]);
 	oIdentifier.push(identifier[1]);
 
@@ -1218,7 +1222,7 @@ var synchedOrganizationDefinition=mongoose.model('synchedOrganization',organizat
 var synchedRequisitionDefinition=mongoose.model('synchedRequisition',requisitionSyncSchema);
 var requisitionSyncLogDefinition=mongoose.model('requisitionSyncLog',requisitionSyncLogSchema);//keep log of synched requisition new API
 var organizatinSyncLogDefinition=mongoose.model('organizationSyncLog',organizationSyncLogSchema);//keep log of synched organization within a specific period new API
-var facilitySyncLogDefinition=mongoose.model('facilitySyncLog',facilitySyncLogSchema);
+var facilitySyncLogDefinition=mongoose.model('facilitySyncLog',facilitySyncLogSchema);//keep log of counter to loop through dhis2 api to sync facilities to hapi
 var facilitySIGLSyncLogDefinition=mongoose.model('facilitySiglSyncLog',facilitySiglSyncLogSchema);//keep log of counter interation when looping though the esigl facilityList API, since it return a set of repeated facility for each page
 var mappingSyncLogDefinition=mongoose.model('mappingSyncLog',mappingSyncLogSchema);//keep esigklfacilityid of mapped facility
 //return the list of organization which requisition has been already synched
