@@ -5,7 +5,7 @@
   "description": "Pull DHIS2 and eSIGL resources, convert them to Fhir Related resources and push in HAPI",
   "defaultChannelConfig": [
     {
-      "name": "Sync DHIS2 orgUnits to FHIR Server",
+      "name": "Get DHIS2 orgUnits and push them to FHIR Server",
       "urlPattern": "^/syncorgunit2fhir/$",
       "alerts": [],
       "txRerunAcl": [],
@@ -17,7 +17,7 @@
       "timeout":"600000",
       "routes": [
         {
-          "name": "Sync DHIS2 orgUnits to FHIR Server",
+          "name": "Get DHIS2 orgUnits and push them to FHIR Server",
           "host": "localhost",
           "port": "5021",
           "primary": true,
