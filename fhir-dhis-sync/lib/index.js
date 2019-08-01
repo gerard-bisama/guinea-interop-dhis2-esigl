@@ -1530,7 +1530,7 @@ function setupApp () {
 			//return;
 			var OrchestrationsDispenensing2Push=[];
 			//first create resources as categoryOptions
-			var listDispensingUnit=customLibrairy.getAllDispensingUnitFormProduct(productLists);
+			var listDispensingUnit=customLibrairy.getAllDispensingUnitFromProduct(productLists);
 			//console.log(listDispensingUnit);
 			//console.log("************************************************");
 			//return;
@@ -1810,388 +1810,480 @@ function setupApp () {
 		const basicClientToken = `Basic ${btoa(mediatorConfig.config.dhis2Server.username+':'+mediatorConfig.config.dhis2Server.password)}`;
 		var globalStoredList=[];
 		//getAllRequisitions("",globalStoredList,function(requisitionLists)
-		getAllRequisitionsCurl("",globalStoredList,function(requisitionsList)
+		var startDate=mediatorConfig.config.periodStartDate;
+		var endDate=mediatorConfig.config.periodEndDate;
+		customLibrairy.getAllRequisition2dhisPeriodSynched(startDate,endDate,function(listSynchedRequisition)
 		{
-			winston.info("Requisitions resources returned from Fhir.."+requisitionsList.length);
-			var listRequisitionsBySetProgram=[];
-			var listProgramToProcess=mediatorConfig.config.programsToSync.split(",");
-			//Now get Requisition for the program set
-			for(var iteratorProg=0;iteratorProg<listProgramToProcess.length;iteratorProg++)
+			var listIdAlreadySynchedRequisitions=[];
+			if(listSynchedRequisition!=null)
 			{
-				var progRequisitions=customLibrairy.getRequisitionByProgram(listProgramToProcess[iteratorProg],requisitionsList);
-				//console.log(progRequisitions.length);
-				//console.log("---------------------------------------------------");
-				//console.log(progRequisitions);
-				for(var iteratorReq=0;iteratorReq<progRequisitions.length;iteratorReq++)
+				for(var iteratorSynchedReq=0;iteratorSynchedReq<listSynchedRequisition.length;iteratorSynchedReq++)
 				{
-					listRequisitionsBySetProgram.push(progRequisitions[iteratorReq]);
+					listIdAlreadySynchedRequisitions.push(listSynchedRequisition[iteratorSynchedReq].reqid);
 				}
 			}
-			if(listRequisitionsBySetProgram.length>0)
+			getAllRequisitionsCurlFilterSynched("",listIdAlreadySynchedRequisitions,globalStoredList,function(requisitionsList)
 			{
-				winston.info("Requisitions selected based on the  Program ");
-				//listRequisitionsBySetProgram=customLibrairy.getRequisitionByProgram(requisitionsList);
-				
-				//console.log(requisitionLists.length);
-				//var builder = require('xmlbuilder');
-				var listPayLoad=[];
-				var listProductsPresentInTheRequisitons=[];
-				listProductsPresentInTheRequisitons=customLibrairy.getAllProductsInRequisition(listRequisitionsBySetProgram);
-				//console.log(listProductsPresentInTheRequisitons);
-				//Now get the list of all product details in the requisitions
-				var stringProductIdsList="";
-				for(var iteratorProd=0;iteratorProd<listProductsPresentInTheRequisitons.length;iteratorProd++)
+				winston.info("Requisitions resources returned from Fhir.."+requisitionsList.length);
+				var listRequisitionsBySetProgram=[];
+				var listProgramToProcess=mediatorConfig.config.programsToSync.split(",");
+				//Now get Requisition for the program set
+				for(var iteratorProg=0;iteratorProg<listProgramToProcess.length;iteratorProg++)
 				{
-					if(iteratorProd==0)
+					var progRequisitions=customLibrairy.getRequisitionByProgram(listProgramToProcess[iteratorProg],requisitionsList);
+					//console.log(progRequisitions.length);
+					//console.log("---------------------------------------------------");
+					//console.log(progRequisitions);
+					for(var iteratorReq=0;iteratorReq<progRequisitions.length;iteratorReq++)
 					{
-						stringProductIdsList=stringProductIdsList+listProductsPresentInTheRequisitons[iteratorProd];
+						listRequisitionsBySetProgram.push(progRequisitions[iteratorReq]);
 					}
-					else
-					{
-						stringProductIdsList=stringProductIdsList+","+listProductsPresentInTheRequisitons[iteratorProd];
-					}
-					
 				}
-				var bundleRequest=mediatorConfig.config.hapiServer.url+"/fhir/Basic?_id:in="+stringProductIdsList+"&_format=json&_count="+mediatorConfig.config.resourceCountFhir;
-				var temBuildListProduct=[];
-				getAllProductsCurl(bundleRequest,temBuildListProduct,function(listProductDetailsInRequisitions)
+				if(listRequisitionsBySetProgram.length>0)
 				{
-					//console.log(listProductDetailsInRequisitions[0]);
-					//Now loop throup requisitions line to build the adx request
-					//Resolve first the related dhis2 id of proogram,product,dispensingunit
-					var listCustomRequisitionObjects=customLibrairy.buildObjectDetailsRequisitionList(listRequisitionsBySetProgram,listProductDetailsInRequisitions);
-					//console.log(listCustomRequisitionObjects.slice(0,5));
-					var listCategoryOptionsToResolve=[];
-					for(var iteratorOjectReq=0;iteratorOjectReq<listCustomRequisitionObjects.length;iteratorOjectReq++)
-					{
-						if(!listCategoryOptionsToResolve.includes(listCustomRequisitionObjects[iteratorOjectReq].product))
-						{
-							listCategoryOptionsToResolve.push(listCustomRequisitionObjects[iteratorOjectReq].product);
-						}
-						if(!listCategoryOptionsToResolve.includes(listCustomRequisitionObjects[iteratorOjectReq].program))
-						{
-							listCategoryOptionsToResolve.push(listCustomRequisitionObjects[iteratorOjectReq].program);
-						}
-						if(!listCategoryOptionsToResolve.includes(listCustomRequisitionObjects[iteratorOjectReq].dispensingUnit))
-						{
-							listCategoryOptionsToResolve.push(listCustomRequisitionObjects[iteratorOjectReq].dispensingUnit);
-						}
-					}
+					winston.info("Requisitions selected based on the  Program ");
+					//listRequisitionsBySetProgram=customLibrairy.getRequisitionByProgram(requisitionsList);
 					
-					var pathQueryCategoryOptions="";
-					for(var iteratorOption=0;iteratorOption< listCategoryOptionsToResolve.length;iteratorOption++)
+					//console.log(requisitionLists.length);
+					//var builder = require('xmlbuilder');
+					var listPayLoad=[];
+					var listProductsPresentInTheRequisitons=[];
+					listProductsPresentInTheRequisitons=customLibrairy.getAllProductsInRequisition(listRequisitionsBySetProgram);
+					//console.log(listProductsPresentInTheRequisitons);
+					//Now get the list of all product details in the requisitions
+					var stringProductIdsList="";
+					for(var iteratorProd=0;iteratorProd<listProductsPresentInTheRequisitons.length;iteratorProd++)
 					{
-						if(iteratorOption==0)
+						if(iteratorProd==0)
 						{
-							pathQueryCategoryOptions=pathQueryCategoryOptions+listCategoryOptionsToResolve[iteratorOption];
+							stringProductIdsList=stringProductIdsList+listProductsPresentInTheRequisitons[iteratorProd];
 						}
 						else
 						{
-							pathQueryCategoryOptions=pathQueryCategoryOptions+","+listCategoryOptionsToResolve[iteratorOption];
-							
-						}
-					}
-					//console.log();
-					var orchestrationCategories=[];
-					orchestrationCategories.push(
-					{ 
-						ctxObjectRef: "categoryOptions",
-						name: "categoryOptions", 
-						domain: mediatorConfig.config.dhis2Server.url,
-						path:mediatorConfig.config.dhis2Server.apiPath+"/categoryOptions.json?fields=id,code&filter=code:in:["+pathQueryCategoryOptions+"]&paging=false",
-						params: "",
-						body:  "",
-						method: "GET",
-						headers: {'Content-Type': 'application/json','Authorization': basicClientToken}
-					});
-					var asyncCategory = require('async');
-					var ctxObject2Get = []; 
-					var orchestrationsResultsCategory=[];
-					//var counterPush=1;
-					asyncCategory.each(orchestrationCategories, function(orchestration, callback) {
-					var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
-					console.log(orchUrl);
-					var options={headers:orchestration.headers};
-					needle.get(orchUrl,options, function(err, resp) {
-						if ( err ){
-							winston.error(err);
-						}
-						orchestrationsResultsCategory.push({
-						name: orchestration.name,
-						request: {
-						  path : orchestration.path,
-						  headers: orchestration.headers,
-						  querystring: orchestration.params,
-						  body: "",
-						  method: orchestration.method,
-						  timestamp: new Date().getTime()
-						},
-						response: {
-						  status: resp.statusCode,
-						  body: resp.body,
-						  timestamp: new Date().getTime()
-						}
-						});
-						// add orchestration response to context object and return callback
-						ctxObject2Get[orchestration.ctxObjectRef] = resp.body;
-						callback();
-					});//end of needle orchUrl
-				},function(err)
-				{
-			
-					if(err)
-					{
-						winston.error(err);
-					}
-					winston.info("CategoryOptions resolve");
-					var listCategorieOptions=ctxObject2Get.categoryOptions.categoryOptions;
-					if(listCategorieOptions.length>0)
-					{
-						//Now build adx request
-						var listPayLoadToPushToDHIS2=[];
-						for(var iteratorReqObject=0;iteratorReqObject<listCustomRequisitionObjects.length;iteratorReqObject++)
-						{
-							//get Program Id
-							var oRequisition=listCustomRequisitionObjects[iteratorReqObject];
-							var programId=customLibrairy.getResourceCategoryIdFromCode(oRequisition.program,listCategorieOptions);
-							var productId=customLibrairy.getResourceCategoryIdFromCode(oRequisition.product,listCategorieOptions);
-							var dispensingUnitId=customLibrairy.getResourceCategoryIdFromCode(oRequisition.dispensingUnit,listCategorieOptions);
-							//new build the ADX associated;
-							var adxRequisitionPayload=customLibrairy.buildADXPayloadFromRequisition(oRequisition,productId,programId,dispensingUnitId,
-							mediatorConfig);
-							listPayLoadToPushToDHIS2.push(adxRequisitionPayload);
+							stringProductIdsList=stringProductIdsList+","+listProductsPresentInTheRequisitons[iteratorProd];
 						}
 						
-						//console.log(listPayLoadToPushToDHIS2);
-						//return;
-						var orchestrationsADX2Push=[];
-						for(var iteratorADX=0;iteratorADX<listPayLoadToPushToDHIS2.length;iteratorADX++)
+					}
+					var bundleRequest=mediatorConfig.config.hapiServer.url+"/fhir/Basic?_id:in="+stringProductIdsList+"&_format=json&_count="+mediatorConfig.config.resourceCountFhir;
+					var temBuildListProduct=[];
+					getAllProductsCurl(bundleRequest,temBuildListProduct,function(listProductDetailsInRequisitions)
+					{
+						//console.log(listProductDetailsInRequisitions[0]);
+						//Now loop throup requisitions line to build the adx request
+						//Resolve first the related dhis2 id of proogram,product,dispensingunit
+						var listCustomRequisitionObjects=customLibrairy.buildObjectDetailsRequisitionList(listRequisitionsBySetProgram,listProductDetailsInRequisitions);
+						//console.log(listCustomRequisitionObjects.slice(0,5));
+						var listCategoryOptionsToResolve=[];
+						for(var iteratorOjectReq=0;iteratorOjectReq<listCustomRequisitionObjects.length;iteratorOjectReq++)
 						{
-							orchestrationsADX2Push.push(
-							{ 
-								ctxObjectRef: "adx"+iteratorADX,
-								name: "adx"+iteratorADX,
-								domain: mediatorConfig.config.dhis2Server.url,
-								path:mediatorConfig.config.dhis2Server.apiPath+"/dataValueSets?dataElementIdScheme=UID&orgUnitIdScheme=UID",
-								params: "",
-								body:listPayLoadToPushToDHIS2[iteratorADX],
-								method: "POST",
-								headers: {'Content-Type': 'application/adx+xml','Authorization': basicClientToken}
-							});
+							if(!listCategoryOptionsToResolve.includes(listCustomRequisitionObjects[iteratorOjectReq].product))
+							{
+								listCategoryOptionsToResolve.push(listCustomRequisitionObjects[iteratorOjectReq].product);
+							}
+							if(!listCategoryOptionsToResolve.includes(listCustomRequisitionObjects[iteratorOjectReq].program))
+							{
+								listCategoryOptionsToResolve.push(listCustomRequisitionObjects[iteratorOjectReq].program);
+							}
+							if(!listCategoryOptionsToResolve.includes(listCustomRequisitionObjects[iteratorOjectReq].dispensingUnit))
+							{
+								listCategoryOptionsToResolve.push(listCustomRequisitionObjects[iteratorOjectReq].dispensingUnit);
+							}
 						}
-						var asyncAdx2Push = require('async');
-						var ctxObject2Update = []; 
-						var orchestrationsResultsADX=[];
-						var counterPush=1;
-						asyncAdx2Push.each(orchestrationsADX2Push, function(orchestrationADX, callbackADX) {
-							var orchUrl = orchestrationADX.domain + orchestrationADX.path + orchestrationADX.params;
-							var options={
-								headers:orchestrationADX.headers
-								};
-							var adx2Push=orchestrationADX.body;
-							//console.log(orchUrl);
-							needle.post(orchUrl,adx2Push,options, function(err, resp) {
-								// if error occured
+						
+						var pathQueryCategoryOptions="";
+						/*
+						for(var iteratorOption=0;iteratorOption< listCategoryOptionsToResolve.length;iteratorOption++)
+						{
+							if(iteratorOption==0)
+							{
+								pathQueryCategoryOptions=pathQueryCategoryOptions+listCategoryOptionsToResolve[iteratorOption];
+							}
+							else
+							{
+								pathQueryCategoryOptions=pathQueryCategoryOptions+","+listCategoryOptionsToResolve[iteratorOption];
 								
-								if ( err ){
-									winston.error("Needle: error when pushing product data to dhis2");
-									callbackADX(err);
-								}
-								//console.log(resp);
-								console.log("********************************************************");
-								winston.info(counterPush+"/"+orchestrationsADX2Push.length);
-								winston.info("...Inserting "+orchestrationADX.path);
-								orchestrationsResultsADX.push({
-								name: orchestrationADX,
-								request: {
-								  path : orchestrationADX.path,
-								  headers: orchestrationADX.headers,
-								  querystring: orchestrationADX.params,
-								  body: orchestrationADX.body,
-								  method: orchestrationADX.method,
-								  timestamp: new Date().getTime()
-								},
-								response: {
-								  status: resp.statusCode,
-								  //body: JSON.stringify(resp.body.toString('utf8'), null, 4),
-								  body: resp.body,
-								  timestamp: new Date().getTime()
-								}
-								});
-								//console.log(resp.body);
-								// add orchestration response to context object and return callback
-								ctxObject2Update[orchestrationsADX2Push.ctxObjectRef] = resp.body;
-								counterPush++;
-								callbackADX();
+							}
+						}*/
+						
+						//console.log();
+						var orchestrationCategories=[];
+						for(var iteratorOption=0;iteratorOption< listCategoryOptionsToResolve.length;iteratorOption++)
+						{
+							orchestrationCategories.push(
+							{ 
+								ctxObjectRef: "categoryOptions_"+listCategoryOptionsToResolve[iteratorOption],
+								name: "categoryOptions_"+listCategoryOptionsToResolve[iteratorOption], 
+								domain: mediatorConfig.config.dhis2Server.url,
+								path:mediatorConfig.config.dhis2Server.apiPath+"/categoryOptions.json?fields=id,code&filter=code:eq:"+listCategoryOptionsToResolve[iteratorOption],
+								params: "",
+								body:  "",
+								method: "GET",
+								headers: {'Content-Type': 'application/json','Authorization': basicClientToken}
 							});
-						},function(err)
-						{
+						}//end for iteratorOption
+						
+						/*
+						orchestrationCategories.push(
+						{ 
+							ctxObjectRef: "categoryOptions",
+							name: "categoryOptions", 
+							domain: mediatorConfig.config.dhis2Server.url,
+							path:mediatorConfig.config.dhis2Server.apiPath+"/categoryOptions.json?fields=id,code&filter=code:in:["+pathQueryCategoryOptions+"]&paging=false",
+							params: "",
+							body:  "",
+							method: "GET",
+							headers: {'Content-Type': 'application/json','Authorization': basicClientToken}
+						});*/
+						var asyncCategory = require('async');
+						var ctxObject2Get = []; 
+						var orchestrationsResultsCategory=[];
+						//var counterPush=1;
+						asyncCategory.each(orchestrationCategories, function(orchestration, callback) {
+						var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
+						console.log(orchUrl);
+						var options={headers:orchestration.headers};
+						var urlRequest=orchUrl;
+						var args = "-X "+orchestration.method+" -H 'Content-Type: application/json' -u gbisama:Gbm\!2000 -g '"+urlRequest+"'";
+						var exec = require('child_process').exec;
+						exec('curl ' + args, function (error, stdout, stderr) {
+							if (error !== null) {
+								console.log('exec error: ' + error);
+								callback(error);
+							  }
+							console.log(orchestration.name+" resolved");
 							
-								if(err)
-								{
-									winston.error(err);
-								}
-								winston.info("Creation of requisition => pushed quantities in dhis2!")
-								//console.log(orchestrationsResultsADX[0]);
-								//return;
-								var urn = mediatorConfig.urn;
-								var status = 'Successful';
-								var response = {
-								  status: 200,
-								  headers: {
-									'content-type': 'application/json'
-								  },
-								  body:JSON.stringify( {'OperationResult':'Requisitions synched successfully into dhis2'}),
-								  timestamp: new Date().getTime()
-								};
-								var orchestrationToReturn=[
-								{
-									name: "requisition2dhis2",
-									request: {
-									  path :"/requisition2dhis2",
-									  headers: {'Content-Type': 'application/json'},
-									  querystring: "",
-									  body:JSON.stringify( {'Process sync':'succeded'}),
-									  method: "GET",
-									  timestamp: new Date().getTime()
-									},
-									response: {
-									  status: 200,
-									  body:JSON.stringify({'OperationResult':'Performed successfully'}),
-									  timestamp: new Date().getTime()
-									}
-								}
-								];
-								var properties = {};
-								properties['Number requisition pushed'] =orchestrationsADX2Push.length;
-								var returnObject = {
-								  "x-mediator-urn": urn,
-								  "status": status,
-								  "response": response,
-								  "orchestrations": orchestrationToReturn,
-								  "properties": properties
-								}
-								winston.info("End of Hapi=>DHIS2 requisition orchestration");
-								res.set('Content-Type', 'application/json+openhim');
-								res.send(returnObject);
-						})//end of asyncAdx2Push
-						
-						
-					}
-					else
-					{
-						winston.warn("No categoryOptions correspondance found ");
-						var urn = mediatorConfig.urn;
-						var status = 'Successful';
-						var response = {
-						  status: 200,
-						  headers: {
-							'content-type': 'application/json'
-						  },
-						  body:JSON.stringify( {'OperationResult':'No categoryOptions correspondance found'}),
-						  timestamp: new Date().getTime()
-						};
-						var properties = {};
-						properties['Numner requisition pushed'] =0;
-						var orchestrationToReturn=[
-						{
-							name: "requisition2dhis2",
+							orchestrationsResultsCategory.push({
+							name: orchestration.name,
 							request: {
-							  path :"/requisition2dhis2",
-							  headers: {'Content-Type': 'application/json'},
-							  querystring: "",
-							  body:JSON.stringify( {'Process sync':'succeded'}),
-							  method: "GET",
+							  path : orchestration.path,
+							  headers: orchestration.headers,
+							  querystring: orchestration.params,
+							  body: "",
+							  method: orchestration.method,
 							  timestamp: new Date().getTime()
 							},
 							response: {
 							  status: 200,
-							  body:JSON.stringify({'OperationResult':'Not performed'}),
+							  //body: JSON.stringify(stdout, null, 4),
+							  body: stdout,
 							  timestamp: new Date().getTime()
 							}
+							});
+							// add orchestration response to context object and return callback
+							ctxObject2Get[orchestration.ctxObjectRef] = stdout;
+							callback();
+							
+						});//end of exec
+						
+						/*
+						needle.get(orchUrl,options, function(err, resp) {
+							if ( err ){
+								winston.error(err);
+							}
+							orchestrationsResultsCategory.push({
+							name: orchestration.name,
+							request: {
+							  path : orchestration.path,
+							  headers: orchestration.headers,
+							  querystring: orchestration.params,
+							  body: "",
+							  method: orchestration.method,
+							  timestamp: new Date().getTime()
+							},
+							response: {
+							  status: resp.statusCode,
+							  body: resp.body,
+							  timestamp: new Date().getTime()
+							}
+							});
+							// add orchestration response to context object and return callback
+							ctxObject2Get[orchestration.ctxObjectRef] = resp.body;
+							callback();
+						});*/
+						//end of needle orchUrl
+					},function(err)
+					{
+				
+						if(err)
+						{
+							winston.error(err);
 						}
-						];
-						var returnObject = {
-						  "x-mediator-urn": urn,
-						  "status": status,
-						  "response": response,
-						  "orchestrations": orchestrationToReturn,
-						  "properties": properties
+						winston.info("CategoryOptions resolve");
+						//console.log(ctxObject2Get.categoryOptions);
+						var listCategorieOptions=[];
+						for(var iteratorOrchResult=0;iteratorOrchResult<orchestrationsResultsCategory.length;iteratorOrchResult++ )
+						{
+							//console.log(JSON.parse(orchestrationsResultsCategory[iteratorOrchResult].response.body).categoryOptions[0]);
+							listCategorieOptions.push(JSON.parse(orchestrationsResultsCategory[iteratorOrchResult].response.body).categoryOptions[0]);
 						}
-						winston.info("End of Hapi=>DHIS2 requisitions orchestration");
-						res.set('Content-Type', 'application/json+openhim');
-						res.send(returnObject);
+						//ctxObject2Get.categoryOptions.categoryOptions;
+						//console.log(listCategorieOptions);
+						//return;
+						if(listCategorieOptions.length>0)
+						{
+							//Now build adx request
+							var listPayLoadToPushToDHIS2=[];
+							for(var iteratorReqObject=0;iteratorReqObject<listCustomRequisitionObjects.length;iteratorReqObject++)
+							{
+								//get Program Id
+								var oRequisition=listCustomRequisitionObjects[iteratorReqObject];
+								var programId=customLibrairy.getResourceCategoryIdFromCode(oRequisition.program,listCategorieOptions);
+								var productId=customLibrairy.getResourceCategoryIdFromCode(oRequisition.product,listCategorieOptions);
+								var dispensingUnitId=customLibrairy.getResourceCategoryIdFromCode(oRequisition.dispensingUnit,listCategorieOptions);
+								//new build the ADX associated;
+								var adxRequisitionPayload=customLibrairy.buildADXPayloadFromRequisition(oRequisition,productId,programId,dispensingUnitId,
+								mediatorConfig);
+								//console.log(adxRequisitionPayload);
+								//return;
+								listPayLoadToPushToDHIS2.push(adxRequisitionPayload);
+							}
+							
+							//console.log(listPayLoadToPushToDHIS2);
+							//return;
+							var orchestrationsADX2Push=[];
+							for(var iteratorADX=0;iteratorADX<listPayLoadToPushToDHIS2.length;iteratorADX++)
+							{
+								orchestrationsADX2Push.push(
+								{ 
+									ctxObjectRef: "adx"+iteratorADX,
+									name: "adx"+iteratorADX,
+									domain: mediatorConfig.config.dhis2Server.url,
+									path:mediatorConfig.config.dhis2Server.apiPath+"/dataValueSets?dataElementIdScheme=UID&orgUnitIdScheme=UID",
+									params: "",
+									body:listPayLoadToPushToDHIS2[iteratorADX],
+									method: "POST",
+									headers: {'Content-Type': 'application/adx+xml','Authorization': basicClientToken}
+								});
+							}
+							var asyncAdx2Push = require('async');
+							var ctxObject2Update = []; 
+							var orchestrationsResultsADX=[];
+							var counterPush=1;
+							asyncAdx2Push.each(orchestrationsADX2Push, function(orchestrationADX, callbackADX) {
+								var orchUrl = orchestrationADX.domain + orchestrationADX.path + orchestrationADX.params;
+								var options={
+									headers:orchestrationADX.headers
+									};
+								var adx2Push=orchestrationADX.body;
+								//console.log(orchUrl);
+								needle.post(orchUrl,adx2Push,options, function(err, resp) {
+									// if error occured
+									
+									if ( err ){
+										winston.error("Needle: error when pushing product data to dhis2");
+										callbackADX(err);
+									}
+									//console.log(resp);
+									console.log("********************************************************");
+									winston.info(counterPush+"/"+orchestrationsADX2Push.length);
+									winston.info("...Inserting "+orchestrationADX.path);
+									orchestrationsResultsADX.push({
+									name: orchestrationADX,
+									request: {
+									  path : orchestrationADX.path,
+									  headers: orchestrationADX.headers,
+									  querystring: orchestrationADX.params,
+									  body: orchestrationADX.body,
+									  method: orchestrationADX.method,
+									  timestamp: new Date().getTime()
+									},
+									response: {
+									  status: resp.statusCode,
+									  //body: JSON.stringify(resp.body.toString('utf8'), null, 4),
+									  body: resp.body,
+									  timestamp: new Date().getTime()
+									}
+									});
+									//console.log(resp.body);
+									// add orchestration response to context object and return callback
+									ctxObject2Update[orchestrationsADX2Push.ctxObjectRef] = resp.body;
+									counterPush++;
+									callbackADX();
+								});
+							},function(err)
+							{
+								
+									if(err)
+									{
+										winston.error(err);
+									}
+									winston.info("Creation of requisition => pushed quantities in dhis2!")
+									//console.log(orchestrationsResultsADX[0]);
+									//return;
+									var urn = mediatorConfig.urn;
+									var status = 'Successful';
+									var response = {
+									  status: 200,
+									  headers: {
+										'content-type': 'application/json'
+									  },
+									  body:JSON.stringify( {'OperationResult':'Requisitions synched successfully into dhis2'}),
+									  timestamp: new Date().getTime()
+									};
+									var orchestrationToReturn=[
+									{
+										name: "requisition2dhis2",
+										request: {
+										  path :"/requisition2dhis2",
+										  headers: {'Content-Type': 'application/json'},
+										  querystring: "",
+										  body:JSON.stringify( {'Process sync':'succeded'}),
+										  method: "GET",
+										  timestamp: new Date().getTime()
+										},
+										response: {
+										  status: 200,
+										  body:JSON.stringify({'OperationResult':'Performed successfully'}),
+										  timestamp: new Date().getTime()
+										}
+									}
+									];
+									var properties = {};
+									properties['Number requisition pushed'] =orchestrationsADX2Push.length;
+									var returnObject = {
+									  "x-mediator-urn": urn,
+									  "status": status,
+									  "response": response,
+									  "orchestrations": orchestrationToReturn,
+									  "properties": properties
+									}
+									winston.info("End of Hapi=>DHIS2 requisition orchestration");
+									//Now save synched to dhis2 requisitions
+									customLibrairy.saveAllSynchedRequisitions2dhisPeriod(mediatorConfig.config.periodStartDate,
+										mediatorConfig.config.periodEndDate,listRequisitionsBySetProgram,function(resSync)
+									{
+										if(resSync)
+										{
+											winston.info("Requisitons pushed  logged with success");
+										}
+										else
+										{
+											winston.warn("Requisitons pushed not logged with success");
+										}
+										
+									});
+									res.set('Content-Type', 'application/json+openhim');
+									res.send(returnObject);
+							})//end of asyncAdx2Push
 						}
-					
-				});//end asyncCategory
-					
-					
-					
-					
-					
+						else
+						{
+							winston.warn("No categoryOptions correspondance found ");
+							var urn = mediatorConfig.urn;
+							var status = 'Successful';
+							var response = {
+							  status: 200,
+							  headers: {
+								'content-type': 'application/json'
+							  },
+							  body:JSON.stringify( {'OperationResult':'No categoryOptions correspondance found'}),
+							  timestamp: new Date().getTime()
+							};
+							var properties = {};
+							properties['Numner requisition pushed'] =0;
+							var orchestrationToReturn=[
+							{
+								name: "requisition2dhis2",
+								request: {
+								  path :"/requisition2dhis2",
+								  headers: {'Content-Type': 'application/json'},
+								  querystring: "",
+								  body:JSON.stringify( {'Process sync':'succeded'}),
+								  method: "GET",
+								  timestamp: new Date().getTime()
+								},
+								response: {
+								  status: 200,
+								  body:JSON.stringify({'OperationResult':'Not performed'}),
+								  timestamp: new Date().getTime()
+								}
+							}
+							];
+							var returnObject = {
+							  "x-mediator-urn": urn,
+							  "status": status,
+							  "response": response,
+							  "orchestrations": orchestrationToReturn,
+							  "properties": properties
+							}
+							winston.info("End of Hapi=>DHIS2 requisitions orchestration");
+							res.set('Content-Type', 'application/json+openhim');
+							res.send(returnObject);
+							}
+						
+					});//end asyncCategory
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						//return;
+						//return;
+					})//end of getAllProductsCurl
 					
 					
 					
 					
 					//return;
-					//return;
-				})//end of getAllProductsCurl
-				
-				
-				
+					
+				}//end if listRequisitionsBySetProgram>>0
+				else
+				{
+					//send to the consol the notification for no requisition to process
+					winston.warn("No requisition information to push in dhis2 for these programs:"+mediatorConfig.config.programsToSync);
+					var urn = mediatorConfig.urn;
+					var status = 'Successful';
+					var response = {
+					  status: 200,
+					  headers: {
+						'content-type': 'application/json'
+					  },
+					  body:JSON.stringify( {'OperationResult':'No requisition information to push in dhis2'}),
+					  timestamp: new Date().getTime()
+					};
+					var properties = {};
+					properties['Number of requisition pushed'] =0;
+					var orchestrationToReturn=[
+					{
+						name: "requisitionHapi2Dhis2Sync",
+						request: {
+						  path :"/dhis/api",
+						  headers: {'Content-Type': 'application/json'},
+						  querystring: "",
+						  body:JSON.stringify( {'Process sync':'succeded'}),
+						  method: "POST",
+						  timestamp: new Date().getTime()
+						},
+						response: {
+						  status: 200,
+						  body:JSON.stringify({'OperationResult':'Not performed'}),
+						  timestamp: new Date().getTime()
+						}
+					}
+					];
+					var returnObject = {
+					  "x-mediator-urn": urn,
+					  "status": status,
+					  "response": response,
+					  "orchestrations": orchestrationToReturn,
+					  "properties": properties
+					}
+					winston.info("End of Hapi=>DHIS2 dispensingunit orchestration");
+					res.set('Content-Type', 'application/json+openhim');
+					res.send(returnObject);
+					
+				}//end else. No requisition to process
 				
 				//return;
-				
-			}//end if listRequisitionsBySetProgram>>0
-			else
-			{
-				//send to the consol the notification for no requisition to process
-				winston.warn("No requisition information to push in dhis2");
-				var urn = mediatorConfig.urn;
-				var status = 'Successful';
-				var response = {
-				  status: 200,
-				  headers: {
-					'content-type': 'application/json'
-				  },
-				  body:JSON.stringify( {'OperationResult':'No requisition information to push in dhis2'}),
-				  timestamp: new Date().getTime()
-				};
-				var properties = {};
-				properties['Number of requisition pushed'] =0;
-				var orchestrationToReturn=[
-				{
-					name: "requisitionHapi2Dhis2Sync",
-					request: {
-					  path :"/dhis/api",
-					  headers: {'Content-Type': 'application/json'},
-					  querystring: "",
-					  body:JSON.stringify( {'Process sync':'succeded'}),
-					  method: "POST",
-					  timestamp: new Date().getTime()
-					},
-					response: {
-					  status: 200,
-					  body:JSON.stringify({'OperationResult':'Not performed'}),
-					  timestamp: new Date().getTime()
-					}
-				}
-				];
-				var returnObject = {
-				  "x-mediator-urn": urn,
-				  "status": status,
-				  "response": response,
-				  "orchestrations": orchestrationToReturn,
-				  "properties": properties
-				}
-				winston.info("End of Hapi=>DHIS2 dispensingunit orchestration");
-				res.set('Content-Type', 'application/json+openhim');
-				res.send(returnObject);
-				
-			}//end else. No requisition to process
+			})//end getAllRequisitions
+	
 			
-			//return;
-		})//end getAllRequisitions
+		});//end getAllRequisition2dhisPeriodSynched
+		
 	})//end app.get requisition2dhis2
   return app 
 }
@@ -2814,7 +2906,8 @@ function getAllRequisitionsCurl(bundleParam,globalStoredList,callback)
 	{
 		var startDate=mediatorConfig.config.periodStartDate;
 		var endDate=mediatorConfig.config.periodEndDate;
-		var filter="code=requisition&_format=json&_count="+mediatorConfig.config.resourceCountFhir+"&created=>="+startDate+"&created=<="+endDate;
+		//var filter="code=requisition&_format=json&_count="+mediatorConfig.config.resourceCountFhir+"&created=>="+startDate+"&created=<="+endDate;
+		var filter="code=requisition&_format=json&_count=20" +"&created=>="+startDate+"&created=<="+endDate;
 		urlRequest="'"+`${mediatorConfig.config.hapiServer.url}/fhir/Basic?${filter}`+"'";
 	}
 	else
@@ -2888,9 +2981,11 @@ function getAllRequisitionsCurl(bundleParam,globalStoredList,callback)
 						//GetOrgUnitId(myArr.link[iterator].url,listAssociatedDataRow,listAssociatedResource,callback);
 					}
 				}
-				if(hasNextPageBundle==true)
+				if(hasNextPageBundle==true && globalStoredList.length<10)
+				//if(hasNextPageBundle==true )
 				//if(false)
 				{
+					winston.warn("Gobal sizee reached =>" +globalStoredList.length);
 					//console.log();
 					//onsole.log("---------------------------------");
 					getAllRequisitionsCurl(nextPageUrl,globalStoredList,callback);
@@ -2902,6 +2997,127 @@ function getAllRequisitionsCurl(bundleParam,globalStoredList,callback)
 				
 			}
 		}//end if responseBundle.entry
+      //callback();
+    });
+}
+function getAllRequisitionsCurlFilterSynched(bundleParam,idSynchedRequisitions,globalStoredList,callback)
+{
+	var urlRequest="";
+	var _idSynchedRequisitions=idSynchedRequisitions;
+	//console.log("Already synched requisition");
+	//console.log(_idSynchedRequisitions);
+	if(bundleParam=="")
+	{
+		var startDate=mediatorConfig.config.periodStartDate;
+		var endDate=mediatorConfig.config.periodEndDate;
+		//var filter="code=requisition&_format=json&_count="+mediatorConfig.config.resourceCountFhir+"&created=>="+startDate+"&created=<="+endDate;
+		var filter="code=requisition&_format=json&_count=20" +"&created=>="+startDate+"&created=<="+endDate;
+		urlRequest="'"+`${mediatorConfig.config.hapiServer.url}/fhir/Basic?${filter}`+"'";
+	}
+	else
+	{
+		urlRequest="'"+`${bundleParam}`+"'";
+		winston.info("Looping througth bundle response to construct requisitions list!");
+	}
+	console.log(urlRequest);
+	var args = "-X GET  -H 'Content-Type: application/fhir+json' "+urlRequest;
+	var exec = require('child_process').exec;
+	exec('curl ' + args, function (error, stdout, stderr) {
+      //console.log('stdout: ' + stdout);
+      console.log('stderr: ' + stderr);
+      if (error !== null) {
+        console.log('exec error: ' + error);
+        callback(error);
+      }
+      var responseBundle=JSON.parse(stdout);
+		if(responseBundle.entry!=null)
+		{
+			var resourceIndexToRetain=[];
+			var listProgramToProcess=mediatorConfig.config.programsToSync.split(",");
+			for(var iterator=0;iterator<responseBundle.entry.length;iterator++)
+			{
+				//remove first the requisitions already synched
+				if(_idSynchedRequisitions.includes(responseBundle.entry[iterator].resource.id))
+				{
+					continue;
+				}
+				var checkProgramRequisition=customLibrairy.checkIfProgramRequisition(listProgramToProcess,responseBundle.entry[iterator].resource);
+				if(!checkProgramRequisition)
+				{
+					continue;
+				}
+				//remove requisition not concerned by the programs set in configuration
+				
+				//if(esponseBundle.entry[iterator].resource)
+				//check if the ressource is already in the globalStoredList
+				//console.log("Resource returned :"+responseBundle.entry[iterator].resource.id);
+				var itemFound=false;
+				for(var itStoreList=0; itStoreList<globalStoredList.length;itStoreList++)
+				{
+					//console.log(`Compare ${globalStoredList[itStoreList].id} == ${responseBundle.entry[iterator].resource.id}`)
+					if(globalStoredList[itStoreList].id==responseBundle.entry[iterator].resource.id)
+					{
+						
+						itemFound=true;
+						break;
+					}
+				}
+				//console.log("res :"+itemFound);
+				//console.log("******************************************");
+				if(!itemFound)
+				{
+					resourceIndexToRetain.push(iterator);
+					//itemFound=false;
+				}
+				
+			}//end for iterator responseBundle
+			//Now getall resources retained
+			for(var iteratorResource=0;iteratorResource<resourceIndexToRetain.length;iteratorResource++)
+			{
+				
+				var indexToAdd=resourceIndexToRetain[iteratorResource];
+				//console.log("id resource retained:"+responseBundle.entry[indexToAdd].resource.id);
+				globalStoredList.push(responseBundle.entry[indexToAdd].resource);
+			}
+			//globalStoredList.push();
+			
+			if(responseBundle.link.length>0)
+			{
+				//console.log("responsebundle size: "+responseBundle.link.length);
+				var hasNextPageBundle=false;
+				var iterator=0;
+				var nextPageUrl="";
+				for(;iterator <responseBundle.link.length;iterator++)
+				{
+					if(responseBundle.link[iterator].relation=="next")
+					{
+						
+						hasNextPageBundle=true;
+						nextPageUrl=responseBundle.link[iterator].url;
+						break;
+						//GetOrgUnitId(myArr.link[iterator].url,listAssociatedDataRow,listAssociatedResource,callback);
+					}
+				}
+				if(hasNextPageBundle==true && globalStoredList.length<10)
+				//if(hasNextPageBundle==true )
+				//if(false)
+				{
+					winston.warn("Gobal sizee reached =>" +globalStoredList.length);
+					//console.log();
+					//onsole.log("---------------------------------");
+					getAllRequisitionsCurlFilterSynched(nextPageUrl,_idSynchedRequisitions,globalStoredList,callback);
+				}
+				else
+				{
+					 return callback(globalStoredList);
+				}
+				
+			}
+		}//end if responseBundle.entry
+		else
+		{
+			return callback(globalStoredList);
+		}
       //callback();
     });
 }

@@ -39,6 +39,7 @@ exports.getResourceCategoryIdFromCode=function(resourceCode,listResolvedCategory
 var getDispensingUnitFromProduct=function(productCode,ListProductFhir)
 {
 	var dispensingUnit="";
+	var found=false;
 	for(var iteratorReq=0;iteratorReq<ListProductFhir.length;iteratorReq++)
 	{
 		if(ListProductFhir[iteratorReq].id!=productCode)
@@ -68,6 +69,46 @@ var getDispensingUnitFromProduct=function(productCode,ListProductFhir)
 	}
 	
 	return dispensingUnit;
+}
+exports.getAllDispensingUnitFromProduct=function(ListProductFhir)
+{
+	var listDispensingUnits=[];
+	var found=false;
+	for(var iteratorReq=0;iteratorReq<ListProductFhir.length;iteratorReq++)
+	{
+		/*
+		if(ListProductFhir[iteratorReq].id!=productCode)
+		{
+			continue;
+		}*/
+		found=false;
+		for(var iteratorExt=0;iteratorExt<ListProductFhir[iteratorReq].extension.length;iteratorExt++)
+		{
+			for(var iteratorExtDetails=0;iteratorExtDetails<ListProductFhir[iteratorReq].extension[iteratorExt].extension.length;iteratorExtDetails++)
+			{
+				if(ListProductFhir[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].url=="dispensingUnit")
+				{
+					var currentDispensingUnit=ListProductFhir[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueString;
+					if(!listDispensingUnits.includes(currentDispensingUnit))
+					{
+						listDispensingUnits.push(ListProductFhir[iteratorReq].extension[iteratorExt].extension[iteratorExtDetails].valueString);
+					}
+					//found=true;
+					break;
+				}
+			}
+			if(found)
+			{
+				break;
+			}
+		}
+		if(found)
+		{
+			continue;
+		}
+	}
+	
+	return listDispensingUnits;
 }
 //Build ADX xml file from requisitionObject
 exports.buildADXPayloadFromRequisition=function(requisitionObject,productId,programId,dispensingUnitId,mediatorConfig)
@@ -324,6 +365,38 @@ exports.getRequisitionByProgram=function(programId,listRequisitions)
 	}
 	return listRequisitionsFound;
 }
+exports.checkIfProgramRequisition=function(listProgramIds,requisition)
+{
+	var isProgramRequisition=false
+	//console.log("Level 1:"+listRequisitions[iteratorReq].extension.length);
+		for(var iteratorExt=0;iteratorExt<requisition.extension.length;iteratorExt++)
+		{
+			//console.log(`Level :${iteratorExt}`);
+			//console.log(listRequisitions[iteratorReq].extension[iteratorExt].extension);
+			//console.log("---------------------------------------------------");
+			for(var iteratorExtDetails=0;iteratorExtDetails<requisition.extension[iteratorExt].extension.length;iteratorExtDetails++)
+			{
+				if(requisition.extension[iteratorExt].extension[iteratorExtDetails].url=="program")
+				{
+					//Now check int the program matches the program id
+					var valueReference=requisition.extension[iteratorExt].extension[iteratorExtDetails].valueReference.reference;
+					
+					var _programId=valueReference.split("/")[1];
+					//console.log("found requisition program :"+valueReference);
+					if(listProgramIds.includes(_programId))
+					{
+						isProgramRequisition=true;
+						break;
+					}
+					else
+					{
+						continue;
+					}
+				}
+			}
+		}
+	return isProgramRequisition;
+}
 
 exports.getProgramName=function(ProgramFhir)
 {
@@ -437,8 +510,14 @@ var requisitionSyncSchema=Schema({
 	code:String, //by default 1
 	lastDateSynched:Date
 });
+var requisition2dhisSyncLogSchema=Schema({
+	reqid:String, //by default 1
+	minperiodstartdate:Date,
+	maxperiodstartdate:Date
+});
 var synchedOrganizationDefinition=mongoose.model('synchedOrganization',organizationSchema);
 var synchedRequisitionDefinition=mongoose.model('synchedRequisition',requisitionSyncSchema);
+var requisition2dhisSyncLogDefinition=mongoose.model('requisition2dhisSyncLog',requisition2dhisSyncLogSchema);//keep log of synched requisition new API
 //return the list of organization which requisition has been already synched
 var getAllSynchedOrganization=function (callback)
 {
@@ -498,7 +577,42 @@ var upsertSynchedOrganization=function(synchedOrganization,callback)
 				}
 			})//end of exec
 }
-
+var upsertSynchedRequisition2dhisPeriod=function(minStartDate,maxStartDate,synchedRequisitionId,callback)
+{
+	requisition2dhisSyncLogDefinition.findOne({
+			reqid:synchedRequisitionId,
+			}).exec(function(error,foundSynchedRequisition){
+				if(error) {
+					console.log(error);
+					callback(false)
+				}
+				else
+				{
+					if(!foundSynchedRequisition)
+					{
+						
+						var reqToUpdate= new requisition2dhisSyncLogDefinition({reqid:synchedRequisitionId,
+							minperiodstartdate:minStartDate,maxperiodstartdate:maxStartDate});
+						
+						var requestResult=reqToUpdate.save(function(err,result){
+							if(err)
+							{
+								console.log(err);
+								callback(false);
+							}
+							else
+							{
+								callback(true);
+							}
+						});
+					}
+					else
+					{
+						console.log("Requisition already logged!");
+					}
+				}
+			})//end of exec
+}
 var saveAllSynchedOrganizations=function (synchedOrganizationList,callBackReturn)
 {
 	const async = require("async"); 
@@ -537,5 +651,79 @@ var saveAllSynchedOrganizations=function (synchedOrganizationList,callBackReturn
 		
 	});//end of asynch
 }
+var saveAllSynchedRequisitions2dhisPeriod=function (minStartDate,maxStartDate,synchedRequisitionList,callBackReturn)
+{
+	const async = require("async"); 
+	var result=false;
+	var _minStartDate=new Date(minStartDate);
+	var _maxStartDate= new Date(maxStartDate);
+	//console.log(`requestString => ${_minStartDate} : ${_maxStartDate}`);
+	async.each(synchedRequisitionList,function(synchedRequisition,callback)
+	{
+		upsertSynchedRequisition2dhisPeriod(_minStartDate,_maxStartDate,synchedRequisition.id,function(response)
+		{
+			result=response;
+			if(response)
+			{
+				console.log(synchedRequisition.id +"inserted with success.");
+			}
+			else
+			{
+				console.log(synchedRequisition.id +"failed to be inserted!");
+			}
+			callback(response);
+		})
+	},function(err)
+	{
+		if(err)
+		{
+			console.log(err);
+			callBackReturn(false);
+		}
+		if(result)
+		{
+			callBackReturn(true);
+		}
+		else
+		{
+			callBackReturn(false);
+		}
+		
+	});//end of asynch
+}
+var getAllRequisition2dhisPeriodSynched=function(minStartDate,maxStartDate,callback)
+{
+	var _minStartDate=new Date(minStartDate);
+	var _maxStartDate=new Date(maxStartDate);
+	if(maxStartDate!="")
+	{
+		var requestResult=requisition2dhisSyncLogDefinition.find({"minperiodstartdate":{$gte:_minStartDate,$lte:_maxStartDate}},{_id:0,minperiodstartdate:0,maxperiodstartdate:0}).exec(function(error,synchedRequisitionsList){
+		if(error) return handleError(err);
+		//return callback(synchedMaxperiod.maxperiodstartdate);
+		//return callback(synchedRequisitionsList);
+		var async = require('async');
+		var arrayList=[];
+		async.each(synchedRequisitionsList, function(synchedRequisition, callbackAsync) {
+			arrayList.push(synchedRequisition);
+			callbackAsync();
+		},function(err)
+		{
+			return callback(arrayList);
+			
+			});//end asynch
+		});
+	}
+	else
+	{
+		var requestResult=requisition2dhisSyncLogDefinition.find({"minperiodstartdate":{$gte:_minStartDate}},{"_id":0}).exec(function(error,synchedRequisitionsList){
+		if(error) return handleError(err);
+		//return callback(synchedMaxperiod.maxperiodstartdate);
+		return callback(synchedRequisitionsList);
+		});
+	}
+	
+}
 exports.getAllSynchedOrganization=getAllSynchedOrganization;
 exports.saveAllSynchedOrganizations=saveAllSynchedOrganizations;
+exports.getAllRequisition2dhisPeriodSynched=getAllRequisition2dhisPeriodSynched;
+exports.saveAllSynchedRequisitions2dhisPeriod=saveAllSynchedRequisitions2dhisPeriod;
