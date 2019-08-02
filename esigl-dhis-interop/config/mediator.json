@@ -5,7 +5,7 @@
   "description": "Pull DHIS2 and eSIGL resources, convert them to Fhir Related resources and push in HAPI",
   "defaultChannelConfig": [
     {
-      "name": "Get DHIS2 orgUnits and push them to FHIR Server",
+      "name": "Sync DHIS2 orgUnits to FHIR Server",
       "urlPattern": "^/syncorgunit2fhir/$",
       "alerts": [],
       "txRerunAcl": [],
@@ -17,7 +17,7 @@
       "timeout":"600000",
       "routes": [
         {
-          "name": "Get DHIS2 orgUnits and push them to FHIR Server",
+          "name": "Sync DHIS2 orgUnits to FHIR Server",
           "host": "localhost",
           "port": "5021",
           "primary": true,
@@ -363,19 +363,19 @@
 		"url":"http://localhost:8083/hapi-fhir-jpaserver"
 		},
 	"esiglServer":{
-		"url":"https://localhost",
+		"url":"https://localhost:9091",
 		"username":"user",
 		"password":"pwd",
 		"resourcespath":"/rest-api"
 		},
-	"mappingFile":"/home/interop/guinea-interop-dhis2-esigl/esigl-dhis-interop/data/mappingstructure-esigl-dhis2_final.csv",
-	"batchSizeRequisitionFacilities":"2",
+	"mappingFile":"/home/exchange-server/guinea-interop-dhis2-esigl/esigl-dhis-interop/data/mappingstructure-esigl-dhis2_final1.csv",
+	"batchSizeRequisitionFacilities":"20",
 	"batchSizeFacilityToSync":"100",
 	"batchSizeeSGLFacilityToSync":"10",
 	"batchSizeRequisitionToProcess":"100",
 	"facilityLevesForRequisitions":"level_4,level_5",
-	"periodStartDate":"2019-04-01",
-	"periodEndDate":"2019-04-30",
+	"periodStartDate":"2019-03-01",
+	"periodEndDate":"2019-03-30",
 	"maxNumberDayRequisitionsToPull":"5",
 	"pgStringConnection":"",
 	"prefixResourceId":"",
