@@ -5,9 +5,9 @@ const moment = require('moment')
     append: true,
     max:5,
     silent: false,    
-    logFile:"/home/exchange-server/forever_syncmoodle_openlmis.log",
-    outFile: "/home/exchange-server/out_syncmoodle_openlmis.log",
-    errFile: "/home/exchange-server/err_syncmoodle_openlmis.log",
+    logFile:"/home/exchange-server/forever_esiglhapi.log",
+    outFile: "/home/exchange-server/out_esiglhapi.log",
+    errFile: "/home/exchange-server/err_esiglhapi.log",
     command: 'node --max_old_space_size=2000',
     args: []
   });
