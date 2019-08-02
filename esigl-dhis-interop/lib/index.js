@@ -2373,10 +2373,10 @@ function setupApp () {
 							//listRequisitionsDetails,listRequisition2Process,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
 							var listRequisitionToPush=customLibrairy.buildRequisitionFhirResourcesNewApiByProducts(requisitionStatusToProcess,mediatorConfig.config.prefixResourceId,listOrganizationToSync,
 							listRequisitionsDetails,listRequisition2Process,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
-							winston.info("Requisitions transformed to Requisition resources done");	
-							console.log(listRequisitionToPush.length);
-							console.log("---------------------------------------");
-							console.log(JSON.stringify(listRequisitionToPush[0]));
+							winston.info("Requisitions transformed to Requisition resources done"+listRequisitionToPush.length);	
+							//console.log(listRequisitionToPush.length);
+							//console.log("---------------------------------------");
+							//console.log(JSON.stringify(listRequisitionToPush[0]));
 							//return;
 							var orchestrationsRequistition2Push=[];
 							for(var iteratorReq=0;iteratorReq<listRequisitionToPush.length;iteratorReq++)
@@ -2501,6 +2501,7 @@ function setupApp () {
 											}
 											
 										});
+										callbackProcessSync();
 									}
 									else if (syncProcess==2)
 									{
@@ -2516,13 +2517,15 @@ function setupApp () {
 												winston.warn("Organization pushed not logged with success");
 											}
 										});
+										callbackProcessSync();
 									}
+									
 								},function(err)
 								{
 									if(err)
 									{
 										winston.erro(err);
-										}
+									}
 									var urn = mediatorConfig.urn;
 									var status = 'Successful';
 									var response = {
