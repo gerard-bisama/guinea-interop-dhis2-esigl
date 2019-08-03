@@ -517,7 +517,7 @@ var requisition2dhisSyncLogSchema=Schema({
 });
 var synchedOrganizationDefinition=mongoose.model('synchedOrganization',organizationSchema);
 var synchedRequisitionDefinition=mongoose.model('synchedRequisition',requisitionSyncSchema);
-var requisition2dhisSyncLogDefinition=mongoose.model('requisition2dhisSyncLog',requisition2dhisSyncLogSchema);//keep log of synched requisition new API
+var requisition2dhisSyncLogDefinition=mongoose.model('requisition2dhisSyncLog',requisition2dhisSyncLogSchema);//keep log of synched requisition to dhis2
 //return the list of organization which requisition has been already synched
 var getAllSynchedOrganization=function (callback)
 {
