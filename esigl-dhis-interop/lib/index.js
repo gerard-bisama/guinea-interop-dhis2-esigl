@@ -2277,26 +2277,28 @@ function setupApp () {
 							globalListRequisitions.push(listRequisitionByFacility[indexGlobal]);
 						}
 					}
-					console.log("Total retained based on Period :"+globalListRequisitions.length);
+					console.log(`Total retained based on Period ${mediatorConfig.config.periodStartDate} - ${mediatorConfig.config.periodEndDate}:${globalListRequisitions.length}`);
 					customLibrairy.getAllRequisitionPeriodSynched(mediatorConfig.config.periodStartDate,mediatorConfig.config.periodEndDate
 					,function(listAlreadySynchedRequisitions)
 					{
 						var listRequisition2Process=[];
-						var batchSize=parseInt(mediatorConfig.config.batchSizeRequisitionToProcess);
+						var batchSizeReq2Process=parseInt(mediatorConfig.config.batchSizeRequisitionToProcess);
+						console.log("Batchsize :"+batchSizeReq2Process);
 						var listProgramToProcess=mediatorConfig.config.programsToSync.split(",");
 						
 						if(listAlreadySynchedRequisitions==null)
 						{
 							listRequisition2Process=customLibrairy.getRequisitionsNotSynched(mediatorConfig.config.prefixResourceId,
-								batchSize,[],globalListRequisitions,listProgramToProcess);
+								batchSizeReq2Process,[],globalListRequisitions,listProgramToProcess);
 						}
 						else
 						{
-							listRequisition2Process=customLibrairy.getRequisitionsNotSynched(mediatorConfig.config.prefixResourceId,batchSize,
+							listRequisition2Process=customLibrairy.getRequisitionsNotSynched(mediatorConfig.config.prefixResourceId,batchSizeReq2Process,
 							listAlreadySynchedRequisitions,globalListRequisitions,listProgramToProcess);
 						}
 						winston.info("Return "+listRequisition2Process.length+" requisition selected from "+mediatorConfig.config.periodStartDate+" to "+mediatorConfig.config.periodEndDate);
 						var orchestrationsDetailReq=[];
+						console.log(JSON.stringify(listRequisition2Process[0]));
 						for(var iteratorReq=0;iteratorReq<listRequisition2Process.length;iteratorReq++)
 						{
 							orchestrationsDetailReq.push(
@@ -2373,7 +2375,7 @@ function setupApp () {
 							//listRequisitionsDetails,listRequisition2Process,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
 							var listRequisitionToPush=customLibrairy.buildRequisitionFhirResourcesNewApiByProducts(requisitionStatusToProcess,mediatorConfig.config.prefixResourceId,listOrganizationToSync,
 							listRequisitionsDetails,listRequisition2Process,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
-							winston.info("Requisitions transformed to Requisition resources done"+listRequisitionToPush.length);	
+							winston.info("Requisitions transformed to Requisition resources done: "+listRequisitionToPush.length);
 							//console.log(listRequisitionToPush.length);
 							//console.log("---------------------------------------");
 							//console.log(JSON.stringify(listRequisitionToPush[0]));
@@ -2438,42 +2440,6 @@ function setupApp () {
 							});//end of exec
 							
 							
-							
-							
-							//winston.info("Simulation activated!!!: "+counterPush);
-							/*
-							needle.put(orchUrl,requisition2Push,{json:true}, function(err, resp) {
-							//needle.get("http://160.119.129.154:8083/hapi-fhir-jpaserver/fhir",requisition2Push,{json:true}, function(err, resp) {
-								// if error occured
-								if ( err ){
-									winston.error("Needle: error when pushing program data to hapi");
-									callbackFhirUpdate(err);
-								}
-								winston.info(counterPush+"/"+orchestrationsRequistition2Push.length);
-								winston.info("...Inserting "+orchestration2FhirUpdate.path);
-								orchestrationsResults2Update.push({
-								name: orchestration2FhirUpdate.name,
-								request: {
-								  path : orchestration2FhirUpdate.path,
-								  headers: orchestration2FhirUpdate.headers,
-								  querystring: orchestration2FhirUpdate.params,
-								  body: orchestration2FhirUpdate.body,
-								  method: orchestration2FhirUpdate.method,
-								  timestamp: new Date().getTime()
-								},
-								response: {
-								  status: resp.statusCode,
-								  body: JSON.stringify(resp.body.toString('utf8'), null, 4),
-								  timestamp: new Date().getTime()
-								}
-								});
-								// add orchestration response to context object and return callback
-								ctxObject2Update[orchestration2FhirUpdate.ctxObjectRef] = resp.body.toString('utf8');
-								
-								callbackFhirUpdate();
-							});//end of needle
-							*/
-							//callbackFhirUpdate();
 							counterPush++;
 							},function(err)
 							{

@@ -674,11 +674,11 @@ exports.buildRequisitionFhirResourcesNewApiByProducts=function buildRequisitionF
 		for(var iteratorProduct=0;iteratorProduct<listRequisitions[iteratorReq].products.length;iteratorProduct++)
 		{
 			var requisitionDetails=[];
-			var newIdRequisition=idRequisition+listRequisitions[iteratorReq].products[iteratorProduct].productCode+listRequisitions[iteratorReq].programCode;
+			var newIdRequisition=idRequisition+"-"+listRequisitions[iteratorReq].products[iteratorProduct].productCode+listRequisitions[iteratorReq].programCode;
 			var identifier=[{
 			use:"official",
 			type:{coding:[{system:identifierCodingSystem,code:"fhirrequisitioncode",display:"fhirrequisitioncode"}],text:"fhirrequisitioncode"},
-			value:idRequisition+listRequisitions[iteratorReq].products[iteratorProduct].productCode+listRequisitions[iteratorReq].programCode
+			value:idRequisition+"-"+listRequisitions[iteratorReq].products[iteratorProduct].productCode+listRequisitions[iteratorReq].programCode
 		},
 		{
 			use:"official",
@@ -1085,7 +1085,7 @@ exports.getRequisitionsNotSynched=function getRequisitionsNotSynched(prefixIdRes
 		for(var iterator=0;iterator<listRequisitions.length;iterator++)
 		{
 			var requisition=listRequisitions[iterator];
-			console.log("ProgramCode: "+requisition.programCode);
+			//console.log("ProgramCode: "+requisition.programCode);
 			if(!listProgramToProcess.includes(requisition.programCode))
 			{
 				continue;
@@ -1095,7 +1095,8 @@ exports.getRequisitionsNotSynched=function getRequisitionsNotSynched(prefixIdRes
 			{
 				//var synchCode=requisition.id;
 				//console.log(`Synched resource selection : ${listSynchedRequisitions[iteratorSync].}==${prefixIdResource+requisition.id}`);
-				if (listSynchedRequisitions[iteratorSync].reqid==prefixIdResource+requisition.id)
+				var synchedRequisitionId=listSynchedRequisitions[iteratorSync].reqid.split("-")[0];
+				if (synchedRequisitionId==prefixIdResource+requisition.id)
 				{
 					found=true;
 					break;
