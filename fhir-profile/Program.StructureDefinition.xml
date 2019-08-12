@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<StructureDefinition xmlns="http://hl7.org/fhir">
+  <id value="Program" />
+  <meta>
+    <versionId value="3" />
+    <lastUpdated value="2019-07-02T19:05:57.302+01:00" />
+  </meta>
+  <url value="http://192.168.1.148:8083/hapi-fhir-jpaserve/fhir/StructureDefinition/Program" />
+  <name value="Program" />
+  <status value="draft" />
+  <fhirVersion value="4.0.0" />
+  <kind value="resource" />
+  <abstract value="false" />
+  <type value="OrganizationAffiliation" />
+  <baseDefinition value="http://hl7.org/fhir/StructureDefinition/OrganizationAffiliation" />
+  <derivation value="constraint" />
+  <differential>
+    <element id="OrganizationAffiliation.extension">
+      <path value="OrganizationAffiliation.extension" />
+      <slicing>
+        <discriminator>
+          <type value="value" />
+          <path value="url" />
+        </discriminator>
+        <rules value="open" />
+      </slicing>
+    </element>
+    <element id="OrganizationAffiliation.extension:programDetails">
+      <path value="OrganizationAffiliation.extension" />
+      <sliceName value="programDetails" />
+      <max value="1" />
+      <type>
+        <code value="Extension" />
+        <profile value="http://192.168.1.148:8083/hapi-fhir-jpaserver/fhir/StructureDefinition/ProgramDetails" />
+      </type>
+    </element>
+  </differential>
+</StructureDefinition>
