@@ -1,6 +1,6 @@
 {
   "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60b41c23c",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "name": "Fhir Resources from HAPI to DHIS2",
   "description": "Pull Fhir resources form HAPI and push them to DHIS2 ",
   "defaultChannelConfig": [
@@ -298,33 +298,33 @@
     "upstreamUrl": "http://sampleApplication:7001",
     "clientPassword":"pwd",
     "dhis2Server":{
-		"url":"http://domain",
-		"username":"user",
+		"url":"http://localhost:8082",
+		"username":"username",
 		"password":"pwd",
 		"apiPath":"/api"
 		},
 	"hapiServer":{
-		"url":"http://ip:port/hapi-fhir-jpaserver"
+		"url":"http://localhost:8083/hapi-fhir-jpaserver"
 		},
-	"productCategoryId":"Bqhkqw8s5rt",
-	"programCategoryId":"RKtSamVHREQ",
+	"productCategoryId":"",
+	"programCategoryId":"",
 	"programProductCategoryId":"",
-	"dispensingUnitCategoryId":"juH0zEJ3vtT",
+	"dispensingUnitCategoryId":"",
 	"resourceCountFhir":"5",
-	"periodStartDate":"2019-04-01",
-	"periodEndDate":"2019-04-30",
+	"periodStartDate":"",
+	"periodEndDate":"",
 	"programsToSync":"SIGL-INTEGRE-PNLP",
-	"datasetId":"lL5mTZHD6lb",
+	"datasetId":"",
 	"DataelementsRequisitionAttributeMapping":{
-		"quantiteUtilisee":"ujytCs3xoDe",
-		"stockInitial":"JEyob0z6TZS",
-		"quantiteRecue":"miIoouEE2kL",
-		"sdu":"qf1BH5SXr3M",
-		"ajustementPositive":"KZmaYz7G06e",
-		"ajustementNegative":"KUOtHOlrXWm",
-		"cmm":"LAQJlCsWz8Z",
-		"nbJoursRupture":"ZMQrpFgq2Q0",
-		"pertes":"ZrhZvXzUP16"
+		"quantiteUtilisee":"",
+		"stockInitial":"",
+		"quantiteRecue":"",
+		"sdu":"",
+		"ajustementPositive":"",
+		"ajustementNegative":"",
+		"cmm":"",
+		"nbJoursRupture":"",
+		"pertes":""
 		
 	}
 	

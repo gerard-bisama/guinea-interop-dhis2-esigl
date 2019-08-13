@@ -50,7 +50,7 @@ function setupApp () {
 		});
 		//console.log("Entered ....!");
 		console.log("Start hapi=>dhis2 products sync...!");
-		const basicClientToken = `Basic ${btoa(mediatorConfig.config.dhis2Server.username+':'+mediatorConfig.config.dhis2Server.password)}`;
+		const basicClientToken = `Basic ${btoa( config.dhis2Server.username+':'+ config.dhis2Server.password)}`;
 		//Get Product list from hapi
 		var globalStoredList=[];
 		//getAllProducts("",globalStoredList,function(productLists)
@@ -80,8 +80,8 @@ function setupApp () {
 					{ 
 					ctxObjectRef: codeProduct,
 					name: codeProduct, 
-					domain: mediatorConfig.config.dhis2Server.url,
-					path:mediatorConfig.config.dhis2Server.apiPath+"/categoryOptions",
+					domain:  config.dhis2Server.url,
+					path: config.dhis2Server.apiPath+"/categoryOptions",
 					params: "",
 					body:  JSON.stringify(productPayLoad),
 					method: "POST",
@@ -204,8 +204,8 @@ function setupApp () {
 					{ 
 						ctxObjectRef: "productsCollection",
 						name: "productsCollection", 
-						domain: mediatorConfig.config.dhis2Server.url,
-						path:mediatorConfig.config.dhis2Server.apiPath+"/categories/"+mediatorConfig.config.productCategoryId+"/categoryOptions",
+						domain:  config.dhis2Server.url,
+						path: config.dhis2Server.apiPath+"/categories/"+ config.productCategoryId+"/categoryOptions",
 						params: "",
 						body:  JSON.stringify(identifiablePayload),
 						method: "POST",
@@ -361,7 +361,7 @@ function setupApp () {
 		});
 		//console.log("Entered ....!");
 		console.log("Start hapi=>dhis2 programs sync...!");
-		const basicClientToken = `Basic ${btoa(mediatorConfig.config.dhis2Server.username+':'+mediatorConfig.config.dhis2Server.password)}`;
+		const basicClientToken = `Basic ${btoa( config.dhis2Server.username+':'+ config.dhis2Server.password)}`;
 		//Get Product list from hapi
 		var globalStoredList=[];
 		//getAllPrograms("",globalStoredList,function(programLists)
@@ -391,8 +391,8 @@ function setupApp () {
 					{ 
 					ctxObjectRef: codeProgram,
 					name: codeProgram, 
-					domain: mediatorConfig.config.dhis2Server.url,
-					path:mediatorConfig.config.dhis2Server.apiPath+"/categoryOptions",
+					domain:  config.dhis2Server.url,
+					path: config.dhis2Server.apiPath+"/categoryOptions",
 					params: "",
 					body:  JSON.stringify(programPayLoad),
 					method: "POST",
@@ -525,8 +525,8 @@ function setupApp () {
 					{ 
 						ctxObjectRef: "programsCollection",
 						name: "programsCollection", 
-						domain: mediatorConfig.config.dhis2Server.url,
-						path:mediatorConfig.config.dhis2Server.apiPath+"/categories/"+mediatorConfig.config.programCategoryId+"/categoryOptions",
+						domain:  config.dhis2Server.url,
+						path: config.dhis2Server.apiPath+"/categories/"+ config.programCategoryId+"/categoryOptions",
 						params: "",
 						body:  JSON.stringify(identifiablePayload),
 						method: "POST",
@@ -680,11 +680,11 @@ function setupApp () {
 		});
 		//console.log("Entered ....!");
 		console.log("Start hapi=>dhis2 programs sync...!");
-		const basicClientToken = `Basic ${btoa(mediatorConfig.config.dhis2Server.username+':'+mediatorConfig.config.dhis2Server.password)}`;
+		const basicClientToken = `Basic ${btoa( config.dhis2Server.username+':'+ config.dhis2Server.password)}`;
 		//Get Product list from hapi
 		var globalStoredListPorgram=[];
 		//getAllPrograms("",globalStoredList,function(programLists)
-		var programIdToProcess=mediatorConfig.config.programsToSync.split(",");
+		var programIdToProcess= config.programsToSync.split(",");
 		var bundleParam="_format=json&_count=1&_id:in=";
 		for(var iteratorProId=0;iteratorProId<programIdToProcess.length;iteratorProId++)
 		{
@@ -745,7 +745,7 @@ function setupApp () {
 				}
 			}//end for
 			//Now get Products provided to the program
-			var urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Basic?${listProductsIdToPull}`;
+			var urlRequest=`${ config.hapiServer.url}/fhir/Basic?${listProductsIdToPull}`;
 			var globalStoredListProducts=[];
 			getAllProductsCurl(urlRequest,globalStoredListProducts,function(productLists)
 			{
@@ -773,8 +773,8 @@ function setupApp () {
 					{ 
 					ctxObjectRef: listProgramPayload[iteratorProg].code,
 					name: listProgramPayload[iteratorProg].code, 
-					domain: mediatorConfig.config.dhis2Server.url,
-					path:mediatorConfig.config.dhis2Server.apiPath+"/categoryOptions",
+					domain:  config.dhis2Server.url,
+					path: config.dhis2Server.apiPath+"/categoryOptions",
 					params: "",
 					body:  JSON.stringify(listProgramPayload[iteratorProg]),
 					method: "POST",
@@ -875,8 +875,8 @@ function setupApp () {
 						{ 
 							ctxObjectRef: "programsCollection",
 							name: "programsCollection", 
-							domain: mediatorConfig.config.dhis2Server.url,
-							path:mediatorConfig.config.dhis2Server.apiPath+"/categories/"+mediatorConfig.config.programCategoryId+"/categoryOptions",
+							domain:  config.dhis2Server.url,
+							path: config.dhis2Server.apiPath+"/categories/"+ config.programCategoryId+"/categoryOptions",
 							params: "",
 							body:  JSON.stringify(identifiablePayload),
 							method: "POST",
@@ -955,8 +955,8 @@ function setupApp () {
 								{ 
 									ctxObjectRef: listProductPayLoad[iteratorProd].code,
 									name: listProductPayLoad[iteratorProd].code, 
-									domain: mediatorConfig.config.dhis2Server.url,
-									path:mediatorConfig.config.dhis2Server.apiPath+"/categoryOptions",
+									domain:  config.dhis2Server.url,
+									path: config.dhis2Server.apiPath+"/categoryOptions",
 									params: "",
 									body:  JSON.stringify(listProductPayLoad[iteratorProd]),
 									method: "POST",
@@ -1061,8 +1061,8 @@ function setupApp () {
 									{ 
 										ctxObjectRef: "productsCollection",
 										name: "productsCollection", 
-										domain: mediatorConfig.config.dhis2Server.url,
-										path:mediatorConfig.config.dhis2Server.apiPath+"/categories/"+mediatorConfig.config.productCategoryId+"/categoryOptions",
+										domain:  config.dhis2Server.url,
+										path: config.dhis2Server.apiPath+"/categories/"+ config.productCategoryId+"/categoryOptions",
 										params: "",
 										body:  JSON.stringify(identifiablePayload),
 										method: "POST",
@@ -1228,7 +1228,7 @@ function setupApp () {
 		});
 		//console.log("Entered ....!");
 		console.log("Start hapi=>dhis2 programs sync...!");
-		const basicClientToken = `Basic ${btoa(mediatorConfig.config.dhis2Server.username+':'+mediatorConfig.config.dhis2Server.password)}`;
+		const basicClientToken = `Basic ${btoa( config.dhis2Server.username+':'+ config.dhis2Server.password)}`;
 		//Get Product list from hapi
 		var globalStoredList=[];
 		//getAllPrograms("",globalStoredList,function(programLists)
@@ -1257,8 +1257,8 @@ function setupApp () {
 					{ 
 					ctxObjectRef: productCategory.code,
 					name: productCategory.code, 
-					domain: mediatorConfig.config.dhis2Server.url,
-					path:mediatorConfig.config.dhis2Server.apiPath+"/categoryOptions",
+					domain:  config.dhis2Server.url,
+					path: config.dhis2Server.apiPath+"/categoryOptions",
 					params: "",
 					body:  JSON.stringify(productCategoryPayLoad),
 					method: "POST",
@@ -1365,8 +1365,8 @@ function setupApp () {
 					{ 
 						ctxObjectRef: "productCategoryCollection",
 						name: "productCategoryCollection", 
-						domain: mediatorConfig.config.dhis2Server.url,
-						path:mediatorConfig.config.dhis2Server.apiPath+"/categories/"+mediatorConfig.config.programProductCategoryId+"/categoryOptions",
+						domain:  config.dhis2Server.url,
+						path: config.dhis2Server.apiPath+"/categories/"+ config.programProductCategoryId+"/categoryOptions",
 						params: "",
 						body:  JSON.stringify(identifiablePayload),
 						method: "POST",
@@ -1519,7 +1519,7 @@ function setupApp () {
 		});
 		//console.log("Entered ....!");
 		console.log("Start hapi=>dhis2 dispensingunit sync...!");
-		const basicClientToken = `Basic ${btoa(mediatorConfig.config.dhis2Server.username+':'+mediatorConfig.config.dhis2Server.password)}`;
+		const basicClientToken = `Basic ${btoa( config.dhis2Server.username+':'+ config.dhis2Server.password)}`;
 		//Get Product list from hapi
 		var globalStoredList=[];
 		//getAllProducts("",globalStoredList,function(productLists)
@@ -1548,8 +1548,8 @@ function setupApp () {
 					{ 
 					ctxObjectRef: oDispensing,
 					name: oDispensing, 
-					domain: mediatorConfig.config.dhis2Server.url,
-					path:mediatorConfig.config.dhis2Server.apiPath+"/categoryOptions",
+					domain:  config.dhis2Server.url,
+					path: config.dhis2Server.apiPath+"/categoryOptions",
 					params: "",
 					body:  JSON.stringify(dispensingPayLoad),
 					method: "POST",
@@ -1654,8 +1654,8 @@ function setupApp () {
 					{ 
 						ctxObjectRef: "dispensingUnitsCollection",
 						name: "dispensingUnitsCollection", 
-						domain: mediatorConfig.config.dhis2Server.url,
-						path:mediatorConfig.config.dhis2Server.apiPath+"/categories/"+mediatorConfig.config.dispensingUnitCategoryId+"/categoryOptions",
+						domain:  config.dhis2Server.url,
+						path: config.dhis2Server.apiPath+"/categories/"+ config.dispensingUnitCategoryId+"/categoryOptions",
 						params: "",
 						body:  JSON.stringify(identifiablePayload),
 						method: "POST",
@@ -1807,11 +1807,11 @@ function setupApp () {
 			open_timeout: 600000
 		});
 		winston.info("Start hapi=>dhis2 requisitions sync...!");
-		const basicClientToken = `Basic ${btoa(mediatorConfig.config.dhis2Server.username+':'+mediatorConfig.config.dhis2Server.password)}`;
+		const basicClientToken = `Basic ${btoa( config.dhis2Server.username+':'+ config.dhis2Server.password)}`;
 		var globalStoredList=[];
 		//getAllRequisitions("",globalStoredList,function(requisitionLists)
-		var startDate=mediatorConfig.config.periodStartDate;
-		var endDate=mediatorConfig.config.periodEndDate;
+		var startDate= config.periodStartDate;
+		var endDate= config.periodEndDate;
 		customLibrairy.getAllRequisition2dhisPeriodSynched(startDate,endDate,function(listSynchedRequisition)
 		{
 			var listIdAlreadySynchedRequisitions=[];
@@ -1826,7 +1826,7 @@ function setupApp () {
 			{
 				winston.info("Requisitions resources returned from Fhir.."+requisitionsList.length);
 				var listRequisitionsBySetProgram=[];
-				var listProgramToProcess=mediatorConfig.config.programsToSync.split(",");
+				var listProgramToProcess= config.programsToSync.split(",");
 				//Now get Requisition for the program set
 				for(var iteratorProg=0;iteratorProg<listProgramToProcess.length;iteratorProg++)
 				{
@@ -1864,7 +1864,7 @@ function setupApp () {
 						}
 						
 					}
-					var bundleRequest=mediatorConfig.config.hapiServer.url+"/fhir/Basic?_id:in="+stringProductIdsList+"&_format=json&_count="+mediatorConfig.config.resourceCountFhir;
+					var bundleRequest= config.hapiServer.url+"/fhir/Basic?_id:in="+stringProductIdsList+"&_format=json&_count="+ config.resourceCountFhir;
 					var temBuildListProduct=[];
 					getAllProductsCurl(bundleRequest,temBuildListProduct,function(listProductDetailsInRequisitions)
 					{
@@ -1913,8 +1913,8 @@ function setupApp () {
 							{ 
 								ctxObjectRef: "categoryOptions_"+listCategoryOptionsToResolve[iteratorOption],
 								name: "categoryOptions_"+listCategoryOptionsToResolve[iteratorOption], 
-								domain: mediatorConfig.config.dhis2Server.url,
-								path:mediatorConfig.config.dhis2Server.apiPath+"/categoryOptions.json?fields=id,code&filter=code:eq:"+listCategoryOptionsToResolve[iteratorOption],
+								domain:  config.dhis2Server.url,
+								path: config.dhis2Server.apiPath+"/categoryOptions.json?fields=id,code&filter=code:eq:"+listCategoryOptionsToResolve[iteratorOption],
 								params: "",
 								body:  "",
 								method: "GET",
@@ -2047,8 +2047,8 @@ function setupApp () {
 								{ 
 									ctxObjectRef: "adx"+iteratorADX,
 									name: "adx"+iteratorADX,
-									domain: mediatorConfig.config.dhis2Server.url,
-									path:mediatorConfig.config.dhis2Server.apiPath+"/dataValueSets?dataElementIdScheme=UID&orgUnitIdScheme=UID",
+									domain:  config.dhis2Server.url,
+									path: config.dhis2Server.apiPath+"/dataValueSets?dataElementIdScheme=UID&orgUnitIdScheme=UID",
 									params: "",
 									body:listPayLoadToPushToDHIS2[iteratorADX],
 									method: "POST",
@@ -2149,8 +2149,8 @@ function setupApp () {
 									}
 									winston.info("End of Hapi=>DHIS2 requisition orchestration");
 									//Now save synched to dhis2 requisitions
-									customLibrairy.saveAllSynchedRequisitions2dhisPeriod(mediatorConfig.config.periodStartDate,
-										mediatorConfig.config.periodEndDate,listRequisitionsBySetProgram,function(resSync)
+									customLibrairy.saveAllSynchedRequisitions2dhisPeriod( config.periodStartDate,
+										 config.periodEndDate,listRequisitionsBySetProgram,function(resSync)
 									{
 										if(resSync)
 										{
@@ -2234,7 +2234,7 @@ function setupApp () {
 				else
 				{
 					//send to the consol the notification for no requisition to process
-					winston.warn("No requisition information to push in dhis2 for these programs:"+mediatorConfig.config.programsToSync);
+					winston.warn("No requisition information to push in dhis2 for these programs:"+ config.programsToSync);
 					var urn = mediatorConfig.urn;
 					var status = 'Successful';
 					var response = {
@@ -2299,8 +2299,8 @@ function getAllOrganizations(bundleParam,filter,globalStoredList,callback)
 	if(bundleParam=="")
 	{
 		//urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Organization?type=${level}`;
-		var filterAdditional="_count="+mediatorConfig.config.resourceCountFhir;
-		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Organization?${filter}&${filterAdditional}`;
+		var filterAdditional="_count="+ config.resourceCountFhir;
+		urlRequest=`${ config.hapiServer.url}/fhir/Organization?${filter}&${filterAdditional}`;
 		
 		winston.info("First iteration!")
 	}
@@ -2380,8 +2380,8 @@ function getAllProducts(bundleParam,globalStoredList,callback)
 	var urlRequest="";
 	if(bundleParam=="")
 	{
-		var filter="code=product&_format=json&_count="+mediatorConfig.config.resourceCountFhir;
-		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Basic?${filter}`;
+		var filter="code=product&_format=json&_count="+ config.resourceCountFhir;
+		urlRequest=`${ config.hapiServer.url}/fhir/Basic?${filter}`;
 		
 		winston.info("First iteration!")
 	}
@@ -2458,8 +2458,8 @@ function getAllProductsCurl(bundleParam,globalStoredList,callback)
 	var urlRequest="";
 	if(bundleParam=="")
 	{
-		var filter="code=product&_format=json&_count="+mediatorConfig.config.resourceCountFhir;
-		urlRequest="'"+`${mediatorConfig.config.hapiServer.url}/fhir/Basic?${filter}`+"'";
+		var filter="code=product&_format=json&_count="+ config.resourceCountFhir;
+		urlRequest="'"+`${ config.hapiServer.url}/fhir/Basic?${filter}`+"'";
 	}
 	else
 	{
@@ -2566,7 +2566,7 @@ function getAllPrograms(bundleParam,globalStoredList,callback)
 	{
 		//var filter="_format=json&_count="+mediatorConfig.config.resourceCountFhir;
 		var filter="_format=json&_count="+1;
-		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/OrganizationAffiliation?${filter}`;
+		urlRequest=`${ config.hapiServer.url}/fhir/OrganizationAffiliation?${filter}`;
 		
 		winston.info("First iteration!")
 	}
@@ -2644,7 +2644,7 @@ function getAllProgramsCurl(bundleParam,globalStoredList,callback)
 	if(bundleParam=="")
 	{
 		var filter="_format=json&_count="+1;
-		urlRequest="'"+`${mediatorConfig.config.hapiServer.url}/fhir/OrganizationAffiliation?${filter}`+"'";
+		urlRequest="'"+`${ config.hapiServer.url}/fhir/OrganizationAffiliation?${filter}`+"'";
 	}
 	else
 	{
@@ -2751,11 +2751,11 @@ function getAllRequisitions(bundleParam,globalStoredList,callback)
 	var urlRequest="";
 	if(bundleParam=="")
 	{
-		var startDate=mediatorConfig.config.periodStartDate;
-		var endDate=mediatorConfig.config.periodEndDate;
+		var startDate= config.periodStartDate;
+		var endDate= config.periodEndDate;
 		//var filter="code=requisition&_format=json&_count="+mediatorConfig.config.resourceCountFhir+"&created=>="+startDate+"&created=<="+endDate;
 		var filter="code=requisition&_count=1"+"&created=>="+startDate+"&created=<="+endDate;
-		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Basic?${filter}`;
+		urlRequest=`${ config.hapiServer.url}/fhir/Basic?${filter}`;
 		
 		winston.info("First iteration!")
 	}
@@ -2833,11 +2833,11 @@ function getAllRequisitionsXHttpRequest(bundleParam,globalStoredList,callback)
 	var urlRequest="";
 	if(bundleParam=="")
 	{
-		var startDate=mediatorConfig.config.periodStartDate;
-		var endDate=mediatorConfig.config.periodEndDate;
-		var filter="code=requisition&_format=json&_count="+mediatorConfig.config.resourceCountFhir+"&created=>="+startDate+"&created=<="+endDate;
+		var startDate= config.periodStartDate;
+		var endDate= config.periodEndDate;
+		var filter="code=requisition&_format=json&_count="+ config.resourceCountFhir+"&created=>="+startDate+"&created=<="+endDate;
 		//var filter="code=requisition&_count=1"+"&created=>="+startDate+"&created=<="+endDate;
-		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Basic?${filter}`;
+		urlRequest=`${ config.hapiServer.url}/fhir/Basic?${filter}`;
 		
 		winston.info("First iteration!")
 	}
@@ -2904,11 +2904,11 @@ function getAllRequisitionsCurl(bundleParam,globalStoredList,callback)
 	var urlRequest="";
 	if(bundleParam=="")
 	{
-		var startDate=mediatorConfig.config.periodStartDate;
-		var endDate=mediatorConfig.config.periodEndDate;
+		var startDate= config.periodStartDate;
+		var endDate= config.periodEndDate;
 		//var filter="code=requisition&_format=json&_count="+mediatorConfig.config.resourceCountFhir+"&created=>="+startDate+"&created=<="+endDate;
 		var filter="code=requisition&_format=json&_count=20" +"&created=>="+startDate+"&created=<="+endDate;
-		urlRequest="'"+`${mediatorConfig.config.hapiServer.url}/fhir/Basic?${filter}`+"'";
+		urlRequest="'"+`${ config.hapiServer.url}/fhir/Basic?${filter}`+"'";
 	}
 	else
 	{
@@ -3008,11 +3008,11 @@ function getAllRequisitionsCurlFilterSynched(bundleParam,idSynchedRequisitions,g
 	//console.log(_idSynchedRequisitions);
 	if(bundleParam=="")
 	{
-		var startDate=mediatorConfig.config.periodStartDate;
-		var endDate=mediatorConfig.config.periodEndDate;
+		var startDate= config.periodStartDate;
+		var endDate= config.periodEndDate;
 		//var filter="code=requisition&_format=json&_count="+mediatorConfig.config.resourceCountFhir+"&created=>="+startDate+"&created=<="+endDate;
 		var filter="code=requisition&_format=json&_count=20" +"&created=>="+startDate+"&created=<="+endDate;
-		urlRequest="'"+`${mediatorConfig.config.hapiServer.url}/fhir/Basic?${filter}`+"'";
+		urlRequest="'"+`${ config.hapiServer.url}/fhir/Basic?${filter}`+"'";
 	}
 	else
 	{
@@ -3033,7 +3033,7 @@ function getAllRequisitionsCurlFilterSynched(bundleParam,idSynchedRequisitions,g
 		if(responseBundle.entry!=null)
 		{
 			var resourceIndexToRetain=[];
-			var listProgramToProcess=mediatorConfig.config.programsToSync.split(",");
+			var listProgramToProcess= config.programsToSync.split(",");
 			for(var iterator=0;iterator<responseBundle.entry.length;iterator++)
 			{
 				//remove first the requisitions already synched
