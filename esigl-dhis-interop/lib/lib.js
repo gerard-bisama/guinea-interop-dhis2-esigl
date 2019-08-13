@@ -1230,13 +1230,21 @@ var facilitySiglSyncLogSchema=Schema({
 	current:{type:Number,default:1},
 	dateOperation:Date
 });
-var synchedOrganizationDefinition=mongoose.model('synchedOrganization',organizationSchema);
+var fhirOrganizationLogSchema=Schema({ 
+	minperiodstartdate:Date,
+	maxperiodstartdate:Date,
+	currentOffSet:{type:Number,default:0},
+});
+
+
+var synchedOrganizationDefinition=mongoose.model('synchedOrganization',organizationSchema);//Used in syncrequisition2fhir, not actually valid
 var synchedRequisitionDefinition=mongoose.model('synchedRequisition',requisitionSyncSchema);
 var requisitionSyncLogDefinition=mongoose.model('requisitionSyncLog',requisitionSyncLogSchema);//keep log of synched requisition new API
 var organizatinSyncLogDefinition=mongoose.model('organizationSyncLog',organizationSyncLogSchema);//keep log of synched organization within a specific period new API
 var facilitySyncLogDefinition=mongoose.model('facilitySyncLog',facilitySyncLogSchema);//keep log of counter to loop through dhis2 api to sync facilities to hapi
 var facilitySIGLSyncLogDefinition=mongoose.model('facilitySiglSyncLog',facilitySiglSyncLogSchema);//keep log of counter interation when looping though the esigl facilityList API, since it return a set of repeated facility for each page
 var mappingSyncLogDefinition=mongoose.model('mappingSyncLog',mappingSyncLogSchema);//keep esigklfacilityid of mapped facility
+var fhirOrganizationLogDefinition=mongoose.model('fhirOrganizationLog',fhirOrganizationLogSchema);//keep loop trace of fhir Organization to extract Requisition
 //return the list of organization which requisition has been already synched
 var getAllSynchedOrganization=function (callback)
 {
@@ -1371,6 +1379,36 @@ var getSyncLogFacility=function(_dateOperation,callback)
 		
 		});
 }
+var getFhirLogOffSet=function(minStartDate,maxStartDate,callback)
+{
+	var _minStartDate=new Date(minStartDate);
+	var _maxStartDate=new Date(maxStartDate);
+	var requestResult=fhirOrganizationLogDefinition.findOne({"minperiodstartdate":{$eq:_minStartDate},"maxperiodstartdate":{$eq:_maxStartDate}},{"_id":0,"minperiodstartdate":0,"maxperiodstartdate":0}).exec(function(error,doc){
+		if(error) {
+			console.log("Error: Failed to get the facility log sync record!");
+			callback (null);
+		}
+		else
+		{
+			callback(doc==null?0:doc.currentOffSet);
+		}
+		
+		});
+}
+var updateFhirLogOffSet=function (minStartDate,maxStartDate,_currentOffSet,callback)
+{
+	var _minStartDate=new Date(minStartDate);
+	var _maxStartDate=new Date(maxStartDate);
+	fhirOrganizationLogDefinition.findOneAndUpdate({"minperiodstartdate":{$eq:_minStartDate},"maxperiodstartdate":{$eq:_maxStartDate}},{$set:{minperiodstartdate:_minStartDate,maxperiodstartdate:_maxStartDate,currentOffSet:_currentOffSet}},{upsert:true},(err, doc) => {
+		if (err) {
+			console.log("Error: Failed to update the record!");
+			callback(false);
+		}
+		//console.log(true)
+		callback(true);
+	}
+	)
+}
 var getSyncLogFacilityeSigl=function(_dateOperation,callback)
 {
 	var requestResult=facilitySIGLSyncLogDefinition.findOne({"code":"1","dateOperation":{$eq:_dateOperation}},{"_id":0}).exec(function(error,doc){
@@ -1385,6 +1423,7 @@ var getSyncLogFacilityeSigl=function(_dateOperation,callback)
 		
 		});
 }
+
 var updateSynchedRequisitionDate=function (_lastSynchedDate,callback)
 {
 	synchedRequisitionDefinition.findOneAndUpdate({code:"1"},{$set:{lastDateSynched:_lastSynchedDate}},{upsert:true},(err, doc) => {
@@ -1784,3 +1823,5 @@ exports.getSyncLogFacility=getSyncLogFacility;
 exports.getSyncLogFacilityeSigl=getSyncLogFacilityeSigl;
 exports.saveAllSynchedMapping=saveAllSynchedMapping;
 exports.saveAllSynchedOrganizationPeriod=saveAllSynchedOrganizationPeriod;
+exports.getFhirLogOffSet=getFhirLogOffSet;
+exports.updateFhirLogOffSet=updateFhirLogOffSet;

@@ -49,7 +49,7 @@ function setupApp () {
 		});
 		//console.log("Entered ....!");
 		console.log("Start dhis2=>hapi facility sync...!");
-		const basicClientToken = `Basic ${btoa(mediatorConfig.config.dhis2Server.username+':'+mediatorConfig.config.dhis2Server.password)}`;
+		const basicClientToken = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
 		//console.log(basicClientToken);
 		var _currentDateOperation=new Date();
 		var _dateOperation=_currentDateOperation.toJSON().split("T")[0];
@@ -64,13 +64,13 @@ function setupApp () {
 			{
 				//then build the first loop request to dhis2 API
 				_pageCount=1;
-				_pageSize=parseInt(mediatorConfig.config.batchSizeFacilityToSync);
+				_pageSize=parseInt(config.batchSizeFacilityToSync);
 				_currentPage=1;
 				requestOrgUnits=`/organisationUnits.json?order=level:asc&pageSize=${_pageSize}&page=${_currentPage}&fields=href,id,code,level,parent,displayName`;
 			}
 			else
 			{
-				_pageSize=mediatorConfig.config.batchSizeFacilityToSync;
+				_pageSize=config.batchSizeFacilityToSync;
 				_currentPage=syncRecord.current;
 				_pageCount=syncRecord.pageCount;
 				requestOrgUnits=`/organisationUnits.json?order=level:asc&pageSize=${_pageSize}&page=${_currentPage}&fields=href,id,code,level,parent,displayName`;
@@ -85,8 +85,8 @@ function setupApp () {
 				orchestrations = [{ 
 					ctxObjectRef: "OrgUnits",
 					name: "page_"+_currentPage, 
-					domain: mediatorConfig.config.dhis2Server.url,
-					path: mediatorConfig.config.dhis2Server.orgunitapipath+requestOrgUnits,
+					domain: config.dhis2Server.url,
+					path: config.dhis2Server.orgunitapipath+requestOrgUnits,
 					params: "",
 					body: "",
 					method: "GET",
@@ -144,7 +144,7 @@ function setupApp () {
 						orchestrations2Fhir.push({ 
 						ctxObjectRef: "organisation_"+i,
 						name: "push orgnization for fhir ", 
-						domain: mediatorConfig.config.hapiServer.url,
+						domain: config.hapiServer.url,
 						path: "/fhir/Organization/"+oOrganization.id,
 						params: "",
 						body:  JSON.stringify(oOrganization),
@@ -211,7 +211,7 @@ function setupApp () {
 							orchestrations2FhirLevel2.push({ 
 							ctxObjectRef: "organisation_"+i,
 							name: "push orgnization for fhir ", 
-							domain: mediatorConfig.config.hapiServer.url,
+							domain: config.hapiServer.url,
 							path: "/fhir/Organization/"+oOrganization.id,
 							params: "",
 							body:  JSON.stringify(oOrganization),
@@ -275,7 +275,7 @@ function setupApp () {
 								orchestrations2FhirLevel3.push({ 
 								ctxObjectRef: "organisation_"+i,
 								name: "push orgnization for fhir ", 
-								domain: mediatorConfig.config.hapiServer.url,
+								domain: config.hapiServer.url,
 								path: "/fhir/Organization/"+oOrganization.id,
 								params: "",
 								body:  JSON.stringify(oOrganization),
@@ -337,7 +337,7 @@ function setupApp () {
 								orchestrations2FhirLevel4.push({ 
 								ctxObjectRef: "organisation_"+i,
 								name: "push orgnization for fhir ", 
-								domain: mediatorConfig.config.hapiServer.url,
+								domain: config.hapiServer.url,
 								path: "/fhir/Organization/"+oOrganization.id,
 								params: "",
 								body:  JSON.stringify(oOrganization),
@@ -401,7 +401,7 @@ function setupApp () {
 										orchestrations2FhirLevel5.push({ 
 										ctxObjectRef: "organisation_"+i,
 										name: "push orgnization for fhir ", 
-										domain: mediatorConfig.config.hapiServer.url,
+										domain: config.hapiServer.url,
 										path: "/fhir/Organization/"+oOrganization.id,
 										params: "",
 										body:  JSON.stringify(oOrganization),
@@ -577,7 +577,7 @@ function setupApp () {
 		winston.info("Start eSIGL=>Organization mapping...!");
 		//console.log(req.params);
 		//return;
-		const basicClientToken = `Basic ${btoa(mediatorConfig.config.esiglServer.username+':'+mediatorConfig.config.esiglServer.password)}`;
+		const basicClientToken = `Basic ${btoa(config.esiglServer.username+':'+config.esiglServer.password)}`;
 		var _currentDateOperation=new Date();
 		var _dateOperation=_currentDateOperation.toJSON().split("T")[0];
 		customLibrairy.getSyncLogFacilityeSigl(_dateOperation,function(syncRecord)
@@ -590,13 +590,13 @@ function setupApp () {
 			if(syncRecord==null)//sync on going on the specified date
 			{
 				//then build the first loop request to esigl API
-				_pageSize=parseInt(mediatorConfig.config.batchSizeeSGLFacilityToSync);
+				_pageSize=parseInt(config.batchSizeeSGLFacilityToSync);
 				_currentPage=1;
 				requestFacilities=`/lookup/facilities?paging=false&pageSize=${_pageSize}&page=${_currentPage}`;
 			}
 			else
 			{
-				_pageSize=mediatorConfig.config.batchSizeeSGLFacilityToSync;
+				_pageSize=config.batchSizeeSGLFacilityToSync;
 				_currentPage=syncRecord.current;
 				requestFacilities=`/lookup/facilities?paging=false&pageSize=${_pageSize}&page=${_currentPage}`;
 				//if(syncRecord.current > syncRecord.pageCount)
@@ -607,8 +607,8 @@ function setupApp () {
 			orchestrations = [{ 
 				ctxObjectRef: "facilities",
 				name: "Get facilities from eSIGL", 
-				domain: mediatorConfig.config.esiglServer.url,
-				path: mediatorConfig.config.esiglServer.resourcespath+requestFacilities,
+				domain: config.esiglServer.url,
+				path: config.esiglServer.resourcespath+requestFacilities,
 				params: "",
 				body: "",
 				method: "GET",
@@ -617,8 +617,8 @@ function setupApp () {
 			  {
 			  ctxObjectRef: "facilityTypes",
 				name: "Get facility types from eSIGL", 
-				domain: mediatorConfig.config.esiglServer.url,
-				path: mediatorConfig.config.esiglServer.resourcespath+"/lookup/facility-types",
+				domain: config.esiglServer.url,
+				path: config.esiglServer.resourcespath+"/lookup/facility-types",
 				params: "",
 				body: "",
 				method: "GET",
@@ -681,7 +681,7 @@ function setupApp () {
 				}
 				listIdFacilityFromeSIGL.sort();
 				//console.log(listIdFacilityFromeSIGL);
-				customLibrairy.readCSVFile(mediatorConfig.config.mappingFile,function(dataFile)
+				customLibrairy.readCSVFile(config.mappingFile,function(dataFile)
 				{
 					if(dataFile.length>0)
 					{
@@ -735,7 +735,7 @@ function setupApp () {
 										//ctxObjectRef: "organization_"+iteratorLine,
 										ctxObjectRef: dataFile[iteratorLine][0].trim().replace(/\s/g,""),
 										name: "get organization from hapi", 
-										domain: mediatorConfig.config.hapiServer.url,
+										domain: config.hapiServer.url,
 										path: "/fhir/Organization/"+dataFile[iteratorLine][1].trim().replace(/\s/g,""),
 										params: "",
 										body: "",
@@ -840,7 +840,7 @@ function setupApp () {
 										if(eSIGLType!=null)
 										{
 											//Now update the organization
-											var newOrganization=customLibrairy.updateOrganizationFromeSIGL(eSIGLFacility,eSIGLType,ctxObjectOrgFhir[iteratorOrg].resource,mediatorConfig.config.esiglServer.url);
+											var newOrganization=customLibrairy.updateOrganizationFromeSIGL(eSIGLFacility,eSIGLType,ctxObjectOrgFhir[iteratorOrg].resource,config.esiglServer.url);
 											if(newOrganization!=null)
 											{
 												listUpdatedOrganization.push(newOrganization);
@@ -878,7 +878,7 @@ function setupApp () {
 									orchestrations2FhirUpdate.push({ 
 									ctxObjectRef: "organisation_"+i,
 									name: "push orgnization for fhir ", 
-									domain: mediatorConfig.config.hapiServer.url,
+									domain: config.hapiServer.url,
 									path: "/fhir/Organization/"+oOrganization.id,
 									params: "",
 									body:  JSON.stringify(oOrganization),
@@ -1078,13 +1078,13 @@ function setupApp () {
 			open_timeout: 600000
 		});
 		winston.info("Start extraction of products from eSIGL...!");
-		const basicClientToken = `Basic ${btoa(mediatorConfig.config.esiglServer.username+':'+mediatorConfig.config.esiglServer.password)}`;
+		const basicClientToken = `Basic ${btoa(config.esiglServer.username+':'+config.esiglServer.password)}`;
 		var orchestrations=[];
 		orchestrations = [{ 
 			ctxObjectRef: "products",
 			name: "Get products from eSIGL", 
-			domain: mediatorConfig.config.esiglServer.url,
-			path: mediatorConfig.config.esiglServer.resourcespath+"/lookup/products?paging=false",
+			domain: config.esiglServer.url,
+			path: config.esiglServer.resourcespath+"/lookup/products?paging=false",
 			params: "",
 			body: "",
 			method: "GET",
@@ -1093,8 +1093,8 @@ function setupApp () {
 		  {
 		  ctxObjectRef: "productCategories",
 			name: "Get product categories from eSIGL", 
-			domain: mediatorConfig.config.esiglServer.url,
-			path: mediatorConfig.config.esiglServer.resourcespath+"/lookup/product-categories",
+			domain: config.esiglServer.url,
+			path: config.esiglServer.resourcespath+"/lookup/product-categories",
 			params: "",
 			body: "",
 			method: "GET",
@@ -1103,8 +1103,8 @@ function setupApp () {
 		  {
 		  ctxObjectRef: "dosageUnits",
 			name: "Get dosage unit from eSIGL", 
-			domain: mediatorConfig.config.esiglServer.url,
-			path: mediatorConfig.config.esiglServer.resourcespath+"/lookup/dosage-units",
+			domain: config.esiglServer.url,
+			path: config.esiglServer.resourcespath+"/lookup/dosage-units",
 			params: "",
 			body: "",
 			method: "GET",
@@ -1166,7 +1166,7 @@ function setupApp () {
 			listProductCategoryFromeSIGL=ctxObject.productCategories["product-categories"];
 			listDosageUnitFromeSIGL=ctxObject.dosageUnits["dosage-units"]
 			////loop throup product to constr
-			var listProductsFhir=customLibrairy.buildProductFhirResources(listProductsFromeSIGL,listProductCategoryFromeSIGL,listDosageUnitFromeSIGL,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
+			var listProductsFhir=customLibrairy.buildProductFhirResources(listProductsFromeSIGL,listProductCategoryFromeSIGL,listDosageUnitFromeSIGL,config.esiglServer.url,config.hapiServer.url);
 			winston.info("Transformation of product to Fhir product extension done!");
 			var orchestrations2FhirUpdate=[];
 			for(var i=0;i<listProductsFhir.length;i++)
@@ -1175,7 +1175,7 @@ function setupApp () {
 				orchestrations2FhirUpdate.push({ 
 				ctxObjectRef: "product_"+i,
 				name: "push product for fhir ", 
-				domain: mediatorConfig.config.hapiServer.url,
+				domain: config.hapiServer.url,
 				path: "/fhir/Basic/"+oProduct.id,
 				params: "",
 				body:  JSON.stringify(oProduct),
@@ -1258,13 +1258,13 @@ function setupApp () {
 			open_timeout: 600000
 		});
 		winston.info("Start extraction of programs from eSIGL...!");
-		const basicClientToken = `Basic ${btoa(mediatorConfig.config.esiglServer.username+':'+mediatorConfig.config.esiglServer.password)}`;
+		const basicClientToken = `Basic ${btoa(config.esiglServer.username+':'+config.esiglServer.password)}`;
 		var orchestrations=[];
 		orchestrations = [{ 
 			ctxObjectRef: "programs",
 			name: "Get programs from eSIGL", 
-			domain: mediatorConfig.config.esiglServer.url,
-			path: mediatorConfig.config.esiglServer.resourcespath+"/lookup/programs",
+			domain: config.esiglServer.url,
+			path: config.esiglServer.resourcespath+"/lookup/programs",
 			params: "",
 			body: "",
 			method: "GET",
@@ -1273,8 +1273,8 @@ function setupApp () {
 		  {
 			ctxObjectRef: "productCategories",
 			name: "productCategory", 
-			domain: mediatorConfig.config.esiglServer.url,
-			path: mediatorConfig.config.esiglServer.resourcespath+"/lookup/product-categories",
+			domain: config.esiglServer.url,
+			path:config.esiglServer.resourcespath+"/lookup/product-categories",
 			params: "",
 			body: "",
 			method: "GET",
@@ -1349,8 +1349,8 @@ function setupApp () {
 				{ 
 					ctxObjectRef: oProgramCode,
 					name: oProgramCode, 
-					domain: mediatorConfig.config.esiglServer.url,
-					path: mediatorConfig.config.esiglServer.resourcespath+"/program-products",
+					domain: config.esiglServer.url,
+					path: config.esiglServer.resourcespath+"/program-products",
 					params: "?programCode="+oProgramCode,
 					body: "",
 					method: "GET",
@@ -1407,7 +1407,7 @@ function setupApp () {
 					var oProgramToProcess=customLibrairy.getProgramFromList(programCode,listProgramsFromeSIGL);
 					var itemLists=orchestrationsResultsProgramProducts[iteratorResultProgramProduct].response.body.programProductList;
 					winston.info(orchestrationsResultsProgramProducts[iteratorResultProgramProduct].response.body.programProductList[0].programCode+" extracted program-products list: "+itemLists.length);
-					var itemListProgramProductsByCode=customLibrairy.buildProgramProductsFhirResources(oProgramToProcess,listProductCategories,itemLists,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
+					var itemListProgramProductsByCode=customLibrairy.buildProgramProductsFhirResources(oProgramToProcess,listProductCategories,itemLists,config.esiglServer.url,config.hapiServer.url);
 					for(var iteratorProgramResource=0;iteratorProgramResource<itemListProgramProductsByCode.length;iteratorProgramResource++)
 					{
 						listAssociatedProgramFhirResources.push(itemListProgramProductsByCode[iteratorProgramResource]);
@@ -1425,7 +1425,7 @@ function setupApp () {
 					orchestrations2FhirUpdate.push({ 
 					ctxObjectRef: "program_"+i,
 					name: "push program for fhir ", 
-					domain: mediatorConfig.config.hapiServer.url,
+					domain: config.hapiServer.url,
 					path: "/fhir/OrganizationAffiliation/"+oProgram.id,
 					params: "",
 					body:  JSON.stringify(oProgram),
@@ -1522,11 +1522,11 @@ function setupApp () {
 		{
 			open_timeout: 600000
 		});
-		const basicClientToken = `Basic ${btoa(mediatorConfig.config.esiglServer.username+':'+mediatorConfig.config.esiglServer.password)}`;
+		const basicClientToken = `Basic ${btoa(config.esiglServer.username+':'+config.esiglServer.password)}`;
 		var globalSharedOrganisation=[];
 		winston.info("Start extraction of requisitions from eSIGL...!");
 		//Only facility with the set levele and which the boby contains siglcode will be considered
-		var levelOrganizationCode=mediatorConfig.config.facilityLevesForRequisitions;
+		var levelOrganizationCode=config.facilityLevesForRequisitions;
 		var filter="identifier:text=siglcode&_sort=type&_pretty=true&_count=100";
 		var operationType=0 //0 to get requisition from API and one to get requisition from dbs
 		getAllOrganizations("",filter,globalSharedOrganisation,function(listOrganizations)
@@ -1537,7 +1537,7 @@ function setupApp () {
 			{
 				//console.log(listSynchedOrganizations);
 				var listOrganizationToSync=[];
-				var batchSize=parseInt(mediatorConfig.config.batchSizeRequisitionFacilities);
+				var batchSize=parseInt(config.batchSizeRequisitionFacilities);
 				if(listSynchedOrganizations.length>0)
 				{
 					//console.log("Synched organization "+listSynchedOrganizations.length);
@@ -1565,7 +1565,7 @@ function setupApp () {
 							{ 
 							ctxObjectRef: eSiglCode,
 							name: organization.id, 
-							domain: mediatorConfig.config.esiglServer.url,
+							domain: config.esiglServer.url,
 							path: "/rest-api/requisitions",
 							params:"?facilityCode="+eSiglCode,
 							body: "",
@@ -1636,10 +1636,10 @@ function setupApp () {
 							var responseBody=JSON.parse(oResultOrchestration.response.body);
 							console.log("Total found :"+responseBody.length);
 							//remove requisition where periodStartDate < definedConfDate
-							var listRequisition2Process=customLibrairy.geRequisitionsFromStartDate(mediatorConfig.config.periodStartDate,responseBody);
+							var listRequisition2Process=customLibrairy.geRequisitionsFromStartDate(config.periodStartDate,responseBody);
 							//console.log(oResultOrchestration);
 							listRequisitions=customLibrairy.buildRequisitionFhirResources(oResultOrchestration.name,oResultOrchestration.ctxObjectRef,listRequisition2Process,
-								mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
+								config.esiglServer.url,config.hapiServer.url);
 							//console.log(listRequisitions[0]);
 							console.log("Total retained based on date :"+listRequisitions.length);
 							//break;
@@ -1656,7 +1656,7 @@ function setupApp () {
 								{ 
 								ctxObjectRef: oRequisition.id,
 								name: oRequisition.id, 
-								domain: mediatorConfig.config.hapiServer.url,
+								domain: config.hapiServer.url,
 								path: "/fhir/Basic/"+oRequisition.id,
 								params: "",
 								body:  JSON.stringify(oRequisition),
@@ -1765,7 +1765,7 @@ function setupApp () {
 				else if (operationType==1)
 				{
 					//build request to get the list of requisition and related information from the db
-					var dayToIncrement=parseInt(mediatorConfig.config.maxNumberDayRequisitionsToPull);
+					var dayToIncrement=parseInt(config.maxNumberDayRequisitionsToPull);
 					
 					
 					
@@ -1853,41 +1853,41 @@ function setupApp () {
 			var globalListRequisitions=[];
 			var globalListRequisitionsToProcess=[];
 			//globalListRequisitions=orchestrationsResults[0].response.body;
-			if(mediatorConfig.config.periodEndDate=="")
+			if(config.periodEndDate=="")
 			{
-				globalListRequisitions=customLibrairy.geRequisitionsFromStartDate(mediatorConfig.config.periodStartDate,
+				globalListRequisitions=customLibrairy.geRequisitionsFromStartDate(config.periodStartDate,
 			orchestrationsResults[0].response.body);
 			}
 			else
 			{
-				globalListRequisitions=customLibrairy.geRequisitionsPeriod(mediatorConfig.config.periodStartDate,mediatorConfig.config.periodEndDate,
+				globalListRequisitions=customLibrairy.geRequisitionsPeriod(config.periodStartDate,config.periodEndDate,
 			orchestrationsResults[0].response.body);
 			}
 			//console.log(globalListRequisitions);
 			//customLibrairy.getAllSynchedRequisitions(function (listSynchedRequisitions)
-			customLibrairy.getAllRequisitionPeriodSynched(mediatorConfig.config.periodStartDate,mediatorConfig.config.periodEndDate
+			customLibrairy.getAllRequisitionPeriodSynched(config.periodStartDate,config.periodEndDate
 			,function(listAlreadySynchedRequisitions)
 			{
 				//console.log(listAlreadySynchedRequisitions[110]);
 				//var periodStartDate="";
 				//var globalListRequisitionsToProcess=[];
 				var listRequisition2Process=[];
-				var batchSize=parseInt(mediatorConfig.config.batchSizeRequisitionToProcess);
+				var batchSize=parseInt(config.batchSizeRequisitionToProcess);
 				if(listAlreadySynchedRequisitions==null)
 				{
-					listRequisition2Process=customLibrairy.getRequisitionsNotSynched(mediatorConfig.config.prefixResourceId,batchSize,[],
+					listRequisition2Process=customLibrairy.getRequisitionsNotSynched(config.prefixResourceId,batchSize,[],
 					globalListRequisitions);
 			
 				}
 				else
 				{
-					listRequisition2Process=customLibrairy.getRequisitionsNotSynched(mediatorConfig.config.prefixResourceId,batchSize,listAlreadySynchedRequisitions,globalListRequisitions);
+					listRequisition2Process=customLibrairy.getRequisitionsNotSynched(config.prefixResourceId,batchSize,listAlreadySynchedRequisitions,globalListRequisitions);
 			
 				}
 				//res.send("interrupt");
 				//console.log(globalListRequisitionsToProcess);
 				//return;
-				winston.info("Return "+listRequisition2Process.length+" requisition selected from "+mediatorConfig.config.periodStartDate);
+				winston.info("Return "+listRequisition2Process.length+" requisition selected from "+config.periodStartDate);
 				
 				//var listRequisition2Process=customLibrairy.getRequisitionsNotSynched(batchSize,[],globalListRequisitionsToProcess);
 				//Now getRequisitionDetails
@@ -1979,7 +1979,7 @@ function setupApp () {
 					{ 
 					ctxObjectRef: listRequisitionsDetails[iteratorFac].agentCode,
 					name: listRequisitionsDetails[iteratorFac].agentCode, 
-					domain: mediatorConfig.config.hapiServer.url,
+					domain: config.hapiServer.url,
 					path: "/fhir/Organization?&_format=json&identifier="+listRequisitionsDetails[iteratorFac].agentCode,
 					params:"",
 					body: "",
@@ -2048,9 +2048,9 @@ function setupApp () {
 					}
 					//console.log(listFacilitiesRequisition);
 					//Now build the bundle Requisition ressources
-					var listRequisitionToPush=customLibrairy.buildRequisitionFhirResourcesNewApi(mediatorConfig.config.prefixResourceId,listFacilitiesRequisition,
+					var listRequisitionToPush=customLibrairy.buildRequisitionFhirResourcesNewApi(config.prefixResourceId,listFacilitiesRequisition,
 					listRequisitionsDetails,listRequisition2Process,
-						mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
+						config.esiglServer.url,config.hapiServer.url);
 					winston.info("Requisitions transformed to Requisition resources done");
 					//console.log("Total requisition to process: "+listRequisitionToPush.length);
 					
@@ -2062,7 +2062,7 @@ function setupApp () {
 							{ 
 							ctxObjectRef: oRequisition.id,
 							name: oRequisition.id, 
-							domain: mediatorConfig.config.hapiServer.url,
+							domain: config.hapiServer.url,
 							path: "/fhir/Basic/"+oRequisition.id,
 							params: "",
 							body:  JSON.stringify(oRequisition),
@@ -2138,8 +2138,8 @@ function setupApp () {
 							winston.info("End of eSIGL=>Fhir requisition orchestration");
 							//now keep the log of sync
 							////get the maxPeriodStartDate from synched requisition
-							customLibrairy.saveAllSynchedRequisitionsPeriod(mediatorConfig.config.periodStartDate,
-								mediatorConfig.config.periodEndDate,listRequisitionToPush,function(resSync)
+							customLibrairy.saveAllSynchedRequisitionsPeriod(config.periodStartDate,
+								config.periodEndDate,listRequisitionToPush,function(resSync)
 								{
 									if(resSync)
 									{
@@ -2168,365 +2168,397 @@ function setupApp () {
 	});//end of app get
 	app.get('/syncrequisition2fhir_new', (req, res) => {
 		winston.info("***********************Channel for getting requisition triggered*******************************");
+		req.setTimeout(600000);
 		needle.defaults(
 		{
 			open_timeout: 600000
 		});
+		//console.log(res);
 		var requisitionStatusToProcess="APPROVED";
-		const basicClientToken = `Basic ${btoa(mediatorConfig.config.esiglServer.username+':'+mediatorConfig.config.esiglServer.password)}`;
+		const basicClientToken = `Basic ${btoa(config.esiglServer.username+':'+config.esiglServer.password)}`;
 		var globalSharedOrganisation=[];
 		winston.info("Start extraction of requisitions from eSIGL...!");
 		//Only facility with the set levele and which the boby contains siglcode will be considered
-		var levelOrganizationCode=mediatorConfig.config.facilityLevesForRequisitions;
+		var levelOrganizationCode=config.facilityLevesForRequisitions;
 		var filter="identifier:text=siglcode&_sort=type&_pretty=true&_count=2";
 		var operationType=0 //0 to get requisition from API and one to get requisition from dbs
-		getAllOrganizationsCurl("",filter,globalSharedOrganisation,function(listOrganizations)
+		
+		var periodStartDate=config.periodStartDate;
+		var periodEndDate=config.periodEndDate;
+		customLibrairy.getFhirLogOffSet(periodStartDate,periodEndDate,function(currentOffSet)
 		{
-			winston.info("Get organizations that gas mapping siglCode to get their requisitions.Done!!");
-			//now  get all organization already synched during the defined period for requisitons from mongodb log db
 			
-			customLibrairy.getAllOrganizationPeriodSynched(mediatorConfig.config.periodStartDate,mediatorConfig.config.periodEndDate,function (listSynchedOrganizations)
+			//console.log("Current offset:"+currentOffSet);
+			var _currentOffSet=currentOffSet;
+			//return;
+			
+			getAllOrganizationsCurlWithCurrentOffset(_currentOffSet,"",filter,globalSharedOrganisation,function(dicRes)
 			{
-				var listOrganizationToSync=[];
-				var batchSize=parseInt(mediatorConfig.config.batchSizeRequisitionFacilities);
-				if(listSynchedOrganizations.length>0)
+				winston.info("Get organizations that gas mapping siglCode to get their requisitions.Done!!");
+				//now  get all organization already synched during the defined period for requisitons from mongodb log db
+				//
+				var listOrganizations=dicRes[1];
+				var newOffSet=dicRes[0];
+				//console.log(listOrganizations);
+				customLibrairy.updateFhirLogOffSet(periodStartDate,periodEndDate,newOffSet,function(upDateres)
 				{
-					//console.log("Synched organization "+listSynchedOrganizations.length);
-					winston.info("Limit the batch on the organizations based on the previous sync...");
-					listOrganizationToSync=customLibrairy.getOrganizationsNotSynched(batchSize,listSynchedOrganizations,listOrganizations);
-				}
-				else
-				{
-					listOrganizationToSync=customLibrairy.getOrganizationsNotSynched(batchSize,[],listOrganizations);
-				}
-				//console.log(listSynchedOrganizations);
-				//Now build orchestrator to get requisition by facility
-				winston.info("Start extraction of requisitions from eSIGL...!");
-				var orchestrations=[];
-				for(var indexFacility=0;indexFacility<listOrganizationToSync.length; indexFacility++)
-				{
-					var organization=listOrganizationToSync[indexFacility];
-					var eSiglCode=customLibrairy.getFacilityeSiGLCode(organization);
-					
-					orchestrations.push(
-						{ 
-						ctxObjectRef: eSiglCode,
-						name: organization.id, 
-						domain: mediatorConfig.config.esiglServer.url,
-						path: "/rest-api/requisitions",
-						params:"?facilityCode="+eSiglCode,
-						body: "",
-						method: "GET",
-						headers: {'Authorization': basicClientToken}
-					  });
-				}
-				var ctxObject = []; 
-				var orchestrationsResults=[]; 
-				var listRequisitionsFromeSIGL=[];
-				var counter=1; 
-				async.each(orchestrations, function(orchestration, callback) {
-					var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
-					//console.log(orchUrl);
-					var options={headers:orchestration.headers};
-					winston.info(counter+"/"+orchestrations.length);
-					winston.info("Querying requisitions/"+orchestration.ctxObjectRef+" from eSIGL....");
-					needle.get(orchUrl,options, function(err, resp) {
-						if ( err ){
-							callback(err);
-						}
-						orchestrationsResults.push({
-						name: orchestration.name,
-						ctxObjectRef:orchestration.ctxObjectRef,
-						request: {
-						  path : orchestration.path,
-						  headers: orchestration.headers,
-						  querystring: orchestration.params,
-						  body: "",
-						  method: orchestration.method,
-						  timestamp: new Date().getTime()
-						},
-						response: {
-						  status: resp.statusCode,
-						  body: JSON.stringify(resp.body.requisitions, null, 4),
-						  timestamp: new Date().getTime()
-						}
-						});
-						ctxObject[orchestration.ctxObjectRef] = resp.body;
-						callback();
-					});//end of needle
-				counter++;
-				},function(err)
-				{
-					if(err)
+					//console.log(res);
+					console.log("Returned updateFhirLogOffSet");
+					customLibrairy.getAllOrganizationPeriodSynched(config.periodStartDate,config.periodEndDate,function (listSynchedOrganizations)
 					{
-						winston.error(err);
-						
-					}
-					winston.info("Requisitions extracted from eSIGL...");
-					var globalListRequisitions=[]
-					for(var iteratorRes=0;iteratorRes<orchestrationsResults.length;iteratorRes++)
-					{
-						var oResultOrchestration=orchestrationsResults[iteratorRes];
-						var responseBody=JSON.parse(oResultOrchestration.response.body);
-						console.log(oResultOrchestration.name +" |requisition found :"+responseBody.length);
-						var listRequisitionByFacility=customLibrairy.geRequisitionsPeriod(mediatorConfig.config.periodStartDate,
-							mediatorConfig.config.periodEndDate,responseBody);
-						//now assign the requisition to the global list 
-						for(var indexGlobal=0;indexGlobal<listRequisitionByFacility.length;indexGlobal++)
+						var listOrganizationToSync=[];
+						var batchSize=parseInt(config.batchSizeRequisitionFacilities);
+						//console.log(listSynchedOrganizations);
+						if(listSynchedOrganizations.length>0)
 						{
-							globalListRequisitions.push(listRequisitionByFacility[indexGlobal]);
-						}
-					}
-					console.log(`Total retained based on Period ${mediatorConfig.config.periodStartDate} - ${mediatorConfig.config.periodEndDate}:${globalListRequisitions.length}`);
-					customLibrairy.getAllRequisitionPeriodSynched(mediatorConfig.config.periodStartDate,mediatorConfig.config.periodEndDate
-					,function(listAlreadySynchedRequisitions)
-					{
-						var listRequisition2Process=[];
-						var batchSizeReq2Process=parseInt(mediatorConfig.config.batchSizeRequisitionToProcess);
-						console.log("Batchsize :"+batchSizeReq2Process);
-						var listProgramToProcess=mediatorConfig.config.programsToSync.split(",");
-						
-						if(listAlreadySynchedRequisitions==null)
-						{
-							listRequisition2Process=customLibrairy.getRequisitionsNotSynched(mediatorConfig.config.prefixResourceId,
-								batchSizeReq2Process,[],globalListRequisitions,listProgramToProcess);
+							//console.log("Synched organization "+listSynchedOrganizations.length);
+							winston.info("Limit the batch on the organizations based on the previous sync...");
+							listOrganizationToSync=customLibrairy.getOrganizationsNotSynched(batchSize,listSynchedOrganizations,listOrganizations);
 						}
 						else
 						{
-							listRequisition2Process=customLibrairy.getRequisitionsNotSynched(mediatorConfig.config.prefixResourceId,batchSizeReq2Process,
-							listAlreadySynchedRequisitions,globalListRequisitions,listProgramToProcess);
+							listOrganizationToSync=customLibrairy.getOrganizationsNotSynched(batchSize,[],listOrganizations);
 						}
-						winston.info("Return "+listRequisition2Process.length+" requisition selected from "+mediatorConfig.config.periodStartDate+" to "+mediatorConfig.config.periodEndDate);
-						var orchestrationsDetailReq=[];
-						console.log(JSON.stringify(listRequisition2Process[0]));
-						for(var iteratorReq=0;iteratorReq<listRequisition2Process.length;iteratorReq++)
+						//console.log(listSynchedOrganizations);
+						//Now build orchestrator to get requisition by facility
+						winston.info("Start extraction of requisitions from eSIGL...!");
+						var orchestrations=[];
+						for(var indexFacility=0;indexFacility<listOrganizationToSync.length; indexFacility++)
 						{
-							orchestrationsDetailReq.push(
-							{ 
-								ctxObjectRef: listRequisition2Process[iteratorReq].id,
-								name: listRequisition2Process[iteratorReq].id, 
-								domain: mediatorConfig.config.esiglServer.url,
-								path: "/rest-api/requisitions/"+listRequisition2Process[iteratorReq].id,
-								params:"",
+							var organization=listOrganizationToSync[indexFacility];
+							var eSiglCode=customLibrairy.getFacilityeSiGLCode(organization);
+							
+							orchestrations.push(
+								{ 
+								ctxObjectRef: eSiglCode,
+								name: organization.id, 
+								domain: config.esiglServer.url,
+								path: "/rest-api/requisitions",
+								params:"?facilityCode="+eSiglCode,
 								body: "",
 								method: "GET",
 								headers: {'Authorization': basicClientToken}
-								//headers: ""
-						  });
+							  });
 						}
-						var ctxObjectReqDetail = []; 
-						var orchestrationsResultsReqDetail=[];
+						var ctxObject = []; 
+						var orchestrationsResults=[]; 
+						var listRequisitionsFromeSIGL=[];
 						var counter=1; 
-						async.each(orchestrationsDetailReq, function(orchestration, callbackReqDetail) {
-						var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
-						var options={headers:orchestration.headers};
-						winston.info(counter+"/"+orchestrationsDetailReq.length);
-						winston.info("Querying requisitions/"+orchestration.ctxObjectRef+" from eSIGL....");
-						needle.get(orchUrl,options, function(err, resp) {
-							if ( err ){
-								callbackReqDetail(err);
-							}
-							orchestrationsResultsReqDetail.push({
-							name: orchestration.name,
-							request: {
-							  path : orchestration.path,
-							  headers: orchestration.headers,
-							  querystring: orchestration.params,
-							  body: resp.body.requisition,
-							  method: orchestration.method,
-							  timestamp: new Date().getTime()
-							},
-							response: {
-							  status: resp.statusCode,
-							  body: resp.body.requisition,
-							  timestamp: new Date().getTime()
-							}
-							});
-							ctxObject[orchestration.ctxObjectRef] = resp.body.requisition;
-							//console.log(ctxObject);
-							//counter++;
-							callbackReqDetail();
-						});//end of needle
+						async.each(orchestrations, function(orchestration, callback) {
+							var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
+							//console.log(orchUrl);
+							var options={headers:orchestration.headers};
+							winston.info(counter+"/"+orchestrations.length);
+							winston.info("Querying requisitions/"+orchestration.ctxObjectRef+" from eSIGL....");
+							needle.get(orchUrl,options, function(err, resp) {
+								if ( err ){
+									callback(err);
+								}
+								orchestrationsResults.push({
+								name: orchestration.name,
+								ctxObjectRef:orchestration.ctxObjectRef,
+								request: {
+								  path : orchestration.path,
+								  headers: orchestration.headers,
+								  querystring: orchestration.params,
+								  body: "",
+								  method: orchestration.method,
+								  timestamp: new Date().getTime()
+								},
+								response: {
+								  status: resp.statusCode,
+								  body: JSON.stringify(resp.body.requisitions, null, 4),
+								  timestamp: new Date().getTime()
+								}
+								});
+								ctxObject[orchestration.ctxObjectRef] = resp.body;
+								callback();
+							});//end of needle
 						counter++;
 						},function(err)
 						{
 							if(err)
 							{
 								winston.error(err);
+								
 							}
-							var listRequisitionsDetails=[];
-							winston.info("Extraction of requisition details done!")
-							for(var iteratorReqDetails=0;iteratorReqDetails<orchestrationsResultsReqDetail.length;iteratorReqDetails++)
-							{	
-								var foundRequisition=orchestrationsResultsReqDetail[iteratorReqDetails].response.body;
-								var oRequisitionDetails={
-										id:foundRequisition.id,
-										agentCode:foundRequisition.agentCode,
-										periodStartDate:foundRequisition.periodStartDate,
-										periodEndDate:foundRequisition.periodEndDate,
-										products:foundRequisition.products,
-										requisitionStatus:foundRequisition.requisitionStatus
-									};
-								listRequisitionsDetails.push(oRequisitionDetails);
-							}
-							//Then  facilityId (dhis2 id) for {Reference:Organization/id}
-							//Now build the bundle Requisition ressources                                                                                                                                                                                                                                                                                                                                                            
-							//var listRequisitionToPush=customLibrairy.buildRequisitionFhirResourcesNewApi(requisitionStatusToProcess,mediatorConfig.config.prefixResourceId,listOrganizationToSync,
-							//listRequisitionsDetails,listRequisition2Process,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
-							var listRequisitionToPush=customLibrairy.buildRequisitionFhirResourcesNewApiByProducts(requisitionStatusToProcess,mediatorConfig.config.prefixResourceId,listOrganizationToSync,
-							listRequisitionsDetails,listRequisition2Process,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
-							winston.info("Requisitions transformed to Requisition resources done: "+listRequisitionToPush.length);
-							//console.log(listRequisitionToPush.length);
-							//console.log("---------------------------------------");
-							//console.log(JSON.stringify(listRequisitionToPush[0]));
-							//return;
-							var orchestrationsRequistition2Push=[];
-							for(var iteratorReq=0;iteratorReq<listRequisitionToPush.length;iteratorReq++)
+							winston.info("Requisitions extracted from eSIGL...");
+							var globalListRequisitions=[]
+							for(var iteratorRes=0;iteratorRes<orchestrationsResults.length;iteratorRes++)
 							{
-								var oRequisition=listRequisitionToPush[iteratorReq];
-								orchestrationsRequistition2Push.push(
-									{ 
-									ctxObjectRef: oRequisition.id,
-									name: oRequisition.id, 
-									domain: mediatorConfig.config.hapiServer.url,
-									path: "/fhir/Basic/"+oRequisition.id,
-									params: "",
-									body:  JSON.stringify(oRequisition),
-									method: "PUT",
-									headers: {'Content-Type': 'application/json'}
-								  });
-								
-							}
-							var asyncFhir2Update = require('async');
-							var ctxObject2Update = []; 
-							var orchestrationsResults2Update=[];
-							var counterPush=1;
-							asyncFhir2Update.each(orchestrationsRequistition2Push, function(orchestration2FhirUpdate, callbackFhirUpdate) {
-							var orchUrl = orchestration2FhirUpdate.domain + orchestration2FhirUpdate.path + orchestration2FhirUpdate.params;
-							var options={headers:orchestration2FhirUpdate.headers};
-							var requisition2Push=orchestration2FhirUpdate.body;
-							var urlRequest=orchUrl;
-							winston.info(counterPush+"/"+orchestrationsRequistition2Push.length);
-							winston.info("...Inserting "+orchestration2FhirUpdate.path);
-							var args = "-X "+orchestration2FhirUpdate.method+" -H 'Content-Type: application/fhir+json' '"+urlRequest+"' "+" -d '"+requisition2Push+"' ";
-							var exec = require('child_process').exec;
-							exec('curl ' + args, function (error, stdout, stderr) {
-								if (error !== null) {
-									console.log('exec error: ' + error);
-									callbackFhirUpdate(error);
-								  }
-								//console.log(stdout);
-								
-								orchestrationsResults2Update.push({
-								name: orchestration2FhirUpdate.name,
-								request: {
-								  path : orchestration2FhirUpdate.path,
-								  headers: orchestration2FhirUpdate.headers,
-								  querystring: orchestration2FhirUpdate.params,
-								  body: "",
-								  method: orchestration2FhirUpdate.method,
-								  timestamp: new Date().getTime()
-								},
-								response: {
-								  status: 200,
-								  body: JSON.stringify(stdout, null, 4),
-								  timestamp: new Date().getTime()
-								}
-								});
-								// add orchestration response to context object and return callback
-								ctxObject2Update[orchestration2FhirUpdate.ctxObjectRef] = stdout;
-								callbackFhirUpdate();
-								
-							});//end of exec
-							
-							
-							counterPush++;
-							},function(err)
-							{
-								if(err)
+								var oResultOrchestration=orchestrationsResults[iteratorRes];
+								var responseBody=JSON.parse(oResultOrchestration.response.body);
+								console.log(oResultOrchestration.name +" |requisition found :"+responseBody.length);
+								var listRequisitionByFacility=customLibrairy.geRequisitionsPeriod(config.periodStartDate,
+									config.periodEndDate,responseBody);
+								//now assign the requisition to the global list 
+								for(var indexGlobal=0;indexGlobal<listRequisitionByFacility.length;indexGlobal++)
 								{
-									winston.error(err);
+									globalListRequisitions.push(listRequisitionByFacility[indexGlobal]);
 								}
+							}
+							console.log(`Total retained based on Period ${config.periodStartDate} - ${config.periodEndDate}:${globalListRequisitions.length}`);
+							customLibrairy.getAllRequisitionPeriodSynched(config.periodStartDate,config.periodEndDate
+							,function(listAlreadySynchedRequisitions)
+							{
+								var listRequisition2Process=[];
+								var batchSizeReq2Process=parseInt(config.batchSizeRequisitionToProcess);
+								console.log("Batchsize :"+batchSizeReq2Process);
+								var listProgramToProcess=config.programsToSync.split(",");
 								
-								winston.info("End of eSIGL=>Fhir requisition orchestration");
-								var listSyncProcess=[1,2];
-								var asyncLogs = require('async');
-								asyncLogs.each(listSyncProcess, function(syncProcess, callbackProcessSync) {
-									if(syncProcess==1)
-									{
-										customLibrairy.saveAllSynchedRequisitionsPeriod(mediatorConfig.config.periodStartDate,
-										mediatorConfig.config.periodEndDate,listRequisitionToPush,function(resSync)
-										{
-											if(resSync)
-											{
-												winston.info("Requisitons pushed  logged with success");
-											}
-											else
-											{
-												winston.warn("Requisitons pushed not logged with success");
-											}
-											
-										});
-										callbackProcessSync();
+								if(listAlreadySynchedRequisitions==null)
+								{
+									listRequisition2Process=customLibrairy.getRequisitionsNotSynched(config.prefixResourceId,
+										batchSizeReq2Process,[],globalListRequisitions,listProgramToProcess);
+								}
+								else
+								{
+									listRequisition2Process=customLibrairy.getRequisitionsNotSynched(config.prefixResourceId,batchSizeReq2Process,
+									listAlreadySynchedRequisitions,globalListRequisitions,listProgramToProcess);
+								}
+								winston.info("Return "+listRequisition2Process.length+" requisition selected from "+config.periodStartDate+" to "+config.periodEndDate);
+								var orchestrationsDetailReq=[];
+								//console.log(JSON.stringify(listRequisition2Process[0]));
+								for(var iteratorReq=0;iteratorReq<listRequisition2Process.length;iteratorReq++)
+								{
+									orchestrationsDetailReq.push(
+									{ 
+										ctxObjectRef: listRequisition2Process[iteratorReq].id,
+										name: listRequisition2Process[iteratorReq].id, 
+										domain: config.esiglServer.url,
+										path: "/rest-api/requisitions/"+listRequisition2Process[iteratorReq].id,
+										params:"",
+										body: "",
+										method: "GET",
+										headers: {'Authorization': basicClientToken}
+										//headers: ""
+								  });
+								}
+								var ctxObjectReqDetail = []; 
+								var orchestrationsResultsReqDetail=[];
+								var counter=1; 
+								async.each(orchestrationsDetailReq, function(orchestration, callbackReqDetail) {
+								var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
+								var options={headers:orchestration.headers};
+								winston.info(counter+"/"+orchestrationsDetailReq.length);
+								winston.info("Querying requisitions/"+orchestration.ctxObjectRef+" from eSIGL....");
+								needle.get(orchUrl,options, function(err, resp) {
+									if ( err ){
+										callbackReqDetail(err);
 									}
-									else if (syncProcess==2)
-									{
-										customLibrairy.saveAllSynchedOrganizationPeriod(mediatorConfig.config.periodStartDate,
-										mediatorConfig.config.periodEndDate,listOrganizationToSync,function(resSync)
-										{
-											if(resSync)
-											{
-												winston.info("Organization pushed  logged with success");
-											}
-											else
-											{
-												winston.warn("Organization pushed not logged with success");
-											}
-										});
-										callbackProcessSync();
+									orchestrationsResultsReqDetail.push({
+									name: orchestration.name,
+									request: {
+									  path : orchestration.path,
+									  headers: orchestration.headers,
+									  querystring: orchestration.params,
+									  body: resp.body.requisition,
+									  method: orchestration.method,
+									  timestamp: new Date().getTime()
+									},
+									response: {
+									  status: resp.statusCode,
+									  body: resp.body.requisition,
+									  timestamp: new Date().getTime()
 									}
-									
+									});
+									ctxObject[orchestration.ctxObjectRef] = resp.body.requisition;
+									//console.log(ctxObject);
+									//counter++;
+									callbackReqDetail();
+								});//end of needle
+								counter++;
 								},function(err)
 								{
 									if(err)
 									{
-										winston.erro(err);
+										winston.error(err);
 									}
-									var urn = mediatorConfig.urn;
-									var status = 'Successful';
-									var response = {
-									  status: 200,
-									  headers: {
-										'content-type': 'application/json'
-									  },
-									  body:JSON.stringify( {'Requisition_sync_operationd':'success'}),
-									  timestamp: new Date().getTime()
-									};
-									var properties = {};
-									properties['Nombre requisitions maj'] =orchestrationsResults2Update.length;
-									var returnObject = {
-									  "x-mediator-urn": urn,
-									  "status": status,
-									  "response": response,
-									  "orchestrations": orchestrationsResults2Update,
-									  "properties": properties
+									var listRequisitionsDetails=[];
+									winston.info("Extraction of requisition details done!")
+									for(var iteratorReqDetails=0;iteratorReqDetails<orchestrationsResultsReqDetail.length;iteratorReqDetails++)
+									{	
+										var foundRequisition=orchestrationsResultsReqDetail[iteratorReqDetails].response.body;
+										var oRequisitionDetails={
+												id:foundRequisition.id,
+												agentCode:foundRequisition.agentCode,
+												periodStartDate:foundRequisition.periodStartDate,
+												periodEndDate:foundRequisition.periodEndDate,
+												products:foundRequisition.products,
+												requisitionStatus:foundRequisition.requisitionStatus
+											};
+										listRequisitionsDetails.push(oRequisitionDetails);
 									}
-									res.set('Content-Type', 'application/json+openhim');
-									res.send(returnObject);
-								});//end asyncLogs
+									//Then  facilityId (dhis2 id) for {Reference:Organization/id}
+									//Now build the bundle Requisition ressources                                                                                                                                                                                                                                                                                                                                                            
+									//var listRequisitionToPush=customLibrairy.buildRequisitionFhirResourcesNewApi(requisitionStatusToProcess,mediatorConfig.config.prefixResourceId,listOrganizationToSync,
+									//listRequisitionsDetails,listRequisition2Process,mediatorConfig.config.esiglServer.url,mediatorConfig.config.hapiServer.url);
+									var listRequisitionToPush=customLibrairy.buildRequisitionFhirResourcesNewApiByProducts(requisitionStatusToProcess,config.prefixResourceId,listOrganizationToSync,
+									listRequisitionsDetails,listRequisition2Process,config.esiglServer.url,config.hapiServer.url);
+									winston.info("Requisitions transformed to Requisition resources done: "+listRequisitionToPush.length);
+									//console.log(listRequisitionToPush.length);
+									//console.log("---------------------------------------");
+									//console.log(JSON.stringify(listRequisitionToPush[0]));
+									//return;
+									var orchestrationsRequistition2Push=[];
+									for(var iteratorReq=0;iteratorReq<listRequisitionToPush.length;iteratorReq++)
+									{
+										var oRequisition=listRequisitionToPush[iteratorReq];
+										orchestrationsRequistition2Push.push(
+											{ 
+											ctxObjectRef: oRequisition.id,
+											name: oRequisition.id, 
+											domain: config.hapiServer.url,
+											path: "/fhir/Basic/"+oRequisition.id,
+											params: "",
+											body:  JSON.stringify(oRequisition),
+											method: "PUT",
+											headers: {'Content-Type': 'application/json'}
+										  });
+										
+									}
+									var asyncFhir2Update = require('async');
+									var ctxObject2Update = []; 
+									var orchestrationsResults2Update=[];
+									var counterPush=1;
+									asyncFhir2Update.each(orchestrationsRequistition2Push, function(orchestration2FhirUpdate, callbackFhirUpdate) {
+									var orchUrl = orchestration2FhirUpdate.domain + orchestration2FhirUpdate.path + orchestration2FhirUpdate.params;
+									var options={headers:orchestration2FhirUpdate.headers};
+									var requisition2Push=orchestration2FhirUpdate.body;
+									var urlRequest=orchUrl;
+									winston.info(counterPush+"/"+orchestrationsRequistition2Push.length);
+									winston.info("...Inserting "+orchestration2FhirUpdate.path);
+									var args = "-X "+orchestration2FhirUpdate.method+" -H 'Content-Type: application/fhir+json' '"+urlRequest+"' "+" -d '"+requisition2Push+"' ";
+									var exec = require('child_process').exec;
+									exec('curl ' + args, function (error, stdout, stderr) {
+										if (error !== null) {
+											console.log('exec error: ' + error);
+											callbackFhirUpdate(error);
+										  }
+										//console.log(stdout);
+										
+										orchestrationsResults2Update.push({
+										name: orchestration2FhirUpdate.name,
+										request: {
+										  path : orchestration2FhirUpdate.path,
+										  headers: orchestration2FhirUpdate.headers,
+										  querystring: orchestration2FhirUpdate.params,
+										  body: "",
+										  method: orchestration2FhirUpdate.method,
+										  timestamp: new Date().getTime()
+										},
+										response: {
+										  status: 200,
+										  body: JSON.stringify(stdout, null, 4),
+										  timestamp: new Date().getTime()
+										}
+										});
+										// add orchestration response to context object and return callback
+										ctxObject2Update[orchestration2FhirUpdate.ctxObjectRef] = stdout;
+										callbackFhirUpdate();
+										
+									});//end of exec
 									
-							})//end asyncFhir2Update OrchestrationRequisition to push
-							//console.log(listRequisitionToPush[0]);	
-							//return ;
-						});//end async orchestrationsDetailReq
+									
+									counterPush++;
+									},function(err)
+									{
+										if(err)
+										{
+											winston.error(err);
+										}
+										
+										//winston.info("End of eSIGL=>Fhir requisition orchestration");
+										var listSyncProcess=[1,2];
+										var asyncLogs = require('async');
+										asyncLogs.each(listSyncProcess, function(syncProcess, callbackProcessSync) {
+											if(syncProcess==1)
+											{
+												customLibrairy.saveAllSynchedRequisitionsPeriod(config.periodStartDate,
+												config.periodEndDate,listRequisitionToPush,function(resSync)
+												{
+													if(resSync)
+													{
+														winston.info("Requisitons pushed  logged with success");
+													}
+													else
+													{
+														winston.warn("Requisitons pushed not logged with success");
+													}
+													
+												});
+												callbackProcessSync();
+											}
+											else if (syncProcess==2)
+											{
+												customLibrairy.saveAllSynchedOrganizationPeriod(config.periodStartDate,
+												config.periodEndDate,listOrganizationToSync,function(resSync)
+												{
+													if(resSync)
+													{
+														winston.info("Organization pushed  logged with success");
+													}
+													else
+													{
+														winston.warn("Organization pushed not logged with success");
+													}
+												});
+												callbackProcessSync();
+											}
+											
+										},function(err)
+										{
+											if(err)
+											{
+												winston.erro(err);
+											}
+											winston.info("---------------End of eSIGL=>Fhir requisition orchestration------------------");
+											var urn = mediatorConfig.urn;
+											var status = 'Successful';
+											var response = {
+											  status: 200,
+											  headers: {
+												'content-type': 'application/json'
+											  },
+											  body:JSON.stringify( {'Requisition_sync_operationd':'success'}),
+											  timestamp: new Date().getTime()
+											};
+											var properties = {};
+											properties['Nombre requisitions maj'] =orchestrationsResults2Update.length;
+											var returnObject = {
+											  "x-mediator-urn": urn,
+											  "status": status,
+											  "response": response,
+											  "orchestrations": orchestrationsResults2Update,
+											  "properties": properties
+											}
+											//console.log(returnObject);
+											//console.log(res);
+											res.set('Content-Type', 'application/json+openhim');
+											res.send(returnObject);
+										});//end asyncLogs
+											
+									})//end asyncFhir2Update OrchestrationRequisition to push
+									//console.log(listRequisitionToPush[0]);	
+									//return ;
+								});//end async orchestrationsDetailReq
+								
+								
+							});//end of customLibrairy.getAllRequisitionPeriodSynched
+						});//end of async orchestration
 						
-						
-					});//end of customLibrairy.getAllRequisitionPeriodSynched
-				});//end of async orchestration
+					});//end of customLibrairy.getAllOrganizationPeriodSynched
 				
-			});//end of customLibrairy.getAllOrganizationPeriodSynched
+				});
+				//return;
+				
+			});//end of getAllOrganizationsCurl
+	
 			
-		});//end of getAllOrganizationsCurl
+			
+			
+		})//end ustomLibrairy.getFhirLofOffSet
+		
 	});//end of app.get syncrequisition2fhir_new
   return app
 }
@@ -2542,7 +2574,7 @@ function getAllOrganizations(bundleParam,filter,globalStoredList,callback)
 	if(bundleParam=="")
 	{
 		//urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Organization?type=${level}`;
-		urlRequest=`${mediatorConfig.config.hapiServer.url}/fhir/Organization?_count=2&${filter}`;
+		urlRequest=`${config.hapiServer.url}/fhir/Organization?_count=2&${filter}`;
 		
 		winston.info("First iteration!")
 	}
@@ -2611,10 +2643,11 @@ function getAllOrganizations(bundleParam,filter,globalStoredList,callback)
 }
 function getAllOrganizationsCurl(bundleParam,filter,globalStoredList,callback)
 {
+	console.log("Entered old function!!!");
 	var urlRequest="";
 	if(bundleParam=="")
 	{
-		urlRequest="'"+`${mediatorConfig.config.hapiServer.url}/fhir/Organization?${filter}`+"'";
+		urlRequest="'"+`${config.hapiServer.url}/fhir/Organization?${filter}`+"'";
 		winston.info("First iteration!")
 	}
 	else
@@ -2691,7 +2724,8 @@ function getAllOrganizationsCurl(bundleParam,filter,globalStoredList,callback)
 						//GetOrgUnitId(myArr.link[iterator].url,listAssociatedDataRow,listAssociatedResource,callback);
 					}
 				}
-				if(hasNextPageBundle==true && globalStoredList.length<300)
+				//if(hasNextPageBundle==true && globalStoredList.length<30)
+				if(hasNextPageBundle==true)
 				//if(false)
 				{
 					//console.log();
@@ -2708,6 +2742,264 @@ function getAllOrganizationsCurl(bundleParam,filter,globalStoredList,callback)
       //callback();
     });
 }
+function getAllOrganizationsCurlWithCurrentOffset(currentOffSet,bundleParam,filter,globalStoredList,callback)
+{
+	console.log("Entered new function!!!");
+	var urlRequest="";
+	if(bundleParam=="")
+	{
+		urlRequest="'"+`${config.hapiServer.url}/fhir/Organization?${filter}`+"'";
+		winston.info("First iteration!")
+	}
+	else
+	{
+		urlRequest="'"+`${bundleParam}`+"'";
+		winston.info("Looping througth bundle response to construct organization list!");
+	}
+	console.log(urlRequest);
+	var args = "-X GET  -H 'Content-Type: application/fhir+json' "+urlRequest;
+	var exec = require('child_process').exec;
+	exec('curl ' + args, function (error, stdout, stderr) {
+      //console.log('stdout: ' + stdout);
+      //console.log('stderr: ' + stderr);
+      if (error !== null) {
+        console.log('exec error: ' + error);
+        callback(error);
+      }
+      var responseBundle=JSON.parse(stdout);
+		if(responseBundle.entry!=null && currentOffSet==0)
+		{
+			//console.log("Has entries!!!!!");
+			var resourceIndexToRetain=[];
+			for(var iterator=0;iterator<responseBundle.entry.length;iterator++)
+			{
+				//if(esponseBundle.entry[iterator].resource)
+				//check if the ressource is already in the globalStoredList
+				//console.log("Resource returned :"+responseBundle.entry[iterator].resource.id);
+				var itemFound=false;
+				for(var itStoreList=0; itStoreList<globalStoredList.length;itStoreList++)
+				{
+					//console.log(`Compare ${globalStoredList[itStoreList].id} == ${responseBundle.entry[iterator].resource.id}`)
+					if(globalStoredList[itStoreList].id==responseBundle.entry[iterator].resource.id)
+					{
+						
+						itemFound=true;
+						break;
+					}
+				}
+				//console.log("res :"+itemFound);
+				//console.log("******************************************");
+				if(!itemFound)
+				{
+					resourceIndexToRetain.push(iterator);
+					//itemFound=false;
+				}
+				
+			}//end for iterator responseBundle
+			//Now getall resources retained
+			for(var iteratorResource=0;iteratorResource<resourceIndexToRetain.length;iteratorResource++)
+			{
+				
+				var indexToAdd=resourceIndexToRetain[iteratorResource];
+				//console.log("id resource retained:"+responseBundle.entry[indexToAdd].resource.id);
+				globalStoredList.push(responseBundle.entry[indexToAdd].resource);
+			}
+			//globalStoredList.push();
+			
+			if(responseBundle.link.length>0)
+			{
+				//console.log("responsebundle size: "+responseBundle.link.length);
+				var hasNextPageBundle=false;
+				var iterator=0;
+				var nextPageUrl="";
+				//console.log(responseBundle.link);
+				//console.log("////////////////////////////////////////////////////////////////////////");
+				for(;iterator <responseBundle.link.length;iterator++)
+				{
+					if(responseBundle.link[iterator].relation=="next")
+					{
+						
+						hasNextPageBundle=true;
+						nextPageUrl=responseBundle.link[iterator].url;
+						break;
+						//GetOrgUnitId(myArr.link[iterator].url,listAssociatedDataRow,listAssociatedResource,callback);
+					}
+				}
+				//if(hasNextPageBundle==true && globalStoredList.length<30)
+				var batchSizeRequisitionFacilities= parseInt (config.batchSizeRequisitionFacilities);
+				console.log("Global store list size="+globalStoredList.length)
+				if(hasNextPageBundle==true && globalStoredList.length<batchSizeRequisitionFacilities)
+				//if(false)
+				{
+					//console.log();
+					//onsole.log("---------------------------------");
+					getAllOrganizationsCurlWithCurrentOffset(currentOffSet,nextPageUrl,"",globalStoredList,callback);
+				}
+				else
+				{
+					//return callback(globalStoredList);
+					var offSetNumber=getPageOffSetFromUrl(nextPageUrl);
+					return callback([offSetNumber,globalStoredList]);
+				}
+				
+			}
+		}//end if responseBundle.entry
+		else if(responseBundle.entry!=null && currentOffSet>0)
+		{
+			if(responseBundle.link.length>0 && bundleParam=="")
+			{
+				//console.log("responsebundle size: "+responseBundle.link.length);
+				var hasNextPageBundle=false;
+				var iterator=0;
+				var nextPageUrl="";
+				//console.log(responseBundle.link);
+				//console.log("////////////////////////////////////////////////////////////////////////");
+				for(;iterator <responseBundle.link.length;iterator++)
+				{
+					if(responseBundle.link[iterator].relation=="next")
+					{
+						
+						hasNextPageBundle=true;
+						nextPageUrl=responseBundle.link[iterator].url;
+						break;
+						//GetOrgUnitId(myArr.link[iterator].url,listAssociatedDataRow,listAssociatedResource,callback);
+					}
+				}
+				//if(hasNextPageBundle==true && globalStoredList.length<30)
+				var batchSizeRequisitionFacilities= parseInt (config.batchSizeRequisitionFacilities);
+				if(hasNextPageBundle==true && globalStoredList.length<batchSizeRequisitionFacilities)
+				//if(false)
+				{
+					//console.log();
+					//onsole.log("---------------------------------");
+					//now reformat the url to point the correct offset
+					var urlComponents=nextPageUrl.split("&");
+					var indexPageOffSet=-1;
+					var stringToReplace="";
+					for(var indexUrl=0;indexUrl<urlComponents.length;indexUrl++)
+					{
+						if(urlComponents[indexUrl].includes("_getpagesoffset="))
+						{
+							indexPageOffSet=indexUrl;
+							stringToReplace=urlComponents[indexUrl];
+							break;
+						}
+					}
+					
+					var newNextPageUrl="";
+					if(indexPageOffSet!=-1)
+					{
+						var newOffSet=currentOffSet+2;
+						var item="_getpagesoffset="+newOffSet;
+						newNextPageUrl=nextPageUrl.replace(stringToReplace,item);
+					}
+					else
+					{
+						newNextPageUrl=nextPageUrl;
+					}
+					getAllOrganizationsCurlWithCurrentOffset(currentOffSet,newNextPageUrl,"",globalStoredList,callback);
+				}
+				else
+				{
+					 //return callback(globalStoredList);
+					var offSetNumber=getPageOffSetFromUrl(nextPageUrl);
+					return callback([offSetNumber,globalStoredList]);
+				}
+				
+			}//end if responseBundle.link.length
+			else if(responseBundle.link.length>0 && bundleParam!="")
+			{
+				var resourceIndexToRetain=[];
+				for(var iterator=0;iterator<responseBundle.entry.length;iterator++)
+				{
+					//if(esponseBundle.entry[iterator].resource)
+					//check if the ressource is already in the globalStoredList
+					//console.log("Resource returned :"+responseBundle.entry[iterator].resource.id);
+					var itemFound=false;
+					for(var itStoreList=0; itStoreList<globalStoredList.length;itStoreList++)
+					{
+						//console.log(`Compare ${globalStoredList[itStoreList].id} == ${responseBundle.entry[iterator].resource.id}`)
+						if(globalStoredList[itStoreList].id==responseBundle.entry[iterator].resource.id)
+						{
+							
+							itemFound=true;
+							break;
+						}
+					}
+					//console.log("res :"+itemFound);
+					//console.log("******************************************");
+					if(!itemFound)
+					{
+						resourceIndexToRetain.push(iterator);
+						//itemFound=false;
+					}
+					
+				}//end for iterator responseBundle
+				//Now getall resources retained
+				for(var iteratorResource=0;iteratorResource<resourceIndexToRetain.length;iteratorResource++)
+				{
+					
+					var indexToAdd=resourceIndexToRetain[iteratorResource];
+					//console.log("id resource retained:"+responseBundle.entry[indexToAdd].resource.id);
+					globalStoredList.push(responseBundle.entry[indexToAdd].resource);
+				}
+				if(responseBundle.link.length>0)
+				{
+					//console.log("responsebundle size: "+responseBundle.link.length);
+					var hasNextPageBundle=false;
+					var iterator=0;
+					var nextPageUrl="";
+					//console.log(responseBundle.link);
+					//console.log("////////////////////////////////////////////////////////////////////////");
+					for(;iterator <responseBundle.link.length;iterator++)
+					{
+						if(responseBundle.link[iterator].relation=="next")
+						{
+							
+							hasNextPageBundle=true;
+							nextPageUrl=responseBundle.link[iterator].url;
+							break;
+							//GetOrgUnitId(myArr.link[iterator].url,listAssociatedDataRow,listAssociatedResource,callback);
+						}
+					}
+					//if(hasNextPageBundle==true && globalStoredList.length<30)
+					var batchSizeRequisitionFacilities= parseInt (config.batchSizeRequisitionFacilities);
+					console.log("Global store list size="+globalStoredList.length)
+					if(hasNextPageBundle==true && globalStoredList.length<batchSizeRequisitionFacilities)
+					//if(false)
+					{
+						//console.log();
+						//onsole.log("---------------------------------");
+						getAllOrganizationsCurlWithCurrentOffset(currentOffSet,nextPageUrl,"",globalStoredList,callback);
+					}
+					else
+					{
+						var offSetNumber=getPageOffSetFromUrl(nextPageUrl);
+						return callback([offSetNumber,globalStoredList]);
+					}
+					
+				}//end if responseBundle.link.length
+			}//end else if responseBundle.link.length>0 && bundleParam!=""
+		}//end else responseBundle.entry!=null && currentOffSet>
+      //callback();
+    });
+}
+function getPageOffSetFromUrl(url)
+{
+	var urlComponents=url.split("&");
+	var offSetNumber=0;
+	for(var indexUrl=0;indexUrl<urlComponents.length;indexUrl++)
+	{
+		if(urlComponents[indexUrl].includes("_getpagesoffset="))
+		{
+			//indexPageOffSet=indexUrl;
+			offSetNumber=parseInt(urlComponents[indexUrl].split("=")[1]);
+			break;
+		}
+	}
+	return offSetNumber;
+}
+
 /**
  * start - starts the mediator
  *

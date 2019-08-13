@@ -1,6 +1,6 @@
 {
   "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60b41c05c",
-  "version": "0.3.6",
+  "version": "0.3.9",
   "name": "Push DHIS2 and eSIGL to FHIR HAPI Server",
   "description": "Pull DHIS2 and eSIGL resources, convert them to Fhir Related resources and push in HAPI",
   "defaultChannelConfig": [
@@ -152,14 +152,14 @@
         
       ],
       "allow": ["exchange"],
-      "type": "polling"
+      "type": "http"
     }
   ],
   "endpoints": [
     {
       "name": " Synnc DHIS2 orgUnits to FHIR Server",
       "host": "localhost",
-      "path": "/syncorgunit2fhir",
+      "path": "/",
       "port": "5021",
       "primary": true,
       "type": "http"
@@ -270,7 +270,7 @@
     {
       "param": "batchSizeRequisitionFacilities",
       "displayName": "batchSizeRequisitionFacilities ",
-      "description": "numbre of facility to process within each poll to get requisitions information (Starting from 2)",
+      "description": "numbre of facility to process within each poll to get requisitions information (Starting from 2,default 20)",
       "type": "string",
       "template": []
     }
@@ -278,7 +278,7 @@
     {
       "param": "batchSizeFacilityToSync",
       "displayName": "batchSizeFacilityToSync ",
-      "description": "numbre of facility to process at once during the dhis2=>hapi sync",
+      "description": "numbre of facility to process at once during the dhis2=>hapi sync (default 100)",
       "type": "string",
       "template": []
     } 
@@ -355,7 +355,7 @@
     "clientPassword":"pwd",
     "dhis2Server":{
 		"url":"http://localhost:8082",
-		"username":"user",
+		"username":"username",
 		"password":"pwd",
 		"orgunitapipath":"/api"
 		},
@@ -363,22 +363,22 @@
 		"url":"http://localhost:8083/hapi-fhir-jpaserver"
 		},
 	"esiglServer":{
-		"url":"https://localhost:9091",
-		"username":"user",
-		"password":"pwd",
+		"url":"https://localhost",
+		"username":"username",
+		"password":"password",
 		"resourcespath":"/rest-api"
 		},
-	"mappingFile":"/home/exchange-server/guinea-interop-dhis2-esigl/esigl-dhis-interop/data/mappingstructure-esigl-dhis2_final1.csv",
+	"mappingFile":"/home/user/data/mappingstructure-esigl-dhis2.csv",
 	"batchSizeRequisitionFacilities":"20",
 	"batchSizeFacilityToSync":"100",
 	"batchSizeeSGLFacilityToSync":"10",
 	"batchSizeRequisitionToProcess":"100",
-	"facilityLevesForRequisitions":"level_4,level_5",
-	"periodStartDate":"2019-03-01",
-	"periodEndDate":"2019-03-30",
+	"facilityLevesForRequisitions":"",
+	"periodStartDate":"",
+	"periodEndDate":"",
 	"maxNumberDayRequisitionsToPull":"5",
 	"pgStringConnection":"",
 	"prefixResourceId":"",
-	"programsToSync":"SIGL-INTEGRE-PNLP"
+	"programsToSync":""
   }
 }

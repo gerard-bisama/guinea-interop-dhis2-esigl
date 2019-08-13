@@ -1,5 +1,6 @@
 ---#Creating indices on the collections synchedorganizations
 #db.synchedorganizations.createIndex({"reqid":1,"minperiodstartdate":-1})
 db.requisitionSyncLog.createIndex({"reqid":1,"minperiodstartdate":-1}) //for requisition synched log//
+db.requisition2dhisSyncLog.createIndex({"reqid":1,"minperiodstartdate":-1}) //for requisition synched in dhis2
 db.organizationSyncLog.createIndex({"orgid":1,"minperiodstartdate":-1}) //for organization synched log
 db.mappingsynclogs.createIndex({"facilityId":1});
