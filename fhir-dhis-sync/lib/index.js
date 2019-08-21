@@ -2032,7 +2032,7 @@ function setupApp () {
 								var dispensingUnitId=customLibrairy.getResourceCategoryIdFromCode(oRequisition.dispensingUnit,listCategorieOptions);
 								//new build the ADX associated;
 								var adxRequisitionPayload=customLibrairy.buildADXPayloadFromRequisition(oRequisition,productId,programId,dispensingUnitId,
-								config);
+								mediatorConfig);
 								//console.log(adxRequisitionPayload);
 								//return;
 								listPayLoadToPushToDHIS2.push(adxRequisitionPayload);
