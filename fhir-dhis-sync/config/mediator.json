@@ -299,32 +299,32 @@
     "clientPassword":"pwd",
     "dhis2Server":{
 		"url":"http://localhost:8082",
-		"username":"username",
-		"password":"pwd",
+		"username":"gbisama",
+		"password":"Gbm!2000",
 		"apiPath":"/api"
 		},
 	"hapiServer":{
 		"url":"http://localhost:8083/hapi-fhir-jpaserver"
 		},
-	"productCategoryId":"",
-	"programCategoryId":"",
+	"productCategoryId":"zpMfTfkpc3m",
+	"programCategoryId":"DvLVPNEOZpq",
 	"programProductCategoryId":"",
-	"dispensingUnitCategoryId":"",
+	"dispensingUnitCategoryId":"XMHaCy4F9IG",
 	"resourceCountFhir":"5",
 	"periodStartDate":"",
 	"periodEndDate":"",
 	"programsToSync":"SIGL-INTEGRE-PNLP",
-	"datasetId":"",
+	"datasetId":"XfkbBsCVdkh",
 	"DataelementsRequisitionAttributeMapping":{
-		"quantiteUtilisee":"",
-		"stockInitial":"",
-		"quantiteRecue":"",
-		"sdu":"",
-		"ajustementPositive":"",
-		"ajustementNegative":"",
-		"cmm":"",
-		"nbJoursRupture":"",
-		"pertes":""
+		"quantiteUtilisee":"lcqZPctUePx",
+		"stockInitial":"QEtFxUKiC4s",
+		"quantiteRecue":"DsjkbZzcn5L",
+		"sdu":"YiNNbdGrI38",
+		"ajustementPositive":"BArsFlTrdes",
+		"ajustementNegative":"ycDkz6mBMSX",
+		"cmm":"GpypgMkSmjn",
+		"nbJoursRupture":"AElZS6ASt4d",
+		"pertes":"DYOVfXTYg43"
 		
 	}
 	
