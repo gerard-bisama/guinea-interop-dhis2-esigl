@@ -1806,6 +1806,8 @@ function setupApp () {
 		{
 			open_timeout: 600000
 		});
+		//console.log(config.DataelementsRequisitionAttributeMapping);
+		//return;
 		winston.info("Start hapi=>dhis2 requisitions sync...!");
 		const basicClientToken = `Basic ${btoa( config.dhis2Server.username+':'+ config.dhis2Server.password)}`;
 		var globalStoredList=[];
@@ -2032,7 +2034,7 @@ function setupApp () {
 								var dispensingUnitId=customLibrairy.getResourceCategoryIdFromCode(oRequisition.dispensingUnit,listCategorieOptions);
 								//new build the ADX associated;
 								var adxRequisitionPayload=customLibrairy.buildADXPayloadFromRequisition(oRequisition,productId,programId,dispensingUnitId,
-								mediatorConfig);
+								config);
 								//console.log(adxRequisitionPayload);
 								//return;
 								listPayLoadToPushToDHIS2.push(adxRequisitionPayload);

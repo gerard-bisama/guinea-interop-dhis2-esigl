@@ -118,6 +118,7 @@ exports.buildADXPayloadFromRequisition=function(requisitionObject,productId,prog
 	var currentZFormatDate=formatDateInZform(currentDate);
 	var validPeridoReported=requisitionObject.startDate.split("T")[0];
 	
+	/*
 	var xmlObject=[{adx:[{_attr:{xmlns:'urn:ihe:qrph:adx:2015','xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
 			'xsi:schemaLocation':'urn:ihe:qrph:adx:2015 ../schema/adx_loose.xsd',exported:currentZFormatDate}},
 			{group:[{_attr:{orgUnit:requisitionObject.organization,period:validPeridoReported+"/P1M",completeDate:currentZFormatDate}},
@@ -138,6 +139,28 @@ exports.buildADXPayloadFromRequisition=function(requisitionObject,productId,prog
 				{dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.nbJoursRupture,
 					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.stockOutDay}}]},
 				{dataValue:[{_attr:{dataElement:mediatorConfig.config.DataelementsRequisitionAttributeMapping.pertes,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.losses}}]},
+				]}]}]*/
+	var xmlObject=[{adx:[{_attr:{xmlns:'urn:ihe:qrph:adx:2015','xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
+			'xsi:schemaLocation':'urn:ihe:qrph:adx:2015 ../schema/adx_loose.xsd',exported:currentZFormatDate}},
+			{group:[{_attr:{orgUnit:requisitionObject.organization,period:validPeridoReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.DataelementsRequisitionAttributeMapping.quantiteUtilisee,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.consumedQuantity}}]},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.DataelementsRequisitionAttributeMapping.stockInitial,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.initialStock}}]},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.DataelementsRequisitionAttributeMapping.quantiteRecue,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.receivedQuantity}}]},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.DataelementsRequisitionAttributeMapping.sdu,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.stockOnHand}}]},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.DataelementsRequisitionAttributeMapping.ajustementPositive,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.positiveAdjustment}}]},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.DataelementsRequisitionAttributeMapping.ajustementNegative,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.negativeAdjustment}}]},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.DataelementsRequisitionAttributeMapping.cmm,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.averageMonthConsumption}}]},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.DataelementsRequisitionAttributeMapping.nbJoursRupture,
+					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.stockOutDay}}]},
+				{dataValue:[{_attr:{dataElement:mediatorConfig.DataelementsRequisitionAttributeMapping.pertes,
 					programme:programId,produits:productId,formes:dispensingUnitId,value:requisitionObject.losses}}]},
 				]}]}]
 	//console.log(xmlObject[0]);

@@ -299,8 +299,8 @@
     "clientPassword":"pwd",
     "dhis2Server":{
 		"url":"http://localhost:8082",
-		"username":"gbisama",
-		"password":"Gbm!2000",
+		"username":"user",
+		"password":"pwd",
 		"apiPath":"/api"
 		},
 	"hapiServer":{
