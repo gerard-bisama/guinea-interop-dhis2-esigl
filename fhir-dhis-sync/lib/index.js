@@ -1944,8 +1944,11 @@ function setupApp () {
 						var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
 						console.log(orchUrl);
 						var options={headers:orchestration.headers};
+						var usernameandpwd=config.dhis2Server.username+":"+config.dhis2Server.password;
+						//var password=config.dhis2Server.password.
 						var urlRequest=orchUrl;
-						var args = "-X "+orchestration.method+" -H 'Content-Type: application/json' -u gbisama:Gbm\!2000 -g '"+urlRequest+"'";
+						//var args = "-X "+orchestration.method+" -H 'Content-Type: application/json' -u gbisama:Gbm\!2000 -g '"+urlRequest+"'";
+						var args = "-X "+orchestration.method+" -H 'Content-Type: application/json' -u "+usernameandpwd+" -g '"+urlRequest+"'";
 						var exec = require('child_process').exec;
 						exec('curl ' + args, function (error, stdout, stderr) {
 							if (error !== null) {
