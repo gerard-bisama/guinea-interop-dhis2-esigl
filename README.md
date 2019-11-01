@@ -13,6 +13,22 @@ The architecture requires the following components apart of DHIS2 and e-SIGL:
 * [Hapi Fhir/JPA Server](https://hapifhir.io/doc_jpa.html)
 * [OpenHIM-Core](https://openhim.readthedocs.io/en/latest/getting-started.html)
 * [OpenHIM Console](https://openhim.readthedocs.io/en/latest/getting-started.html)
+### Start server
+Three main componants must be started to have an operational openhim server.
+* Start the openhim-core
+```
+sudo service mongod start
+openhim-core
+```
+
+* Start the Hapi FHIR Server
+```
+cd hapi-fhir-jpaserver-starter
+mvn jetty:run -Djetty.http.port=8083 > ~/hapifhir.log &
+```
+
+* Start the openhim console
+Openhim console is deployed as web application on apache. Ones need just to ensure that apache is running.
 
 ### Mediators
 ```
