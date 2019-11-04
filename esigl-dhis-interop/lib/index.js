@@ -807,12 +807,14 @@ function setupApp () {
 									},
 									response: {
 									  status: 200,
-									  body: JSON.stringify(stdout, null, 4),
+									  //body: JSON.stringify(stdout, null, 4),
+									  body: JSON.stringify(stdout),
 									  timestamp: new Date().getTime()
 									}
 								});
 							
-							ctxObjectOrgFhir.push( {eSIGLid:orchestration2GetOrganisation.ctxObjectRef,resource:JSON.parse(stdout.toString('utf8'))});
+							//ctxObjectOrgFhir.push( {eSIGLid:orchestration2GetOrganisation.ctxObjectRef,resource:JSON.parse(stdout.toString('utf8'))});
+							ctxObjectOrgFhir.push( {eSIGLid:orchestration2GetOrganisation.ctxObjectRef,resource:JSON.parse(stdout)});
 							
 							counter++;
 							callbackGetFhir();
@@ -2175,6 +2177,7 @@ function setupApp () {
 		});
 		//console.log(res);
 		var requisitionStatusToProcess="APPROVED";
+		var programCode= config.programsToSync;
 		const basicClientToken = `Basic ${btoa(config.esiglServer.username+':'+config.esiglServer.password)}`;
 		var globalSharedOrganisation=[];
 		winston.info("Start extraction of requisitions from eSIGL...!");
@@ -2185,7 +2188,7 @@ function setupApp () {
 		
 		var periodStartDate=config.periodStartDate;
 		var periodEndDate=config.periodEndDate;
-		customLibrairy.getFhirLogOffSet(periodStartDate,periodEndDate,function(currentOffSet)
+		customLibrairy.getFhirLogOffSet(periodStartDate,periodEndDate,programCode,function(currentOffSet)
 		{
 			
 			//console.log("Current offset:"+currentOffSet);
@@ -2200,11 +2203,11 @@ function setupApp () {
 				var listOrganizations=dicRes[1];
 				var newOffSet=dicRes[0];
 				//console.log(listOrganizations);
-				customLibrairy.updateFhirLogOffSet(periodStartDate,periodEndDate,newOffSet,function(upDateres)
+				customLibrairy.updateFhirLogOffSet(periodStartDate,periodEndDate,programCode,newOffSet,function(upDateres)
 				{
 					//console.log(res);
 					console.log("Returned updateFhirLogOffSet");
-					customLibrairy.getAllOrganizationPeriodSynched(config.periodStartDate,config.periodEndDate,function (listSynchedOrganizations)
+					customLibrairy.getAllOrganizationPeriodSynched(config.periodStartDate,config.periodEndDate,programCode,function (listSynchedOrganizations)
 					{
 						var listOrganizationToSync=[];
 						var batchSize=parseInt(config.batchSizeRequisitionFacilities);
@@ -2298,7 +2301,7 @@ function setupApp () {
 								}
 							}
 							console.log(`Total retained based on Period ${config.periodStartDate} - ${config.periodEndDate}:${globalListRequisitions.length}`);
-							customLibrairy.getAllRequisitionPeriodSynched(config.periodStartDate,config.periodEndDate
+							customLibrairy.getAllRequisitionPeriodSynched(config.periodStartDate,config.periodEndDate,programCode
 							,function(listAlreadySynchedRequisitions)
 							{
 								var listRequisition2Process=[];
@@ -2475,7 +2478,7 @@ function setupApp () {
 											if(syncProcess==1)
 											{
 												customLibrairy.saveAllSynchedRequisitionsPeriod(config.periodStartDate,
-												config.periodEndDate,listRequisitionToPush,function(resSync)
+												config.periodEndDate,programCode,listRequisitionToPush,function(resSync)
 												{
 													if(resSync)
 													{
@@ -2492,7 +2495,7 @@ function setupApp () {
 											else if (syncProcess==2)
 											{
 												customLibrairy.saveAllSynchedOrganizationPeriod(config.periodStartDate,
-												config.periodEndDate,listOrganizationToSync,function(resSync)
+												config.periodEndDate,programCode,listOrganizationToSync,function(resSync)
 												{
 													if(resSync)
 													{

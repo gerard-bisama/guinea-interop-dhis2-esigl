@@ -1206,12 +1206,14 @@ var requisitionSyncSchema=Schema({
 var requisitionSyncLogSchema=Schema({
 	reqid:String, //by default 1
 	minperiodstartdate:Date,
-	maxperiodstartdate:Date
+	maxperiodstartdate:Date,
+	programCode:String
 });
 var organizationSyncLogSchema=Schema({
 	orgid:String, //by default 1
 	minperiodstartdate:Date,
-	maxperiodstartdate:Date
+	maxperiodstartdate:Date,
+	programCode:String
 });
 
 var mappingSyncLogSchema=Schema({
@@ -1234,17 +1236,18 @@ var fhirOrganizationLogSchema=Schema({
 	minperiodstartdate:Date,
 	maxperiodstartdate:Date,
 	currentOffSet:{type:Number,default:0},
+	programCode:String
 });
 
 
 var synchedOrganizationDefinition=mongoose.model('synchedOrganization',organizationSchema);//Used in syncrequisition2fhir, not actually valid
 var synchedRequisitionDefinition=mongoose.model('synchedRequisition',requisitionSyncSchema);
 var requisitionSyncLogDefinition=mongoose.model('requisitionSyncLog',requisitionSyncLogSchema);//keep log of synched requisition new API
-var organizatinSyncLogDefinition=mongoose.model('organizationSyncLog',organizationSyncLogSchema);//keep log of synched organization within a specific period new API
-var facilitySyncLogDefinition=mongoose.model('facilitySyncLog',facilitySyncLogSchema);//keep log of counter to loop through dhis2 api to sync facilities to hapi
+var organizatinSyncLogDefinition=mongoose.model('organizationSyncLog',organizationSyncLogSchema);//keep log of synched organization to get requisition within a specific period new API
+var facilitySyncLogDefinition=mongoose.model('facilitySyncLog',facilitySyncLogSchema);//keep log of counter to loop through dhis2 api to sync facilities to hapi, return the current page and the pagecount related to the DHIS2 API, this allow incremental lopping base on the specified date
 var facilitySIGLSyncLogDefinition=mongoose.model('facilitySiglSyncLog',facilitySiglSyncLogSchema);//keep log of counter interation when looping though the esigl facilityList API, since it return a set of repeated facility for each page
 var mappingSyncLogDefinition=mongoose.model('mappingSyncLog',mappingSyncLogSchema);//keep esigklfacilityid of mapped facility
-var fhirOrganizationLogDefinition=mongoose.model('fhirOrganizationLog',fhirOrganizationLogSchema);//keep loop trace of fhir Organization to extract Requisition
+var fhirOrganizationLogDefinition=mongoose.model('fhirOrganizationLog',fhirOrganizationLogSchema);//keep loop trace of fhir facilities to extract Requisition by program.
 //return the list of organization which requisition has been already synched
 var getAllSynchedOrganization=function (callback)
 {
@@ -1267,13 +1270,13 @@ var getAllSynchedRequisitionsByFacility=function (callback)
 		return callback(synchedRequisitionsList);
 		});
 }
-var getAllRequisitionPeriodSynched=function(minStartDate,maxStartDate,callback)
+var getAllRequisitionPeriodSynched=function(minStartDate,maxStartDate,programCode,callback)
 {
 	var _minStartDate=new Date(minStartDate);
 	var _maxStartDate=new Date(maxStartDate);
 	if(maxStartDate!="")
 	{
-		var requestResult=requisitionSyncLogDefinition.find({"minperiodstartdate":{$gte:_minStartDate,$lte:_maxStartDate}},{"_id":0}).exec(function(error,synchedRequisitionsList){
+		var requestResult=requisitionSyncLogDefinition.find({"minperiodstartdate":{$gte:_minStartDate,$lte:_maxStartDate},"programCode":programCode},{"_id":0}).exec(function(error,synchedRequisitionsList){
 		if(error) return handleError(err);
 		//return callback(synchedMaxperiod.maxperiodstartdate);
 		//return callback(synchedRequisitionsList);
@@ -1291,7 +1294,7 @@ var getAllRequisitionPeriodSynched=function(minStartDate,maxStartDate,callback)
 	}
 	else
 	{
-		var requestResult=requisitionSyncLogDefinition.find({"minperiodstartdate":{$gte:_minStartDate}},{"_id":0}).exec(function(error,synchedRequisitionsList){
+		var requestResult=requisitionSyncLogDefinition.find({"minperiodstartdate":{$gte:_minStartDate},"programCode":programCode},{"_id":0}).exec(function(error,synchedRequisitionsList){
 		if(error) return handleError(err);
 		//return callback(synchedMaxperiod.maxperiodstartdate);
 		return callback(synchedRequisitionsList);
@@ -1299,13 +1302,13 @@ var getAllRequisitionPeriodSynched=function(minStartDate,maxStartDate,callback)
 	}
 	
 }
-var getAllOrganizationPeriodSynched=function(minStartDate,maxStartDate,callback)
+var getAllOrganizationPeriodSynched=function(minStartDate,maxStartDate,programCode,callback)
 {
 	var _minStartDate=new Date(minStartDate);
 	var _maxStartDate=new Date(maxStartDate);
 	if(maxStartDate!="")
 	{
-		var requestResult=organizatinSyncLogDefinition.find({"minperiodstartdate":{$gte:_minStartDate,$lte:_maxStartDate}},{"_id":0}).exec(function(error,synchedOrganizationList){
+		var requestResult=organizatinSyncLogDefinition.find({"minperiodstartdate":{$gte:_minStartDate,$lte:_maxStartDate},"programCode":programCode},{"_id":0}).exec(function(error,synchedOrganizationList){
 		if(error) {return handleError(err);}
 		var async = require('async');
 		var arrayList=[];
@@ -1321,7 +1324,7 @@ var getAllOrganizationPeriodSynched=function(minStartDate,maxStartDate,callback)
 	}
 	else
 	{
-		var requestResult=organizatinSyncLogDefinition.find({"minperiodstartdate":{$gte:_minStartDate}},{"_id":0}).exec(function(error,synchedOrganizationList){
+		var requestResult=organizatinSyncLogDefinition.find({"minperiodstartdate":{$gte:_minStartDate},"programCode":programCode},{"_id":0}).exec(function(error,synchedOrganizationList){
 		if(error) return handleError(err);
 		//return callback(synchedMaxperiod.maxperiodstartdate);
 		return callback(synchedOrganizationList);
@@ -1379,11 +1382,11 @@ var getSyncLogFacility=function(_dateOperation,callback)
 		
 		});
 }
-var getFhirLogOffSet=function(minStartDate,maxStartDate,callback)
+var getFhirLogOffSet=function(minStartDate,maxStartDate,programCode,callback)
 {
 	var _minStartDate=new Date(minStartDate);
 	var _maxStartDate=new Date(maxStartDate);
-	var requestResult=fhirOrganizationLogDefinition.findOne({"minperiodstartdate":{$eq:_minStartDate},"maxperiodstartdate":{$eq:_maxStartDate}},{"_id":0,"minperiodstartdate":0,"maxperiodstartdate":0}).exec(function(error,doc){
+	var requestResult=fhirOrganizationLogDefinition.findOne({"minperiodstartdate":{$eq:_minStartDate},"maxperiodstartdate":{$eq:_maxStartDate},"programCode":programCode},{"_id":0,"minperiodstartdate":0,"maxperiodstartdate":0}).exec(function(error,doc){
 		if(error) {
 			console.log("Error: Failed to get the facility log sync record!");
 			callback (null);
@@ -1395,11 +1398,11 @@ var getFhirLogOffSet=function(minStartDate,maxStartDate,callback)
 		
 		});
 }
-var updateFhirLogOffSet=function (minStartDate,maxStartDate,_currentOffSet,callback)
+var updateFhirLogOffSet=function (minStartDate,maxStartDate,programCode,_currentOffSet,callback)
 {
 	var _minStartDate=new Date(minStartDate);
 	var _maxStartDate=new Date(maxStartDate);
-	fhirOrganizationLogDefinition.findOneAndUpdate({"minperiodstartdate":{$eq:_minStartDate},"maxperiodstartdate":{$eq:_maxStartDate}},{$set:{minperiodstartdate:_minStartDate,maxperiodstartdate:_maxStartDate,currentOffSet:_currentOffSet}},{upsert:true},(err, doc) => {
+	fhirOrganizationLogDefinition.findOneAndUpdate({"minperiodstartdate":{$eq:_minStartDate},"maxperiodstartdate":{$eq:_maxStartDate},"programCode":programCode},{$set:{minperiodstartdate:_minStartDate,maxperiodstartdate:_maxStartDate,currentOffSet:_currentOffSet}},{upsert:true},(err, doc) => {
 		if (err) {
 			console.log("Error: Failed to update the record!");
 			callback(false);
@@ -1502,7 +1505,7 @@ var upsertSynchedRequisition=function(synchedRequisition,callback)
 				}
 			})//end of exec
 }
-var upsertSynchedRequisitionPeriod=function(minStartDate,maxStartDate,synchedRequisitionId,callback)
+var upsertSynchedRequisitionPeriod=function(minStartDate,maxStartDate,programCode,synchedRequisitionId,callback)
 {
 	requisitionSyncLogDefinition.findOne({
 			reqid:synchedRequisitionId,
@@ -1517,7 +1520,7 @@ var upsertSynchedRequisitionPeriod=function(minStartDate,maxStartDate,synchedReq
 					{
 						
 						var reqToUpdate= new requisitionSyncLogDefinition({reqid:synchedRequisitionId,
-							minperiodstartdate:minStartDate,maxperiodstartdate:maxStartDate});
+							minperiodstartdate:minStartDate,maxperiodstartdate:maxStartDate,programCode:programCode});
 						
 						var requestResult=reqToUpdate.save(function(err,result){
 							if(err)
@@ -1538,10 +1541,10 @@ var upsertSynchedRequisitionPeriod=function(minStartDate,maxStartDate,synchedReq
 				}
 			})//end of exec
 }
-var upsertSynchedOrganizationPeriod=function(minStartDate,maxStartDate,synchedFacilityId,callback)
+var upsertSynchedOrganizationPeriod=function(minStartDate,maxStartDate,programCode,synchedFacilityId,callback)
 {
 	organizatinSyncLogDefinition.findOne({
-			orgid:synchedFacilityId,minperiodstartdate:{$gte:maxStartDate,$lte:maxStartDate}
+			orgid:synchedFacilityId,minperiodstartdate:{$gte:maxStartDate,$lte:maxStartDate},programCode:programCode
 			}).exec(function(error,foundSynchedOrganization){
 				if(error) {
 					console.log(error);
@@ -1555,7 +1558,7 @@ var upsertSynchedOrganizationPeriod=function(minStartDate,maxStartDate,synchedFa
 					{
 						
 						var orgToUpdate= new organizatinSyncLogDefinition({orgid:synchedFacilityId,
-							minperiodstartdate:minStartDate,maxperiodstartdate:maxStartDate});
+							minperiodstartdate:minStartDate,maxperiodstartdate:maxStartDate,programCode:programCode});
 						
 						var requestResult=orgToUpdate.save(function(err,result){
 							if(err)
@@ -1688,7 +1691,7 @@ var saveAllSynchedRequisitions=function (synchedRequisitionList,callBackReturn)
 		
 	});//end of asynch
 }
-var saveAllSynchedRequisitionsPeriod=function (minStartDate,maxStartDate,synchedRequisitionList,callBackReturn)
+var saveAllSynchedRequisitionsPeriod=function (minStartDate,maxStartDate,programCode,synchedRequisitionList,callBackReturn)
 {
 	const async = require("async"); 
 	var result=false;
@@ -1697,7 +1700,7 @@ var saveAllSynchedRequisitionsPeriod=function (minStartDate,maxStartDate,synched
 	//console.log(`requestString => ${_minStartDate} : ${_maxStartDate}`);
 	async.each(synchedRequisitionList,function(synchedRequisition,callback)
 	{
-		upsertSynchedRequisitionPeriod(_minStartDate,_maxStartDate,synchedRequisition.id,function(response)
+		upsertSynchedRequisitionPeriod(_minStartDate,_maxStartDate,programCode,synchedRequisition.id,function(response)
 		{
 			result=response;
 			if(response)
@@ -1728,7 +1731,7 @@ var saveAllSynchedRequisitionsPeriod=function (minStartDate,maxStartDate,synched
 		
 	});//end of asynch
 }
-var saveAllSynchedOrganizationPeriod=function (minStartDate,maxStartDate,synchedOrganizationsList,callBackReturn)
+var saveAllSynchedOrganizationPeriod=function (minStartDate,maxStartDate,programCode,synchedOrganizationsList,callBackReturn)
 {
 	const async = require("async"); 
 	var result=false;
@@ -1737,7 +1740,7 @@ var saveAllSynchedOrganizationPeriod=function (minStartDate,maxStartDate,synched
 	//console.log(`requestString => ${_minStartDate} : ${_maxStartDate}`);
 	async.each(synchedOrganizationsList,function(synchedOrganization,callback)
 	{
-		upsertSynchedOrganizationPeriod(_minStartDate,_maxStartDate,synchedOrganization.id,function(response)
+		upsertSynchedOrganizationPeriod(_minStartDate,_maxStartDate,programCode,synchedOrganization.id,function(response)
 		{
 			result=response;
 			if(response)
