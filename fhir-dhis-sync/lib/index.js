@@ -2020,7 +2020,11 @@ function setupApp () {
 						for(var iteratorOrchResult=0;iteratorOrchResult<orchestrationsResultsCategory.length;iteratorOrchResult++ )
 						{
 							//console.log(JSON.parse(orchestrationsResultsCategory[iteratorOrchResult].response.body).categoryOptions[0]);
-							listCategorieOptions.push(JSON.parse(orchestrationsResultsCategory[iteratorOrchResult].response.body).categoryOptions[0]);
+							if(JSON.parse(orchestrationsResultsCategory[iteratorOrchResult].response.body).categoryOptions.length>0)
+							{
+								listCategorieOptions.push(JSON.parse(orchestrationsResultsCategory[iteratorOrchResult].response.body).categoryOptions[0]);
+							}
+							
 						}
 						//ctxObject2Get.categoryOptions.categoryOptions;
 						//console.log(listCategorieOptions);
