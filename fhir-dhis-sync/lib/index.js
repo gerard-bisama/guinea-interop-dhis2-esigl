@@ -2014,7 +2014,8 @@ function setupApp () {
 							winston.error(err);
 						}
 						winston.info("CategoryOptions resolve");
-						//console.log(ctxObject2Get.categoryOptions);
+						console.log(orchestrationsResultsCategory);
+						console.log("---------------------------------------------");
 						var listCategorieOptions=[];
 						for(var iteratorOrchResult=0;iteratorOrchResult<orchestrationsResultsCategory.length;iteratorOrchResult++ )
 						{
