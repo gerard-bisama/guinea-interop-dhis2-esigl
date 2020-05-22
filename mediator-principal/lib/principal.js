@@ -258,156 +258,298 @@ function setupApp () {
     customLibrairy.readeSIGLDataCSVFile(filePath,function(listStructures){
       logger.log({level:levelType.info,operationType:typeOperation.getData,action:`Lecture du fichier CSV des structures`,result:typeResult.success,
         message:`${listStructures.length} structures extraits de du fichier`});
-      //res.send(listStructures);
-      listeSIGLStrutures=listStructures;
-      customLibrairy.readMappingCSVFile(filePath,function(mappingList){
-        logger.log({level:levelType.info,operationType:typeOperation.getData,action:`Lecture du fichier CSV de mapping`,result:typeResult.success,
-        message:`${mappingList.length} mapping extraits de du fichier`});
-        var listLocationIds=[];
-        for(let mappingElement of mappingList)
+      //return res.send(listStructures);
+      var listLocationIds=[];
+      for(let mappingElement of listStructures)
+      {
+        if(mappingElement.iddhis)
         {
-          listLocationIds.push(mappingElement.dhis2);
+          listLocationIds.push(mappingElement.iddhis);
         }
-        getListHAPILocationByIds(hapiToken,listLocationIds,function(listLocationToMap){
-          logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/Location`,result:typeResult.success,
-        message:`${listLocationToMap.length} structures resolues pour mapping`});
-          let updatedLocationBundle=customLibrairy.updateLocationFromSIGL(listLocationToMap,config.esiglServer.url,listeSIGLStrutures,mappingList);
-          //console.log()
-          //res.send(updatedLocationBundle);
-          if(updatedLocationBundle.entry && updatedLocationBundle.entry.length>=1)
+        
+      }
+      //return res.send(listLocationIds);
+      getListHAPILocationByIds(hapiToken,listLocationIds,function(listLocationToMap){
+        logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/Location`,result:typeResult.success,
+      message:`${listLocationToMap.length} structures resolues pour mapping`});
+        let updatedLocationBundle=customLibrairy.updateLocationFromSIGL(listLocationToMap,config.esiglServer.url,listStructures);
+        //console.log()
+        //res.send(updatedLocationBundle);
+        if(updatedLocationBundle.entry && updatedLocationBundle.entry.length>=1)
+        {
+          logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/Location`,result:typeResult.iniate,
+        message:`${listLocationToMap.length} structures a mapper`});
+
+          saveBundle2Fhir(hapiToken,'Location',updatedLocationBundle,function(hapiServerResponse)
           {
-            logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/Location`,result:typeResult.iniate,
-          message:`${listLocationToMap.length} structures a mapper`});
-
-            saveBundle2Fhir(hapiToken,'Location',updatedLocationBundle,function(hapiServerResponse)
-            {
-              //console.log(hapiServerResponse.status);
-                if(hapiServerResponse.status==200)
-                {
-                    logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/Location",result:typeResult.success,
-                    message:`${hapiServerResponse.message}: ${updatedLocationBundle.entry.length} structures mappes`});
-                    //res.send(hapiServerResponse);
-                    let urn = mediatorConfig.urn;
-                    let status = 'Successful';
-                    let response = {
-                      status: 200,
-                      headers: {
-                      'content-type': 'application/json'
-                      },
-                      body:JSON.stringify( {'Process':`${updatedLocationBundle.entry.length} Location ont ete mise a jour avec success dans HAPI FHIR`}),
-                      timestamp: new Date().getTime()
-                    };
-                    var orchestrationToReturn=[
-                      {
-                        name: "Location",
-                        request: {
-                          path :"/Location",
-                          headers: {'Content-Type': 'application/json'},
-                          querystring: "",
-                          body:JSON.stringify( {'Process':`${updatedLocationBundle.entry.length} Location a mettre a jour dans HAPI FHIR`}),
-                          method: "POST",
-                          timestamp: new Date().getTime()
-                        },
-                        response: response
-                      }];
-                    var returnObject = {
-                      "x-mediator-urn": urn,
-                      "status": status,
-                      "response": response,
-                      "orchestrations": orchestrationToReturn,
-                      "properties": ""
-                    }
-                    res.set('Content-Type', 'application/json+openhim');
-                    res.send(returnObject);
-                }
-                else{
-                    logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/Location",result:typeResult.failed,
-                    message:`${hapiServerResponse.message}`});
-                    //res.send(hapiServerResponse);
-                    let urn = mediatorConfig.urn;
-                    let status = 'Successful';
-                    let response = {
-                      status: 200,
-                      headers: {
-                      'content-type': 'application/json'
-                      },
-                      body:JSON.stringify( {'Process':`${hapiServerResponse.message}`}),
-                      timestamp: new Date().getTime()
-                    };
-                    var orchestrationToReturn=[
-                      {
-                        name: "Location",
-                        request: {
-                          path :"/Location",
-                          headers: {'Content-Type': 'application/json'},
-                          querystring: "",
-                          body:JSON.stringify( {'Process':`${updatedLocationBundle.entry.length} Location a charger dans HAPI FHIR`}),
-                          method: "POST",
-                          timestamp: new Date().getTime()
-                        },
-                        response: response
-                      }];
-                    var returnObject = {
-                      "x-mediator-urn": urn,
-                      "status": status,
-                      "response": response,
-                      "orchestrations": orchestrationToReturn,
-                      "properties": ""
-                    }
-                    res.set('Content-Type', 'application/json+openhim');
-                    res.send(returnObject);
-                }
-            }); //end saveBundle2Fhir
-
-          }//end if updatedLocationBundle.entry
-          else{
-            logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/Location",result:typeResult.failed,
-            message:`Bundle de mapping invalid`});
-            //res.send(hapiServerResponse);
-            let urn = mediatorConfig.urn;
-            let status = 'Successful';
-            let response = {
-              status: 200,
-              headers: {
-              'content-type': 'application/json'
-              },
-              body:JSON.stringify( {'Process':`Bundle de mapping invalid`}),
-              timestamp: new Date().getTime()
-            };
-            var orchestrationToReturn=[
+            //console.log(hapiServerResponse.status);
+              if(hapiServerResponse.status==200)
               {
-                name: "Location",
-                request: {
-                  path :"/Location",
-                  headers: {'Content-Type': 'application/json'},
-                  querystring: "",
-                  body:JSON.stringify( {'Process':`Bundle de mapping invalid`}),
-                  method: "POST",
-                  timestamp: new Date().getTime()
-                },
-                response: response
-              }];
-            var returnObject = {
-              "x-mediator-urn": urn,
-              "status": status,
-              "response": response,
-              "orchestrations": orchestrationToReturn,
-              "properties": ""
-            }
-            res.set('Content-Type', 'application/json+openhim');
-            res.send(returnObject);
-          }//end else updatedLocationBundle.entry
-          
+                  logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/Location",result:typeResult.success,
+                  message:`${hapiServerResponse.message}: ${updatedLocationBundle.entry.length} structures mappes`});
+                  //res.send(hapiServerResponse);
+                  let urn = mediatorConfig.urn;
+                  let status = 'Successful';
+                  let response = {
+                    status: 200,
+                    headers: {
+                    'content-type': 'application/json'
+                    },
+                    body:JSON.stringify( {'Process':`${updatedLocationBundle.entry.length} Location ont ete mise a jour avec success dans HAPI FHIR`}),
+                    timestamp: new Date().getTime()
+                  };
+                  var orchestrationToReturn=[
+                    {
+                      name: "Location",
+                      request: {
+                        path :"/Location",
+                        headers: {'Content-Type': 'application/json'},
+                        querystring: "",
+                        body:JSON.stringify( {'Process':`${updatedLocationBundle.entry.length} Location a mettre a jour dans HAPI FHIR`}),
+                        method: "POST",
+                        timestamp: new Date().getTime()
+                      },
+                      response: response
+                    }];
+                  var returnObject = {
+                    "x-mediator-urn": urn,
+                    "status": status,
+                    "response": response,
+                    "orchestrations": orchestrationToReturn,
+                    "properties": ""
+                  }
+                  res.set('Content-Type', 'application/json+openhim');
+                  res.status(200).send(returnObject);
+              }
+              else{
+                  logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/Location",result:typeResult.failed,
+                  message:`${hapiServerResponse.message}`});
+                  //res.send(hapiServerResponse);
+                  let urn = mediatorConfig.urn;
+                  let status = 'Successful';
+                  let response = {
+                    status: 200,
+                    headers: {
+                    'content-type': 'application/json'
+                    },
+                    body:JSON.stringify( {'Process':`${hapiServerResponse.message}`}),
+                    timestamp: new Date().getTime()
+                  };
+                  var orchestrationToReturn=[
+                    {
+                      name: "Location",
+                      request: {
+                        path :"/Location",
+                        headers: {'Content-Type': 'application/json'},
+                        querystring: "",
+                        body:JSON.stringify( {'Process':`${updatedLocationBundle.entry.length} Location a charger dans HAPI FHIR`}),
+                        method: "POST",
+                        timestamp: new Date().getTime()
+                      },
+                      response: response
+                    }];
+                  var returnObject = {
+                    "x-mediator-urn": urn,
+                    "status": status,
+                    "response": response,
+                    "orchestrations": orchestrationToReturn,
+                    "properties": ""
+                  }
+                  res.set('Content-Type', 'application/json+openhim');
+                  res.status(200).send(returnObject);
+              }
+          }); //end saveBundle2Fhir
 
-        });//end getListHAPILocationByIds
+        }//end if updatedLocationBundle.entry
+        else{
+          logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/Location",result:typeResult.failed,
+          message:`Bundle de mapping invalid`});
+          //res.send(hapiServerResponse);
+          let urn = mediatorConfig.urn;
+          let status = 'Successful';
+          let response = {
+            status: 200,
+            headers: {
+            'content-type': 'application/json'
+            },
+            body:JSON.stringify( {'Process':`Bundle de mapping invalid`}),
+            timestamp: new Date().getTime()
+          };
+          var orchestrationToReturn=[
+            {
+              name: "Location",
+              request: {
+                path :"/Location",
+                headers: {'Content-Type': 'application/json'},
+                querystring: "",
+                body:JSON.stringify( {'Process':`Bundle de mapping invalid`}),
+                method: "POST",
+                timestamp: new Date().getTime()
+              },
+              response: response
+            }];
+          var returnObject = {
+            "x-mediator-urn": urn,
+            "status": status,
+            "response": response,
+            "orchestrations": orchestrationToReturn,
+            "properties": ""
+          }
+          res.set('Content-Type', 'application/json+openhim');
+          res.send(returnObject);
+        }//end else updatedLocationBundle.entry
+        
 
-        //res.send(listeSIGLStrutures);
-
-
-      });//end of customLibrairy.readMappingCSVFile
-
+      });
 
     });//end of customLibrairy.readeSIGLDataCSVFile
+  });
+  app.get('/syncprogramproduct2fhir', (req, res) => {
+    logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncprogramproduct2fhir",result:typeResult.iniate,
+    message:`Lancement du processus d'extraction des programs-produits eSIGL=>DHIS2`});
+    const eSIGLToken = `Basic ${btoa(config.esiglServer.username+':'+config.esiglServer.password)}`;
+    const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;;
+		var orchestrations = [
+      { 
+			ctxObjectRef: "programs",
+			name: "programs", 
+			domain: config.esiglServer.url,
+			path: config.esiglServer.resourcespath+"/lookup/programs",
+			params: "",
+			body: "",
+			method: "GET",
+			headers: {'Authorization': eSIGLToken,'Content-Type': 'application/json'}
+		  },
+		  {
+			ctxObjectRef: "products",
+			name: "products", 
+			domain: config.esiglServer.url,
+			path:config.esiglServer.resourcespath+"/lookup/products",
+			params: "?paging=false",
+			body: "",
+			method: "GET",
+			headers: {'Authorization': eSIGLToken,'Content-Type': 'application/json'}
+      },
+      {
+        ctxObjectRef: "program-products",
+        name: "program-products", 
+        domain: config.esiglServer.url,
+        path:config.esiglServer.resourcespath+"/lookup/program-products",
+        params: "",
+        body: "",
+        method: "GET",
+        headers: {'Authorization': eSIGLToken,'Content-Type': 'application/json'}
+      }
+      ];
+
+    var async = require('async');
+    let programsList=[];
+    let productsList=[];
+    let programproductsList=[];
+    async.eachSeries(orchestrations, (orchestration, nextOrchestration) => { 
+      var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
+      logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${orchestration.name}`,result:typeResult.iniate,
+      message:`Mapping: Extraction de la liste des programmes`});
+      let localNeedle = require('needle');
+      localNeedle.defaults(
+      {
+          open_timeout: 600000
+      });
+      let options={headers:orchestration.headers};
+      console.log(orchUrl);
+      localNeedle.get(orchUrl,options, function(err, resp) {
+        if(err)
+        {
+          logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${orchestration.name}`,result:typeResult.failed,
+        message:`${err.message}`});
+          
+        }
+        console.log(`status code :${resp.statusCode}`);
+        if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
+          logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${orchestration.name}`,result:typeResult.failed,
+        message:`${err.message}`});
+			  }
+        if (resp.statusCode && (resp.statusCode == 200)) {
+           
+          if(orchestration.name=="programs")
+          {
+            //console.log(resp.body.programs);
+            logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${orchestration.name}`,result:typeResult.ongoing,
+        message:`${resp.body.programs.length} ${orchestration.name}: extraits`});
+            programsList=programsList.concat(resp.body.programs);
+          }
+          if(orchestration.name=="products")
+          {
+            logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${orchestration.name}`,result:typeResult.ongoing,
+        message:`${resp.body.products.length} ${orchestration.name}: extraits`});
+            productsList=productsList.concat(resp.body.products);
+          }
+          if(orchestration.name=="program-products")
+          {
+            logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${orchestration.name}`,result:typeResult.ongoing,
+        message:`${resp.body['program-products'].length} ${orchestration.name}: extraits`});
+            programproductsList=programproductsList.concat(resp.body['program-products']);
+          }
+        }
+        nextOrchestration();
+      })//end of localNeedle.get(url orchestration)
+
+    },function(err)
+      {
+        if(err)
+        {
+          logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/programs`,result:typeResult.failed,
+          message:`${error.message}`});
+        }
+        
+        let productProgram=customLibrairy.buildProgamProductRessourceBundle(programsList,productsList,programproductsList,config.esiglServer.url,
+          config.extensionBaseUrlProductDetails,config.extensionBaseUrlProgramDetails);
+          if(productProgram && productProgram.length>0)
+          {
+            let bundleProducts=productProgram[0];
+            let bundleProgram=productProgram[1];
+          }
+
+        return res.send(productProgram[1]);
+        //console.log(programsList);
+        let urn = mediatorConfig.urn;
+        let status = 'Successful';
+        let response = {
+          status: 200,
+          headers: {
+          'content-type': 'application/json'
+          },
+          body:JSON.stringify( {'Process':`${programsList.length} programmes de ${productsList.length} produits sont mise a jour dans HAPI FHIR}`}),
+          timestamp: new Date().getTime()
+        };
+        var orchestrationToReturn=[
+          {
+            name: "Location",
+            request: {
+              path :"/program-products",
+              headers: {'Content-Type': 'application/json'},
+              querystring: "",
+              body:JSON.stringify( {'Process':`${programsList.length} programmes de ${productsList.length} produits a mettre a jour dans HAPI FHIR}`}),
+              method: "POST",
+              timestamp: new Date().getTime()
+            },
+            response: response
+          }];
+        var returnObject = {
+          "x-mediator-urn": urn,
+          "status": status,
+          "response": response,
+          "orchestrations": orchestrationToReturn,
+          "properties": ""
+        }
+        res.set('Content-Type', 'application/json+openhim');
+        res.send(returnObject);
+
+
+      }
+    );//end of async.orchestrations
+
+    
   });
   return app
 }

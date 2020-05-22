@@ -4,7 +4,7 @@ const csv=require('csvtojson');
 const moment = require('moment');
 const url=require('url');
 var csvHeaderLog=['timestamp','level','label','operationType','action','result','message'];
-var csvHeaderData=['code','id','etablissement','categories','prefecture','possession','Adresse','telephone','fax'];
+var csvHeaderData=['code','id','iddhis','etablissement','categories','prefecture','possession','Adresse','telephone','fax'];
 var csvHeaderMapping=['esigl','dhis2'];
 const logCSVConverter={
     noheader:true,
@@ -170,7 +170,7 @@ exports.buildLocationHierarchy =function buildLocationHierarchy(orgUnitList)
 	return oBundle;
 }
 
-exports.updateLocationFromSIGL=function updateLocationFromSIGL(listLocations,urlSIGLDomain,listSIGLFacilities,listMappings)
+exports.updateLocationFromSIGL=function updateLocationFromSIGL(listLocations,urlSIGLDomain,listSIGLFacilities)
 {
 	var listOfEntries=[];
 	for(let i=0;i<listLocations.length;i++)
@@ -203,55 +203,56 @@ exports.updateLocationFromSIGL=function updateLocationFromSIGL(listLocations,url
 		}
 		let dhisIdentifier=listLocations[i].identifier.find(identifier=>identifier.type.text=='dhis2Id');
 		let locationId=dhisIdentifier && dhisIdentifier.value;
-		let oMapping=listMappings.find(mapping=>mapping.dhis2==locationId);
-		let oFacility=listSIGLFacilities.find(facility=>facility.id==oMapping.esigl);
-
-		var facilityTypeCodingSystem=urlSIGLDomain+"/facility-type";
-		var eSIGLType=[];
-		if(oFacility.categories){
-			eSIGLType.push(
-				{
-					coding:[{system:facilityTypeCodingSystem,code:"categorie".code,display:"categorie"}],
-					text:oFacility.categories
-				}
-			)
-		}
-		if(oFacility.possession){
-			eSIGLType.push(
-				{
-					coding:[{system:facilityTypeCodingSystem,code:"possession".code,display:"possession"}],
-					text:oFacility.possession
-				}
-			)
-		}
-		var identifierCodingSystem=urlSIGLDomain+"/facility-code";
-		var eSIGLIdentifier=[];
-		if(oFacility.code)
+		let oFacility=listSIGLFacilities.find(facility=>facility.iddhis==locationId);
+		if(oFacility && oFacility.id)
 		{
-			eSIGLIdentifier.push(
-				{
-					use:"official",
-					type:{coding:[{system:identifierCodingSystem,code:"siglcode",display:"siglcode"}],text:"siglcode"},
-					value: oFacility.code
-				}
-			)
-		}
-		if(oFacility.code)
-		{
-			eSIGLIdentifier.push(
-				{
-					use:"official",
-					type:{coding:[{system:identifierCodingSystem,code:"siglid",display:"siglid"}],text:"siglid"},
-					value: oFacility.id
-				}
-			)
-		}
-		if(listLocations[i].identifier)
-		{
-			listLocations[i].identifier=listLocations[i].identifier.concat(eSIGLIdentifier);
-		}
-		if(listLocations[i].type){
-			listLocations[i].type=listLocations[i].type.concat(eSIGLType);
+			var facilityTypeCodingSystem=urlSIGLDomain+"/facility-type";
+			var eSIGLType=[];
+			if(oFacility.categories){
+				eSIGLType.push(
+					{
+						coding:[{system:facilityTypeCodingSystem,code:"categorie".code,display:"categorie"}],
+						text:oFacility.categories
+					}
+				)
+			}
+			if(oFacility.possession){
+				eSIGLType.push(
+					{
+						coding:[{system:facilityTypeCodingSystem,code:"possession".code,display:"possession"}],
+						text:oFacility.possession
+					}
+				)
+			}
+			var identifierCodingSystem=urlSIGLDomain+"/facility-code";
+			var eSIGLIdentifier=[];
+			if(oFacility.code)
+			{
+				eSIGLIdentifier.push(
+					{
+						use:"official",
+						type:{coding:[{system:identifierCodingSystem,code:"siglcode",display:"siglcode"}],text:"siglcode"},
+						value: oFacility.code
+					}
+				)
+			}
+			if(oFacility.id)
+			{
+				eSIGLIdentifier.push(
+					{
+						use:"official",
+						type:{coding:[{system:identifierCodingSystem,code:"siglid",display:"siglid"}],text:"siglid"},
+						value: oFacility.id
+					}
+				)
+			}
+			if(listLocations[i].identifier)
+			{
+				listLocations[i].identifier=listLocations[i].identifier.concat(eSIGLIdentifier);
+			}
+			if(listLocations[i].type){
+				listLocations[i].type=listLocations[i].type.concat(eSIGLType);
+			}
 		}
 		listOfEntries.push({
 			resource:listLocations[i],
@@ -260,8 +261,7 @@ exports.updateLocationFromSIGL=function updateLocationFromSIGL(listLocations,url
 				url: listLocations[i].resourceType + '/' + listLocations[i].id,
 				}
 			});
-			//console.log(listLocations[i]);
-	}//end for
+		}//end for
 	let oBundle=null;
 	if(listOfEntries.length>0)
 	{
@@ -274,6 +274,191 @@ exports.updateLocationFromSIGL=function updateLocationFromSIGL(listLocations,url
 	return oBundle;
 
 }
+exports.buildProgamProductRessourceBundle =function buildProgamProductRessourceBundle(programsList,productsList,
+	programProductsList,urlSIGLDomain,extensionBaseUrlProductDetails,extensionBaseUrlProgramDetails){
+	let bundleProducts={};
+	let bundlePrograms={};
+	var currentZFormatDate=moment().format('YYYY-MM-DDTHH:mm:ssZ');
+	var listOfEntries=[];
+	var fullUrl;
+	let extensionElements=[];
+	for(var i=0;i<productsList.length;i++)
+	{
+		extensionElements=[];
+		var oProduct=productsList[i];
+		var identifierCodingSystem=urlSIGLDomain+"/identifier-type";
+		var oIdentifier=[];
+		if(oProduct.id)
+		{
+			oIdentifier.push({
+				use:"official",
+				type:{coding:[{system:identifierCodingSystem,code:"procuctId",display:"procuctId"}],text:"procuctId"},
+				value:oProduct.id
 
+			});
+		}
+		
+		if(oProduct.code)
+		{
+			oIdentifier.push(
+			{
+				use:"official",
+				type:{coding:[{system:identifierCodingSystem,code:"productCode",display:"productCode"}],text:"productCode"},
+				value:oProduct.code
+
+			}
+			);
+		}
+		if(oProduct.primaryName){
+			extensionElements.push(
+				{
+					url:"primaryName",
+					valueString:oProduct.primaryName
+				}
+			);
+		}
+		if(oProduct.fullName){
+			extensionElements.push(
+				{
+					url:"fullName",
+					valueString:oProduct.fullName
+				}
+			);
+		}
+		if(oProduct.dispensingUnit){
+			extensionElements.push(
+				{
+					url:"dispensingUnit",
+					valueString:oProduct.dispensingUnit
+				}
+			);
+		}
+		extensionElements.push(
+			{
+				url:"sigleElementType",
+				valueString:"product"
+			}
+		);
+		var productResource={
+			resourceType:"Basic",
+			id:oProduct.code,
+			identifier:oIdentifier,
+			extension:[
+				{
+					url:extensionBaseUrlProductDetails,
+					extension:extensionElements
+				}
+			]
+		}
+		listOfEntries.push({
+            resource:productResource,
+            request: {
+                method: 'PUT',
+                url: productResource.resourceType + '/' + productResource.id,
+              }
+			});
+	}//end of for
+	//console.log("---------Products----------");
+	//console.log(listOfEntries);
+	if(listOfEntries.length>=1)
+	{
+		bundleProducts={
+			resourceType : "Bundle",
+			type: "batch",
+			entry:listOfEntries
+		};
+	}
+	//console.log(bundleProducts);
+	listOfEntries=[];
+	extensionElements=[];
+	for(var i=0;i<programsList.length;i++)
+	{
+		extensionElements=[];
+		var oProgram=programsList[i];
+		var identifierCodingSystem=urlSIGLDomain+"/identifier-type";
+		var oIdentifier=[];
+		if(oProgram.id)
+		{
+			oIdentifier.push({
+				use:"official",
+				type:{coding:[{system:identifierCodingSystem,code:"programId",display:"programId"}],text:"programId"},
+				value:oProgram.id
+
+			});
+		}
+		
+		if(oProgram.code)
+		{
+			oIdentifier.push(
+			{
+				use:"official",
+				type:{coding:[{system:identifierCodingSystem,code:"programCode",display:"programCode"}],text:"programCode"},
+				value:oProgram.code
+
+			}
+			);
+		}
+		//get the related program-products
+		//let programProductElements= programProductsList.filter(programProductElement=>programProductElement.program.id=oProgram.id);
+		let programProductElements= programProductsList.filter(element=>{
+			if(element.program.id == oProgram.id)
+			{
+				return element;
+			}
+		}
+			);
+		console.log("----- found programs-------");
+		console.log(programProductElements);
+
+		if(programProductElements && programProductElements.length>0)
+		{
+			for(let progprodElement of programProductElements){
+				extensionElements.push(
+					{
+						url:"providedProducts",
+						valueReference:{reference:"Basic/"+progprodElement.product.id}
+					}
+				);
+			}
+		}
+		var programmeResource={
+			resourceType:"Organization",
+			id:oProgram.code,
+			identifier:oIdentifier,
+			extension:[
+				{
+					url:extensionBaseUrlProgramDetails,
+					extension:extensionElements
+				}
+			]
+		}
+		listOfEntries.push({
+            resource:programmeResource,
+            request: {
+                method: 'PUT',
+                url: programmeResource.resourceType + '/' + programmeResource.id,
+              }
+			});
+	}//end of for
+	if(listOfEntries.length>=1)
+	{
+		bundlePrograms={
+			resourceType : "Bundle",
+			type: "batch",
+			entry:listOfEntries
+		};
+	}
+	//console.log(bundlePrograms);
+	return [bundleProducts,bundlePrograms];
+}
+function getProductProgramElement(programProductElement,programId)
+{
+	console.log("------in the loop----");
+	console.log(programProductElement);
+	if(programProductElement.program.id==programId)
+	{
+		return programProductElement;
+	}
+}
 
 
