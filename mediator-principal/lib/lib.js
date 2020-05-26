@@ -296,6 +296,14 @@ exports.buildProgamProductRessourceBundle =function buildProgamProductRessourceB
 				value:oProduct.id
 
 			});
+			//To generate id for dhis category combination
+			let dhisId='produits'+oProduct.id;
+			oIdentifier.push({
+				use:"official",
+				type:{coding:[{system:identifierCodingSystem,code:"dhisId",display:"dhisId"}],text:"dhisId"},
+				value:dhisId
+			});
+
 		}
 		
 		if(oProduct.code)
@@ -385,6 +393,20 @@ exports.buildProgamProductRessourceBundle =function buildProgamProductRessourceB
 				value:oProgram.id
 
 			});
+			let dhisId="";
+			if((""+oProgram.id).length>1)
+			{
+				dhisId="program20"+oProgram.id;
+			}
+			else{
+				dhisId="program200"+oProgram.id;
+			}
+			oIdentifier.push({
+				use:"official",
+				type:{coding:[{system:identifierCodingSystem,code:"dhisId",display:"dhisId"}],text:"dhisId"},
+				value:dhisId
+
+			});
 		}
 		
 		if(oProgram.code)
@@ -405,18 +427,19 @@ exports.buildProgamProductRessourceBundle =function buildProgamProductRessourceB
 			{
 				return element;
 			}
-		}
-			);
-		console.log("----- found programs-------");
-		console.log(programProductElements);
+		});
+		/* console.log("----- found programs-------");
+		console.log(programProductElements); */
 
 		if(programProductElements && programProductElements.length>0)
 		{
+			
 			for(let progprodElement of programProductElements){
+				let productReference=productsList.find(oProduct=>oProduct.id==progprodElement.product.id);
 				extensionElements.push(
 					{
 						url:"providedProducts",
-						valueReference:{reference:"Basic/"+progprodElement.product.id}
+						valueReference:{reference:"Basic/"+productReference.code}
 					}
 				);
 			}
@@ -425,6 +448,7 @@ exports.buildProgamProductRessourceBundle =function buildProgamProductRessourceB
 			resourceType:"Organization",
 			id:oProgram.code,
 			identifier:oIdentifier,
+			name:oProgram.name,
 			extension:[
 				{
 					url:extensionBaseUrlProgramDetails,
@@ -450,6 +474,41 @@ exports.buildProgamProductRessourceBundle =function buildProgamProductRessourceB
 	}
 	//console.log(bundlePrograms);
 	return [bundleProducts,bundlePrograms];
+}
+exports.buildCategoryOptionsMetadata=function buildCategoryOptionsMetadata(prefix,listProducts){
+	let listCategoryOptions=[];
+	for(let product of listProducts)
+	{
+		//dhisId=(prefix+product.id).toLowerCase().substr(0,11);
+		
+		let oIdentifier=product.identifier.find(id=>id.type.text=="dhisId");
+		let dhisId=oIdentifier.value;
+		let productDetail=product.extension[0].extension.find(extElement=>extElement.url=="primaryName");
+		let oCategioryOption={
+			id:dhisId,
+			code:product.id,
+			name:productDetail.valueString,
+			shortName:productDetail.valueString.substr(0,50),
+			displayName:productDetail.valueString
+		}
+		listCategoryOptions.push(oCategioryOption);
+	}
+	return listCategoryOptions;
+}
+exports.buildCategoryMetadata=function buildCategoryMetadata(programResource){
+	let oIdentifier=programResource.identifier.find(id=>id.type.text=="dhisId");
+	let dhisId=oIdentifier.value;
+	let oCategory={
+		id:dhisId,
+		code:programResource.id,
+		name:programResource.name,
+		shortName:programResource.name.substr(0,50),
+		displayName:programResource.name,
+		dataDimensionType:"DISAGGREGATION",
+		dimensionType: "CATEGORY"
+	}
+	return oCategory;
+
 }
 function getProductProgramElement(programProductElement,programId)
 {

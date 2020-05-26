@@ -16,6 +16,13 @@ const customLibrairy=require('./lib.js');
 var globalRes;
 var orgUnitResource="organisationUnits";
 var faciliyResource="facilities";
+var productResource="Product";
+var programResource="Program";
+var fhirProgramResource="Organization";
+var fhirProductResource="Basic";
+var dhisCategoryOption="categoryOptions";
+var dhisCategory="categories";
+var prodIDPrefixe="prod";
 var typeOperation ={
     startTheService:"Start",
     stopTheService:"Stop",
@@ -34,7 +41,7 @@ var typeResult={
 var levelType={
     info:"info",
     error:"error",
-    warning:"warning"
+    warning:"warn"
 };
 var mediatorName="mediateur_principal";
 const myFormat = printf(({ level, message, label, timestamp,operationType,action,result }) => {
@@ -408,7 +415,7 @@ function setupApp () {
     logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncprogramproduct2fhir",result:typeResult.iniate,
     message:`Lancement du processus d'extraction des programs-produits eSIGL=>DHIS2`});
     const eSIGLToken = `Basic ${btoa(config.esiglServer.username+':'+config.esiglServer.password)}`;
-    const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;;
+    const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;
 		var orchestrations = [
       { 
 			ctxObjectRef: "programs",
@@ -498,8 +505,8 @@ function setupApp () {
       {
         if(err)
         {
-          logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/programs`,result:typeResult.failed,
-          message:`${error.message}`});
+          logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/program-products`,result:typeResult.failed,
+          message:`${err.message}`});
         }
         
         let productProgram=customLibrairy.buildProgamProductRessourceBundle(programsList,productsList,programproductsList,config.esiglServer.url,
@@ -507,43 +514,133 @@ function setupApp () {
           if(productProgram && productProgram.length>0)
           {
             let bundleProducts=productProgram[0];
-            let bundleProgram=productProgram[1];
+            let bundlePrograms=productProgram[1];
+            logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/${productResource}`,result:typeResult.iniate,
+      message:`Mise a jour: Lancement de la mise a jour des ${productResource} dans HAPI FHIR`});
+            saveBundle2Fhir(hapiToken,productResource,bundleProducts,(hapiServerResponse)=>{
+              if(hapiServerResponse.status==200)
+              {
+                logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/${productResource}`,result:typeResult.success,
+                  message:`${hapiServerResponse.message}: ${bundleProducts.entry.length} ${productResource} mise a jour`});
+                  logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/${programResource}`,result:typeResult.iniate,
+      message:`Mise a jour: Lancement de la mise a jour des ${programResource} dans HAPI FHIR`});
+                  saveBundle2Fhir(hapiToken,programResource,bundlePrograms,(hapiServerResponse1)=>{
+                    if(hapiServerResponse1.status==200)
+                    {
+                      logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/${programResource}`,result:typeResult.success,
+                      message:`${hapiServerResponse1.message}: ${bundlePrograms.entry.length} ${programResource} mise a jour`});
+                      let urn = mediatorConfig.urn;
+                      let status = 'Successful';
+                      let response = {
+                        status: 200,
+                        headers: {
+                        'content-type': 'application/json'
+                        },
+                        body:JSON.stringify( {'Process':`${bundleProducts.entry.length} ${productResource}  et ${bundlePrograms.entry.length} ${programResource}  ont ete mises a jour dans HAPI FHIR}`}),
+                        timestamp: new Date().getTime()
+                      };
+                      var orchestrationToReturn=[
+                        {
+                          name: "program-products",
+                          request: {
+                            path :"/program-products",
+                            headers: {'Content-Type': 'application/json'},
+                            querystring: "",
+                            body:JSON.stringify( {'Process':`${bundleProducts.entry.length} ${productResource}  et ${bundlePrograms.entry.length} ${programResource}  a mettre a jour dans HAPI FHIR}`}),
+                            method: "POST",
+                            timestamp: new Date().getTime()
+                          },
+                          response: response
+                        }];
+                        var returnObject = {
+                          "x-mediator-urn": urn,
+                          "status": status,
+                          "response": response,
+                          "orchestrations": orchestrationToReturn,
+                          "properties": ""
+                        }
+                        res.set('Content-Type', 'application/json+openhim');
+                        res.status(200).send(returnObject);
+                    }
+                    else{
+                        logger.log({level:levelType.error,operationType:typeOperation.postData,action:`${programResource}`,result:typeResult.failed,
+                    message:`${hapiServerResponse1.message}`});
+                    //res.send(hapiServerResponse);
+                    let urn = mediatorConfig.urn;
+                    let status = 'Failed';
+                    let response = {
+                      status: 500,
+                      headers: {
+                      'content-type': 'application/json'
+                      },
+                      body:JSON.stringify( {'Process':`${hapiServerResponse1.message}`}),
+                      timestamp: new Date().getTime()
+                    };
+                    var orchestrationToReturn=[
+                      {
+                        name: `${programResource}`,
+                        request: {
+                          path :`${programResource}`,
+                          headers: {'Content-Type': 'application/json'},
+                          querystring: "",
+                          body:JSON.stringify( {'Process':`${bundlePrograms.entry.length} ${programResource} a mettre a jour dans HAPI FHIR`}),
+                          method: "POST",
+                          timestamp: new Date().getTime()
+                        },
+                        response: response
+                      }];
+                    var returnObject = {
+                      "x-mediator-urn": urn,
+                      "status": status,
+                      "response": response,
+                      "orchestrations": orchestrationToReturn,
+                      "properties": ""
+                    }
+                    res.set('Content-Type', 'application/json+openhim');
+                    res.status(500).send(returnObject);
+                    }
+                  });//end saveBundle2fhir(programResource)
+                  //res.send(hapiServerResponse);
+              }
+              else{//productResource
+                logger.log({level:levelType.error,operationType:typeOperation.postData,action:`${productResource}`,result:typeResult.failed,
+                    message:`${hapiServerResponse.message}`});
+                    //res.send(hapiServerResponse);
+                    let urn = mediatorConfig.urn;
+                    let status = 'Failed';
+                    let response = {
+                      status: 500,
+                      headers: {
+                      'content-type': 'application/json'
+                      },
+                      body:JSON.stringify( {'Process':`${hapiServerResponse.message}`}),
+                      timestamp: new Date().getTime()
+                    };
+                    var orchestrationToReturn=[
+                      {
+                        name: `${productResource}`,
+                        request: {
+                          path :`${productResource}`,
+                          headers: {'Content-Type': 'application/json'},
+                          querystring: "",
+                          body:JSON.stringify( {'Process':`${bundleProducts.entry.length} ${productResource} a mettre a jour dans HAPI FHIR`}),
+                          method: "POST",
+                          timestamp: new Date().getTime()
+                        },
+                        response: response
+                      }];
+                    var returnObject = {
+                      "x-mediator-urn": urn,
+                      "status": status,
+                      "response": response,
+                      "orchestrations": orchestrationToReturn,
+                      "properties": ""
+                    }
+                    res.set('Content-Type', 'application/json+openhim');
+                    res.status(500).send(returnObject);
+              }
+            });//end ofsaveBundle2Fhir(productResource)
           }
-
-        return res.send(productProgram[1]);
-        //console.log(programsList);
-        let urn = mediatorConfig.urn;
-        let status = 'Successful';
-        let response = {
-          status: 200,
-          headers: {
-          'content-type': 'application/json'
-          },
-          body:JSON.stringify( {'Process':`${programsList.length} programmes de ${productsList.length} produits sont mise a jour dans HAPI FHIR}`}),
-          timestamp: new Date().getTime()
-        };
-        var orchestrationToReturn=[
-          {
-            name: "Location",
-            request: {
-              path :"/program-products",
-              headers: {'Content-Type': 'application/json'},
-              querystring: "",
-              body:JSON.stringify( {'Process':`${programsList.length} programmes de ${productsList.length} produits a mettre a jour dans HAPI FHIR}`}),
-              method: "POST",
-              timestamp: new Date().getTime()
-            },
-            response: response
-          }];
-        var returnObject = {
-          "x-mediator-urn": urn,
-          "status": status,
-          "response": response,
-          "orchestrations": orchestrationToReturn,
-          "properties": ""
-        }
-        res.set('Content-Type', 'application/json+openhim');
-        res.send(returnObject);
 
 
       }
@@ -551,6 +648,176 @@ function setupApp () {
 
     
   });
+  app.get('/syncprogramproduct2dhis2', (req, res) => {
+    globalRes=res;
+    logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncprogramproduct2dhis2",result:typeResult.iniate,
+    message:`Lancement du processus de synchronisation des programmes-produits dans DHIS2`});
+    const dhis2Token = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
+    const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;
+    getListHapiResource(hapiToken,fhirProgramResource,(listProgramsEntries)=>{
+      //res.status(200).send(listProgramsEntry);
+      let async = require('async');
+      async.eachSeries(listProgramsEntries, function(programEntry, nextStep) {
+        
+        var listResourceIds=[];
+        for(let extensionElement of programEntry.resource.extension[0].extension)
+        {
+          if(extensionElement.url=="providedProducts")
+          {
+            listResourceIds.push(extensionElement.valueReference.reference.split("/")[1]);
+          }
+        }
+        /* console.log(listResourceIds.toString());
+        console.log("----------------------------------------"); */
+        logger.log({level:levelType.info,operationType:typeOperation.getData,action:"/getListHAPIResourcesByIds",result:typeResult.iniate,
+    message:`Extraction des details sur les produits du programme ${programEntry.resource.name}`});
+        getListHAPIResourcesByIds(hapiToken,fhirProductResource,listResourceIds,(listProducts)=>{
+          logger.log({level:levelType.info,operationType:typeOperation.getData,action:"/getListHAPIResourcesByIds",result:typeResult.success,
+    message:`Extraction des details sur les produits du programme ${programEntry.resource.name} effectuees`});
+          let listCategoryOptions =customLibrairy.buildCategoryOptionsMetadata(prodIDPrefixe,listProducts);
+          
+          //console.log(JSON.stringify(payload));
+          logger.log({level:levelType.info,operationType:typeOperation.post,action:"/saveMetadataList2Dhis",result:typeResult.iniate,
+    message:`Mise a jour des ${listCategoryOptions.length} produits du ${programEntry.resource.name}`});
+          saveMetadataList2Dhis(dhis2Token,dhisCategoryOption,listCategoryOptions,(dhisOpResponse)=>{
+            
+            //console.log(dhisOpResponse);
+            let listProducts2Update=[];
+            //Now get the metadata to update, those with conflict HTTP status
+            if(dhisOpResponse && dhisOpResponse.length>0){
+              let tempList= dhisOpResponse.filter(element=>{
+                if(element.httpStatus == "Conflict")
+                {
+                  return element;
+                }
+              });
+              for(let opResponse of tempList){
+                listProducts2Update.push(opResponse.metadata);
+              } 
+
+            }
+            logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/saveMetadataList2Dhis",result:typeResult.success,
+            message:`${listCategoryOptions.length-listProducts2Update.length} produits du ${programEntry.resource.name} inseres`});
+            if(listProducts2Update.length>0)
+            {
+              updateMetadataList2Dhis(dhis2Token,dhisCategoryOption,listProducts2Update,(dhisUpdateOperation)=>{
+                
+                logger.log({level:levelType.info,operationType:typeOperation.post,action:"/updateMetadataList2Dhis",result:typeResult.success,
+                message:`${listProducts2Update.length} produits du ${programEntry.resource.name} mise a jour`});
+                //console.log(dhisUpdateOperation);
+                //Transform program to category
+                
+                let programMetadataList=[customLibrairy.buildCategoryMetadata(programEntry.resource)];
+                logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/saveMetadataList2Dhis",result:typeResult.iniate,
+                message:`Creation de la category ${programEntry.resource.name} dans DHIS2`});
+                saveMetadataList2Dhis(dhis2Token,dhisCategory,programMetadataList,(dhisProgAddResponse)=>{
+                  //if the program is newly created or exist already add the collections of object 
+                  //console.log(dhisProgAddResponse);
+                  if(dhisProgAddResponse[0].httpStatus=="OK" || dhisProgAddResponse[0].httpStatus=="Created" || dhisProgAddResponse[0].httpStatus=="Conflict"){
+                    //build the collection of object to add
+                    logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/saveMetadataList2Dhis",result:typeResult.success,
+                message:`Creation de la category ${programEntry.resource.name} dans DHIS2`});
+                    let categoryOptionsCollection={identifiableObjects:[]};
+                    for(let categoryOption of listCategoryOptions){
+                      categoryOptionsCollection.identifiableObjects.push(
+                        {
+                          id:categoryOption.id
+                        }
+                      );
+                    }
+                    logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/saveMetadataCollection2Dhis",result:typeResult.iniate,
+                message:`Creation de la collection dans la category ${programEntry.resource.name} dans DHIS2`});
+                let oIdentifier=programEntry.resource.identifier.find(id=>id.type.text=="dhisId");
+                let dhisIdProgram=oIdentifier.value;
+                    saveMetadataCollection2Dhis(dhis2Token,dhisCategory,dhisIdProgram,dhisCategoryOption,categoryOptionsCollection,
+                    (dhisCreateCollectionOp)=>{
+                      logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/saveMetadataCollection2Dhis",result:typeResult.success,
+                message:`Creation de la collection dans la category ${programEntry.resource.name} dans DHIS2`});
+                      //console.log(dhisCreateCollectionOp);
+                      //let err={message:'stop on the first loop'};
+                       nextStep();
+                    })//end saveMetadataCollection2Dhis()
+
+                  }
+                  else{
+                    logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/saveMetadataList2Dhis",result:typeResult.failed,
+                    message:`Erreur:${dhisProgAddResponse[0].httpStatus}: echec de la creation de la caterogie ${programEntry.resource.name} dans DHIS2`});
+                    
+                    let err={message:`Erreur:${dhisProgAddResponse[0].httpStatus}: echec de la creation de la caterogie ${programEntry.resource.name} dans DHIS2`};
+                    nextStep(err);
+                  }
+
+                });//end saveMetadataList2Dhis(programMetadataList)
+
+                
+              });//end updateMetadataList2Dhis
+            }
+            else
+            {
+              let programMetadataList=[customLibrairy.buildCategoryMetadata(programEntry.resource)];
+                logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/saveMetadataList2Dhis",result:typeResult.iniate,
+                message:`Creation de la category ${programEntry.resource.name} dans DHIS2`});
+                saveMetadataList2Dhis(dhis2Token,dhisCategory,programMetadataList,(dhisProgAddResponse)=>{
+                  //if the program is newly created or exist already add the collections of object 
+                  console.log(dhisProgAddResponse);
+                  if(dhisProgAddResponse[0].httpStatus=="OK" ||dhisProgAddResponse[0].httpStatus=="Created" || dhisProgAddResponse[0].httpStatus=="Conflict"){
+                    //build the collection of object to add
+                    logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/saveMetadataList2Dhis",result:typeResult.success,
+                message:`Creation de la category ${programEntry.resource.name} dans DHIS2`});
+                    let categoryOptionsCollection={identifiableObjects:[]};
+                    for(let categoryOption of listCategoryOptions){
+                      categoryOptionsCollection.identifiableObjects.push(
+                        {
+                          id:categoryOption.id
+                        }
+                      );
+                    }
+                    logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/saveMetadataCollection2Dhis",result:typeResult.iniate,
+                message:`Creation de la collection dans la category ${programEntry.resource.name} dans DHIS2`});
+                let oIdentifier=programEntry.resource.identifier.find(id=>id.type.text=="dhisId");
+                let dhisIdProgram=oIdentifier.value;
+                    saveMetadataCollection2Dhis(dhis2Token,dhisCategory,dhisIdProgram,dhisCategoryOption,categoryOptionsCollection,
+                    (dhisCreateCollectionOp)=>{
+                      //console.log(dhisCreateCollectionOp);
+                      //let err={message:'stop on the first loop'};
+                       nextStep();
+                    })//end saveMetadataCollection2Dhis()
+
+                  }
+                  else{
+                    logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/saveMetadataList2Dhis",result:typeResult.failed,
+                    message:`Erreur:${dhisProgAddResponse[0].httpStatus}: echec de la creation de la caterogie ${programEntry.resource.name} dans DHIS2`});
+                    
+                    let err={message:`Erreur:${dhisProgAddResponse[0].httpStatus}: echec de la creation de la caterogie ${programEntry.resource.name} dans DHIS2`};
+                    nextStep(err);
+                  }
+
+                });//end saveMetadataList2Dhis(programMetadataList
+            }
+            
+            //Break on the first loop
+            
+          });//end saveMetadataList2Dhis
+          
+        });//end getListHAPIResourcesByIds(...)
+        //nextStep();
+      },function(err){
+        if(err)
+        {
+          logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/saveMetadataList2Dhis`,result:typeResult.failed,
+          message:`${err.message}`});
+          res.status(200).send({res:'Error'});
+        }
+        else{
+          res.status(200).send({res:'OK'});
+        }
+        
+      });//end async.eachseries(listProgramsEntry)
+
+
+    });//end getListHapiResource
+  });
+
   return app
 }
 function saveEntryToElastic(url,esToken,logEntries,callbackMain)
@@ -663,6 +930,73 @@ function getListDHIS2OrgUnit(dhis2Token,callbackMain){
         }
     );//end of async.whilst
 }
+function getListHapiResource(hapiToken,fhirResource,callbackMain)
+{
+  let localNeedle = require('needle');
+    localNeedle.defaults(
+        {
+            open_timeout: 600000
+        });
+    let options={headers:{'Content-Type': 'application/json','Authorization':hapiToken}};
+    let localAsync = require('async');
+    var resourceData = [];
+    var url= URI(config.hapiServer.url).segment(fhirResource);
+    url.addQuery('_format', "json");
+    url = url.toString();
+    localAsync.whilst(
+      callback => {
+          return callback(null, url !== false);
+        },
+      callback => {
+          
+          localNeedle.get(url,options, function(err, resp) {
+              url = false;
+              if (err) {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${fhirResource}`,result:typeResult.failed,
+                      message:`${err.message}`});
+              }
+              if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${fhirResource}`,result:typeResult.failed,
+                      message:`Code d'erreur http: ${resp.statusCode}`});
+                  return callback(true, false);
+              }
+              let body = JSON.parse(resp.body);
+              if (!body.entry) {
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${fhirResource}`,result:typeResult.failed,
+                      message:`Ressource invalid retourner par le serveur FHIR: ${resp.statusCode}`});
+                return callback(true, false);
+              }
+              if (body.total === 0 && body.entry && body.entry.length > 0) {
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${fhirResource}`,result:typeResult.failed,
+                message:`Aucune resource retourne par le serveur HAPI: ${resp.statusCode}`});
+                return callback(true, false);
+              }
+              if (body.entry && body.entry.length > 0) {
+        logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${fhirResource} page:${body.entry.length}/${body.total}`,
+        result:typeResult.success,message:`Extraction de  ${body.entry.length} ${fhirResource} de HAPI`});
+                  resourceData = resourceData.concat(body.entry);
+                  //force return only one loop data
+                  //return callback(true, false);
+              }
+              const next =  body.link && body.link.find(link => link.relation === 'next');
+
+              if(next)
+              {
+                  url = next.url;;
+              }
+              return callback(null, url);
+          })//end of needle.get
+            
+      },//end callback 2
+      err=>{
+          return callbackMain(resourceData);
+
+      }
+  );//end of async.whilst
+
+
+
+}
 function getListHAPILocationByIds(hapiToken,listLocationIds,callbackMain){
   let localNeedle = require('needle');
   localNeedle.defaults(
@@ -708,6 +1042,50 @@ function getListHAPILocationByIds(hapiToken,listLocationIds,callbackMain){
   });//end of localAsync.each
 
 }
+function getListHAPIResourcesByIds(hapiToken,fhirResource,listResourcesIds,callbackMain){
+  let localNeedle = require('needle');
+  localNeedle.defaults(
+      {
+          open_timeout: 600000
+      });
+  let options={headers:{'Content-Type': 'application/json','Authorization':hapiToken}};
+  let localAsync = require('async');
+  var listResources = [];
+  var currentIdToFetch="";
+  
+  localAsync.eachSeries(listResourcesIds, function(resourceId, callback) {
+    currentIdToFetch=resourceId;
+    var url= URI(config.hapiServer.url).segment(fhirResource).segment(resourceId); 
+    url=url.toString();
+    logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${fhirResource}/${resourceId}`,result:typeResult.iniate,
+      message:`Mapping: Extraction des donnees`}); 
+    localNeedle.get(url,options, function(err, resp) {
+      if(err)
+      {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${fhirResource}/${resourceId}`,result:typeResult.failed,
+      message:`${err.message}`});
+      }
+      
+      if (resp.statusCode && (resp.statusCode == 200)) {
+        logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${fhirResource}/${resourceId}`,result:typeResult.ongoing,
+      message:`Mapping: donnees extraites`}); 
+      listResources.push(JSON.parse(resp.body.toString('utf8')));
+      callback();
+      }
+
+      
+    });//end of localNeedle
+  },function(error){
+    if(error)
+    {
+      logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${fhirResource}/${currentIdToFetch}`,result:typeResult.failed,
+      message:`${error.message}`});
+    }
+    callbackMain(listResources);
+  });//end of localAsync.each
+
+}
+
 function saveBundle2Fhir(fhirToken,fhirResource,bundle,callback){
     let localNeedle = require('needle');
     localNeedle.defaults(
@@ -725,9 +1103,10 @@ function saveBundle2Fhir(fhirToken,fhirResource,bundle,callback){
         }
         var response={
             status: resp.statusCode,
-            message: `${bundle.entry.length} donnees synchronisees dans HAPI`,
+            message: `${bundle.entry.length} ${fhirResource} synchronisees dans HAPI`,
             timestamp:new Date().getTime()
         }
+        
         if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
 			logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${fhirResource}`,result:typeResult.failed,
                         message:`Code d'erreur http: ${resp.statusCode}`});
@@ -735,6 +1114,148 @@ function saveBundle2Fhir(fhirToken,fhirResource,bundle,callback){
           }
         callback(response);
     });
+
+}
+function saveMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
+  let localNeedle = require('needle');
+  let localAsync = require('async');
+  let dicOperationResults=[];
+  localNeedle.defaults(
+      {
+          open_timeout: 600000
+      });
+  var url= URI(config.dhis2Server.url).segment(dhisResource);
+  url = url.toString();
+  let options={headers:{'Content-Type': 'application/json','Authorization':dhis2Token}};
+  localAsync.eachSeries(listMetadata, function(metadata, nextResource) {
+    /* console.log(url);
+    console.log(JSON.stringify(metadata));
+    console.log("--------------------------");  */
+    localNeedle.post(url,JSON.stringify(metadata),options,function(err,resp){
+      if(err)
+      {
+          logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisResource}`,result:typeResult.failed,
+                      message:`${err.message}`});
+      }
+      dicOperationResults.push({
+        httpStatus:resp.body.httpStatus,
+        metadata:metadata
+      });
+      if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
+        if(resp.statusCode==409)
+        {
+          logger.log({level:levelType.warning,operationType:typeOperation.postData,action:`/${dhisResource}`,result:typeResult.failed,
+                          message:`Code: ${resp.statusCode}. Impossible de creer une ressource qui existe deja`});
+        }
+        else{
+          logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisResource}`,result:typeResult.failed,
+                          message:`Code d'erreur http: ${resp.statusCode}`});
+        }
+      }
+      nextResource();
+      
+    });//end localNeedle
+  },(err)=>{
+    if(err)
+    {
+      logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${dhisResource}`,result:typeResult.failed,
+      message:`${err.message}`});
+    }
+    callback(dicOperationResults);
+    
+  });//end localAsync
+  
+
+}
+function saveMetadataCollection2Dhis(dhis2Token,dhisParentResource,parentId,dhisCollectionResource,
+  metaDataCollection,callback){
+  let localNeedle = require('needle');
+  let localAsync = require('async');
+  let dicOperationResults=[];
+  localNeedle.defaults(
+      {
+          open_timeout: 600000
+      });
+  var url= URI(config.dhis2Server.url).segment(dhisParentResource).segment(parentId).segment(dhisCollectionResource);
+  url = url.toString();
+  let options={headers:{'Content-Type': 'application/json','Authorization':dhis2Token}};
+  /* console.log(url);
+  console.log(JSON.stringify( metaDataCollection));
+  console.log("-----------------------------------------"); */
+  localNeedle.post(url,JSON.stringify(metaDataCollection),options,function(err,resp){
+    if(err)
+    {
+        logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisParentResource}`,result:typeResult.failed,
+                    message:`${err.message}`});
+    }
+    let httpStatus="";
+    //console.log(resp.body);
+    if(resp.body.httpStatus){
+      httpStatus=resp.body.httpStatus;
+    }
+    else{
+      httpStatus="OK";
+    }
+    dicOperationResults.push({
+      httpStatus:httpStatus,
+      metadata:metaDataCollection
+    });
+    
+    if (httpStatus!="OK") {
+      logger.log({level:levelType.warning,operationType:typeOperation.postData,action:`/${dhisParentResource}`,result:typeResult.failed,
+                        message:`Code: ${httpStatus}. Impossible de creer la ressource`});
+    }
+    callback(dicOperationResults);
+  });//end localNeedle
+}
+function updateMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
+  let localNeedle = require('needle');
+  let localAsync = require('async');
+  let dicOperationResults=[];
+  localNeedle.defaults(
+      {
+          open_timeout: 600000
+      });
+  
+  //url = url.toString();
+  let options={headers:{'Content-Type': 'application/json','Authorization':dhis2Token}};
+  localAsync.eachSeries(listMetadata, function(metadata, nextResource) {
+    let url= URI(config.dhis2Server.url).segment(dhisResource).segment(metadata.id);
+    url=url.toString();
+    localNeedle.put(url,JSON.stringify(metadata),options,function(err,resp){
+      if(err)
+      {
+          logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisResource}`,result:typeResult.failed,
+                      message:`${err.message}`});
+      }
+      dicOperationResults.push({
+        httpStatus:resp.body.httpStatus,
+        metadata:metadata
+      });
+      if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
+        logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisResource}`,result:typeResult.failed,
+                          message:`Code d'erreur http: ${resp.statusCode}`});
+        if(resp.statusCode == 404){
+          console.error("---------404 Error code-------");
+          console.log(url);
+          console.log(JSON.stringify(metadata));
+        }
+        //nextResource({message:`Code d'erreur http: ${resp.statusCode}`});
+        //if(resp.body.htt)
+      }
+      nextResource();
+      
+    });//end localNeedle
+  },(err)=>{
+    if(err)
+    {
+      logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${dhisResource}`,result:typeResult.failed,
+      message:`${err.message}`});
+    }
+    callback(dicOperationResults);
+    
+  });//end localAsync
+  
 
 }
 /**
