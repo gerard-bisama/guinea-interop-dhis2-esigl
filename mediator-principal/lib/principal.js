@@ -22,6 +22,7 @@ var fhirProgramResource="Organization";
 var fhirProductResource="Basic";
 var dhisCategoryOption="categoryOptions";
 var dhisCategory="categories";
+var dhisCategoryCombo="categoryCombos";
 var prodIDPrefixe="prod";
 var typeOperation ={
     startTheService:"Start",
@@ -516,7 +517,8 @@ function setupApp () {
             let bundleProducts=productProgram[0];
             let bundlePrograms=productProgram[1];
             logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/${productResource}`,result:typeResult.iniate,
-      message:`Mise a jour: Lancement de la mise a jour des ${productResource} dans HAPI FHIR`});
+            message:`Mise a jour: Lancement de la mise a jour des ${productResource} dans HAPI FHIR`});
+            //return res.send(bundleProducts);
             saveBundle2Fhir(hapiToken,productResource,bundleProducts,(hapiServerResponse)=>{
               if(hapiServerResponse.status==200)
               {
@@ -648,8 +650,9 @@ function setupApp () {
 
     
   });
-  app.get('/syncprogramproduct2dhis2', (req, res) => {
+  app.get('/syncprogramproduct2dhis', (req, res) => {
     globalRes=res;
+    var operationOutcome=true;
     logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncprogramproduct2dhis2",result:typeResult.iniate,
     message:`Lancement du processus de synchronisation des programmes-produits dans DHIS2`});
     const dhis2Token = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
@@ -696,8 +699,10 @@ function setupApp () {
               } 
 
             }
+
             logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/saveMetadataList2Dhis",result:typeResult.success,
             message:`${listCategoryOptions.length-listProducts2Update.length} produits du ${programEntry.resource.name} inseres`});
+            //operationMessage+=`${listCategoryOptions.length} `
             if(listProducts2Update.length>0)
             {
               updateMetadataList2Dhis(dhis2Token,dhisCategoryOption,listProducts2Update,(dhisUpdateOperation)=>{
@@ -733,13 +738,47 @@ function setupApp () {
                     (dhisCreateCollectionOp)=>{
                       logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/saveMetadataCollection2Dhis",result:typeResult.success,
                 message:`Creation de la collection dans la category ${programEntry.resource.name} dans DHIS2`});
-                      //console.log(dhisCreateCollectionOp);
-                      //let err={message:'stop on the first loop'};
-                       nextStep();
+                      if(dhisCreateCollectionOp[0].httpStatus=="OK"){
+                        //Then create the catcombo
+                        let programCatCombosMatadataList=[customLibrairy.buildCategoryCombosMetadata(programEntry.resource)];
+                        logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/${dhisCategoryCombo}`,result:typeResult.iniate,
+                        message:`Creation de la ${dhisCategoryCombo} ${programEntry.resource.name} dans DHIS2`});
+                        saveMetadataList2Dhis(dhis2Token,dhisCategoryCombo,programCatCombosMatadataList,(dhisProgComboAddResponse)=>{
+                          if(dhisProgComboAddResponse[0].httpStatus=="OK" ||
+                          dhisProgComboAddResponse[0].httpStatus=="Created" || 
+                          dhisProgComboAddResponse[0].httpStatus=="Conflict"){
+                            logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/${dhisCategoryCombo}`,result:typeResult.success,
+                            message:`Creation de la ${dhisCategoryCombo} ${programEntry.resource.name} dans DHIS2`});
+                            operationOutcome=operationOutcome&&true;
+                            //console.log(dhisProgComboAddResponse);
+                            //nextStep({warn:'break on the first loop'});
+                            nextStep();
+                          }
+                          else{
+                            operationOutcome=operationOutcome && false;
+                            logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisCategoryCombo}`,result:typeResult.failed,
+                            message:`Erreur:${dhisProgComboAddResponse[0].httpStatus}: echec de la creation de ${dhisCategoryCombo} ${programEntry.resource.name} dans DHIS2`});
+                    
+                            let err={message:`Erreur:${dhisProgComboAddResponse[0].httpStatus}: echec de la creation de ${dhisCategoryCombo} ${programEntry.resource.name} dans DHIS2`};
+                            nextStep(err);
+                            
+                          }
+                        });
+                      }
+                      else{
+                        operationOutcome= operationOutcome&& false;
+                        logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisCategory}`,result:typeResult.failed,
+                        message:`Erreur:${dhisProgComboAddResponse[0].httpStatus}: echec de la creation de ${dhisCategory} ${programEntry.resource.name} dans DHIS2`});
+                    
+                        let err={message:`Erreur:${dhisProgAddResponse[0].httpStatus}: echec de la creation de ${dhisCategory} ${programEntry.resource.name} dans DHIS2`};
+                        nextStep(err);
+                      }
+                       //nextStep();
                     })//end saveMetadataCollection2Dhis()
 
                   }
                   else{
+                    operationOutcome=operationOutcome && false;
                     logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/saveMetadataList2Dhis",result:typeResult.failed,
                     message:`Erreur:${dhisProgAddResponse[0].httpStatus}: echec de la creation de la caterogie ${programEntry.resource.name} dans DHIS2`});
                     
@@ -780,11 +819,48 @@ function setupApp () {
                     (dhisCreateCollectionOp)=>{
                       //console.log(dhisCreateCollectionOp);
                       //let err={message:'stop on the first loop'};
-                       nextStep();
+                      if(dhisCreateCollectionOp[0].httpStatus=="OK"){
+                        //Then create the catcombo
+                        let programCatCombosMatadataList=[customLibrairy.buildCategoryCombosMetadata(programEntry.resource)];
+                        logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/${dhisCategoryCombo}`,result:typeResult.iniate,
+                        message:`Creation de la ${dhisCategoryCombo} ${programEntry.resource.name} dans DHIS2`});
+                        saveMetadataList2Dhis(dhis2Token,dhisCategoryCombo,programCatCombosMatadataList,(dhisProgComboAddResponse)=>{
+                          
+
+                          if(dhisProgComboAddResponse[0].httpStatus=="OK" ||
+                          dhisProgComboAddResponse[0].httpStatus=="Created" || 
+                          dhisProgComboAddResponse[0].httpStatus=="Conflict"){
+                            logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/${dhisCategoryCombo}`,result:typeResult.success,
+                            message:`Creation de la ${dhisCategoryCombo} ${programEntry.resource.name} dans DHIS2`});
+                            //console.log(dhisProgComboAddResponse);
+                            //nextStep({warn:'break on the first loop'});
+                            operationOutcome= operationOutcome&& true;
+                            nextStep();
+                          }
+                          else{
+                            operationOutcome=operationOutcome&&false;
+                            logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisCategoryCombo}`,result:typeResult.failed,
+                            message:`Erreur:${dhisProgComboAddResponse[0].httpStatus}: echec de la creation de ${dhisCategoryCombo} ${programEntry.resource.name} dans DHIS2`});
+                    
+                            let err={message:`Erreur:${dhisProgComboAddResponse[0].httpStatus}: echec de la creation de ${dhisCategoryCombo} ${programEntry.resource.name} dans DHIS2`};
+                            nextStep(err);
+                          }
+                        });
+                      }
+                      else{
+                        operationOutcome=operationOutcome&&false;
+                        logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisCategory}`,result:typeResult.failed,
+                        message:`Erreur:${dhisProgComboAddResponse[0].httpStatus}: echec de la creation de ${dhisCategory} ${programEntry.resource.name} dans DHIS2`});
+                    
+                        let err={message:`Erreur:${dhisProgAddResponse[0].httpStatus}: echec de la creation de ${dhisCategory} ${programEntry.resource.name} dans DHIS2`};
+                        nextStep(err);
+                      }
+                       //nextStep();
                     })//end saveMetadataCollection2Dhis()
 
                   }
                   else{
+                    operationOutcome=operationOutcome&&false;
                     logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/saveMetadataList2Dhis",result:typeResult.failed,
                     message:`Erreur:${dhisProgAddResponse[0].httpStatus}: echec de la creation de la caterogie ${programEntry.resource.name} dans DHIS2`});
                     
@@ -804,14 +880,80 @@ function setupApp () {
       },function(err){
         if(err)
         {
+
+          operationOutcome=operationOutcome && false;
           logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/saveMetadataList2Dhis`,result:typeResult.failed,
           message:`${err.message}`});
-          res.status(200).send({res:'Error'});
+        }
+        if(operationOutcome)
+        {
+          let urn = mediatorConfig.urn;
+          let status = 'Successful';
+          let response = {
+            status: 200,
+            headers: {
+            'content-type': 'application/json'
+            },
+            body:JSON.stringify( {'Process':`L'operation de synchronisation des produits et programmes dans DHIS2 effectuees avec success`}),
+            timestamp: new Date().getTime()
+          };
+          var orchestrationToReturn=[
+            {
+              name: "programproduct2dhis2",
+              request: {
+                path :"/syncprogramproduct2dhis2",
+                headers: {'Content-Type': 'application/json'},
+                querystring: "",
+                body:JSON.stringify( {'Process':`Operation de synchronisation des produits et programmes dans DHIS2`}),
+                method: "POST",
+                timestamp: new Date().getTime()
+              },
+              response: response
+            }];
+            var returnObject = {
+              "x-mediator-urn": urn,
+              "status": status,
+              "response": response,
+              "orchestrations": orchestrationToReturn,
+              "properties": ""
+            }
+            res.set('Content-Type', 'application/json+openhim');
+            res.status(200).send(returnObject);
         }
         else{
-          res.status(200).send({res:'OK'});
+          let urn = mediatorConfig.urn;
+          let status = 'Failed';
+          let response = {
+            status: 500,
+            headers: {
+            'content-type': 'application/json'
+            },
+            body:JSON.stringify( {'Process':`Problemes lors de l'operation de synchronisation des produits et programmes`}),
+            timestamp: new Date().getTime()
+          };
+          var orchestrationToReturn=[
+            {
+              name: "programproduct2dhis2",
+              request: {
+                path :"/syncprogramproduct2dhis2",
+                headers: {'Content-Type': 'application/json'},
+                querystring: "",
+                body:JSON.stringify( {'Process':`Operation de synchronisation des produits et programmes dans DHIS2`}),
+                method: "POST",
+                timestamp: new Date().getTime()
+              },
+              response: response
+            }];
+            var returnObject = {
+              "x-mediator-urn": urn,
+              "status": status,
+              "response": response,
+              "orchestrations": orchestrationToReturn,
+              "properties": ""
+            }
+            res.set('Content-Type', 'application/json+openhim');
+            res.status(500).send(returnObject);
         }
-        
       });//end async.eachseries(listProgramsEntry)
 
 
@@ -1128,7 +1270,13 @@ function saveMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
   url = url.toString();
   let options={headers:{'Content-Type': 'application/json','Authorization':dhis2Token}};
   localAsync.eachSeries(listMetadata, function(metadata, nextResource) {
-    /* console.log(url);
+    /*if(dhisResource=="categoryCombos")
+    {
+      console.log(url)
+      console.log(JSON.stringify(metadata));
+      console.log("--------------------------");  
+    }
+     console.log(url);
     console.log(JSON.stringify(metadata));
     console.log("--------------------------");  */
     localNeedle.post(url,JSON.stringify(metadata),options,function(err,resp){
@@ -1235,11 +1383,11 @@ function updateMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
       if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
         logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisResource}`,result:typeResult.failed,
                           message:`Code d'erreur http: ${resp.statusCode}`});
-        if(resp.statusCode == 404){
+        /* if(resp.statusCode == 404){
           console.error("---------404 Error code-------");
           console.log(url);
           console.log(JSON.stringify(metadata));
-        }
+        } */
         //nextResource({message:`Code d'erreur http: ${resp.statusCode}`});
         //if(resp.body.htt)
       }

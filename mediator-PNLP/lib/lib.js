@@ -5,7 +5,10 @@ const moment = require('moment');
 const url=require('url');
 var csvHeaderLog=['timestamp','level','label','operationType','action','result','message'];
 var csvHeaderData=['code','id','iddhis','etablissement','categories','prefecture','possession','Adresse','telephone','fax'];
+
 var csvHeaderMapping=['esigl','dhis2'];
+var csvHeaderRequisition=['program_code','period_name','period_start_date','period_end_date','facility_id','requisition_id','product_id',
+'product_code','amc','beginningbalance','quantitydispensed','quantityreceived','stockinhand','stockoutdays','totallossesandadjustments'];
 const logCSVConverter={
     noheader:true,
     trim:true,
@@ -15,6 +18,11 @@ const siglDataCSVConverter={
     noheader:false,
     trim:true,
     headers:csvHeaderData
+};
+const siglRequisitionCSVConverter={
+    noheader:false,
+    trim:true,
+    headers:csvHeaderRequisition
 };
 const mappingCSVConverter={
     noheader:false,
@@ -79,6 +87,21 @@ exports.readeSIGLDataCSVFile=function readeSIGLDataCSVFile(filePath,callback)
 		//console.log(listDataFiles);
 		var csvFilePath = path.join(filePath, `${dataDireSIGL}/`+ dataFile);
 		csv(siglDataCSVConverter).fromFile(csvFilePath).then((jsonObj)=>{
+            fileRecords=fileRecords.concat(jsonObj);
+            callback(fileRecords);
+        });
+
+    })
+}
+exports.readeSIGLRequisitionCSVFile=function readeSIGLRequisitionCSVFile(filePath,callback)
+{
+    var async = require('async');
+    getListFiles(filePath,dataDireSIGL,function(listDataFiles){
+		var fileRecords=[];
+		var dataFile = listDataFiles[0];
+		//console.log(listDataFiles);
+		var csvFilePath = path.join(filePath, `${dataDireSIGL}/`+ dataFile);
+		csv(siglRequisitionCSVConverter).fromFile(csvFilePath).then((jsonObj)=>{
             fileRecords=fileRecords.concat(jsonObj);
             callback(fileRecords);
         });
@@ -278,12 +301,10 @@ exports.buildProgamProductRessourceBundle =function buildProgamProductRessourceB
 	programProductsList,urlSIGLDomain,extensionBaseUrlProductDetails,extensionBaseUrlProgramDetails){
 	let bundleProducts={};
 	let bundlePrograms={};
-	var createdDate=moment().format('YYYY-MM-DD');
+	var currentZFormatDate=moment().format('YYYY-MM-DDTHH:mm:ssZ');
 	var listOfEntries=[];
+	var fullUrl;
 	let extensionElements=[];
-	
-	let productCode={coding:[{system:extensionBaseUrlProgramDetails,code:"product",display:"product"}],text:"product"};
-	
 	for(var i=0;i<productsList.length;i++)
 	{
 		extensionElements=[];
@@ -353,8 +374,6 @@ exports.buildProgamProductRessourceBundle =function buildProgamProductRessourceB
 			resourceType:"Basic",
 			id:oProduct.code,
 			identifier:oIdentifier,
-			code:productCode,
-			created:createdDate,
 			extension:[
 				{
 					url:extensionBaseUrlProductDetails,
@@ -479,6 +498,163 @@ exports.buildProgamProductRessourceBundle =function buildProgamProductRessourceB
 	//console.log(bundlePrograms);
 	return [bundleProducts,bundlePrograms];
 }
+exports.buildRequisitionResourceEntry =function buildRequisitionResourceEntry(reqFileRecord,facilityId,
+	extensionBaseUrlRequisitionDetails,urlSIGLDomain){
+	let extensionElements=[];
+	var identifierCodingSystem=urlSIGLDomain+"/identifier-type";
+	var oIdentifier=[];
+	let resourceId=reqFileRecord.requisition_id+"-"+reqFileRecord.product_code+"-"+reqFileRecord.program_code;
+	let tempDate1=moment(reqFileRecord.period_start_date,'YYYY-MM-DDTHH:mm:ssZ');
+	var createdDate=tempDate1.format('YYYY-MM-DD');
+	let requisitionCode={coding:[{system:extensionBaseUrlRequisitionDetails,code:"requisition",display:"requisition"}],text:"requisition"};
+	oIdentifier.push({
+		use:"official",
+		type:{coding:[{system:identifierCodingSystem,code:"requisitionId",display:"requisitionId"}],text:"requisitionId"},
+		value:reqFileRecord.requisition_id
+	});
+	if(reqFileRecord.program_code){
+		extensionElements.push(
+			{
+				url:"program",
+				valueReference:{reference:"Organization/"+reqFileRecord.program_code}
+		});
+	}
+	if(reqFileRecord.facility_id){
+		extensionElements.push(
+			{
+				url:"location",
+				valueReference:{reference:"Location/"+facilityId}
+		});
+	}
+	if(reqFileRecord.period_name){
+		extensionElements.push(
+			{
+				url:"periodName",
+				valueString:reqFileRecord.period_name
+			}
+		);
+	}
+	if(reqFileRecord.period_start_date){
+		var tempDate=moment(reqFileRecord.period_start_date,'YYYY-MM-DDTHH:mm:ssZ');
+		extensionElements.push(
+			{
+				url:"startDate",
+				valueDate:tempDate.format('YYYY-MM-DD')
+			}
+		);
+	}
+	if(reqFileRecord.period_end_date){
+		var tempDate=moment(reqFileRecord.period_end_date,'YYYY-MM-DDTHH:mm:ssZ');
+
+		extensionElements.push(
+			{
+				url:"startDate",
+				valueDate:tempDate.format('YYYY-MM-DD')
+			}
+		);
+	}
+	if(reqFileRecord.product_code){
+		extensionElements.push(
+			{
+				url:"product",
+				valueReference:{reference:"Basic/"+reqFileRecord.product_code}
+			}
+		);
+	}
+	if(reqFileRecord.amc && isNaN(reqFileRecord.amc)==false)
+	{
+		extensionElements.push(
+			{
+				url:"averageMonthConsumption",
+				valueDecimal:parseFloat(reqFileRecord.amc)
+			}
+		);
+	}
+	if(reqFileRecord.beginningbalance && isNaN(reqFileRecord.beginningbalance)==false)
+	{
+		extensionElements.push(
+			{
+				url:"initialStock",
+				valueDecimal:parseFloat(reqFileRecord.beginningbalance)
+			}
+		);
+	}
+	if(reqFileRecord.quantitydispensed && isNaN(reqFileRecord.quantitydispensed)==false)
+	{
+		extensionElements.push(
+			{
+				url:"consumedQuantity",
+				valueDecimal:parseFloat(reqFileRecord.quantitydispensed)
+			}
+		);
+	}
+	if(reqFileRecord.quantityreceived && isNaN(reqFileRecord.quantityreceived)==false)
+	{
+		extensionElements.push(
+			{
+				url:"receivedQuantity",
+				valueDecimal:parseFloat(reqFileRecord.quantityreceived)
+			}
+		);
+	}
+	if(reqFileRecord.stockinhand && isNaN(reqFileRecord.stockinhand)==false)
+	{
+		extensionElements.push(
+			{
+				url:"stockOnHand",
+				valueDecimal:parseFloat(reqFileRecord.stockinhand)
+			}
+		);
+	}
+	if(reqFileRecord.stockoutdays && isNaN(reqFileRecord.stockoutdays)==false)
+	{
+		extensionElements.push(
+			{
+				url:"stockOutDay",
+				valueDecimal:parseFloat(reqFileRecord.stockoutdays)
+			}
+		);
+	}
+	if(reqFileRecord.totallossesandadjustments && isNaN(reqFileRecord.totallossesandadjustments)==false)
+	{
+		extensionElements.push(
+			{
+				url:"losses",
+				valueDecimal:parseFloat(reqFileRecord.totallossesandadjustments)
+			}
+		);
+	}
+	extensionElements.push(
+		{
+			url:"reqElementType",
+			valueString:'requisition'
+		}
+	);
+	//let newRequisitionId=
+	let requisitionResource={
+		resourceType:"Basic",
+		id:resourceId,
+		identifier:oIdentifier,
+		code:requisitionCode,
+		created:createdDate,
+		author:{"reference":"Organization/"+reqFileRecord.program_code},
+		extension:[
+			{
+				url:extensionBaseUrlRequisitionDetails,
+				extension:extensionElements
+			}
+		]
+	}
+	let requisitionEntry={
+		resource:requisitionResource,
+		request: {
+			method: 'PUT',
+			url: requisitionResource.resourceType + '/' + requisitionResource.id
+		  }
+	}
+	return requisitionEntry;
+	
+}
 exports.buildCategoryOptionsMetadata=function buildCategoryOptionsMetadata(prefix,listProducts){
 	let listCategoryOptions=[];
 	for(let product of listProducts)
@@ -498,6 +674,28 @@ exports.buildCategoryOptionsMetadata=function buildCategoryOptionsMetadata(prefi
 		listCategoryOptions.push(oCategioryOption);
 	}
 	return listCategoryOptions;
+}
+exports.buildDataElementMetadata=function buildDataElementMetadata(programCode,programName,listDataelementDescription,categoryCombinationId){
+	let listDEMetadata=[];
+	//let programName=(programCode.split("-"))[2];
+	let extractedPgCode=(programCode.split("-"))[2];
+	for(let deDesc of listDataelementDescription)
+	{
+		let oDEMetadata={
+			id:programName+deDesc.id,
+			name:extractedPgCode+"_"+deDesc.name,
+			shortName:(extractedPgCode+"_"+deDesc.name).substr(0,50),
+			displayName:deDesc.displayName,
+			valueType: "NUMBER",
+			aggregationType:"SUM",
+			domainType:"AGGREGATE",
+			categoryCombo:{
+				id:categoryCombinationId
+			}
+		}
+		listDEMetadata.push(oDEMetadata);
+	}
+	return listDEMetadata;
 }
 exports.buildCategoryMetadata=function buildCategoryMetadata(programResource){
 	let oIdentifier=programResource.identifier.find(id=>id.type.text=="dhisId");
