@@ -100,13 +100,49 @@ function setupApp () {
   //-------- routes -------------------------//
 	
   app.get('/test', (req, res) => {
-    
+    const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;
+    /*
     const currentPeriod = moment(config.synchronizationPeriod,'YYYY-MM');
     console.log(`--------------${config.synchronizationPeriod}------------------`);
     const startOfMonth= currentPeriod.startOf('month').format('YYYY-MM-DD');
     const endOfMonth   = currentPeriod.endOf('month').format('YYYY-MM-DD');
     console.log(`${startOfMonth} / ${endOfMonth}`);
-    res.send(endOfMonth);
+    res.send(endOfMonth);*/
+    let listProduct=['MINJ0054','MORA0052'];
+    /* let filterProgram=[
+      {
+        key:"_id",
+        value:config.program.code
+      }] */
+      let filterProgram=[
+        {
+          key:"_id:in",
+          value:`${listProduct.toString()}`
+        }]
+    getListHapiResourceByFilter(hapiToken,fhirProductResource,filterProgram,(programResource)=>{
+      //console.log(programResource[0].resource.extension[0].extension);
+      return res.send(programResource);
+      if(programResource.length>0)
+      {
+        //Now get list productId from resource
+        let listRefencesProduct=programResource[0].resource.extension[0].extension.filter(extensionElement=>{
+          if(extensionElement.url=="providedProducts")
+          {
+            return extensionElement;
+          }
+        })//end of extension.filter
+        let productIdsList=[];
+        for(let referenceProduct of listRefencesProduct){
+          productIdsList.push(referenceProduct.valueReference.reference.split("/")[1]);
+        }
+        res.send(productIdsList.toString());
+      }
+      else{
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/getListHapiResourceByFilter`,result:typeResult.failed,
+        message:`Erreur: Echec lors de l'extraction des produits par programme : ${config.program.code} `});
+ 
+      }
+    })//end getListHapiResourceByFilter(filterProgram)
   });
   app.get('/deleteresources', (req, res) => {
     const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;
@@ -480,7 +516,7 @@ function setupApp () {
     globalRes=res;
     logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.iniate,
     message:`Lancement du processus de synchronisation des requisitions dans DHIS2`});
-    const eSIGLToken = `Basic ${btoa(config.esiglServer.username+':'+config.esiglServer.password)}`;
+    const dhis2Token = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
     const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;
     const currentPeriod = moment(config.synchronizationPeriod,'YYYY-MM');
     const startOfMonth= currentPeriod.startOf('month').format('YYYY-MM-DD');
@@ -510,22 +546,122 @@ function setupApp () {
     ];
     //let filterExpression2=`?code=requisition&created=>=${startOfMonth}&created=<`
     logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/requisitions`,result:typeResult.iniate,
-      message:`Extraction de requisitions pour le programme ${config.program.code} pour la periode:${startOfMonth} ${endOfMonth}`});
+      message:`Extraction de requisitions pour le programme ${config.program.code} pour la periode:${startOfMonth}-${endOfMonth}`});
     getListHapiResourceByFilterCurl(hapiToken,fhirRequisitionResource,filterExpresion,(requisitionEntries)=>{
-      return res.send(requisitionEntries);
+      //return res.send(requisitionEntries);
       logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/requisitions`,result:typeResult.success,
       message:`Extraction de ${requisitionEntries.length} requisitions pour le programme ${config.program.code} pour la periode:${startOfMonth} ${endOfMonth}`});
     
-      if(requisitionEntries.length)
+      if(requisitionEntries.length>0)
       {
+        let listRequisitions=[];
+        for(let oRequisition of requisitionEntries )
+        {
+          listRequisitions.push(oRequisition.resource);
+        }
 
+        let filterProgram=[
+          {
+            key:"_id",
+            value:config.program.code
+          }];
+        //let filterExpression2=`?code=requisition&created=>=${startOfMonth}&created=<`
+      logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/getListHapiResourceByFilter`,result:typeResult.iniate,
+      message:`Extraction de details du programme ${config.program.code}`});
+        getListHapiResourceByFilter(hapiToken,fhirProgramResource,filterProgram,(programResource)=>{
+          if(programResource.length>0)
+          {
+            var oProgIdentifier=programResource[0].resource.identifier.find(id=>id.type.text=="dhisId");
+            var progDhisId=oProgIdentifier.value;
+            logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/getListHapiResourceByFilter`,result:typeResult.success,
+            message:`Extraction des details du programme ${config.program.code}`});
+            //Now get list productId from resource
+            let listRefencesProduct=programResource[0].resource.extension[0].extension.filter(extensionElement=>{
+              if(extensionElement.url=="providedProducts")
+              {
+                return extensionElement;
+              }
+            });//end of extension.filter
+            let productIdsList=[];
+            for(let referenceProduct of listRefencesProduct){
+              productIdsList.push(referenceProduct.valueReference.reference.split("/")[1]);
+            }
+            logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/getListHapiResourceByFilter`,result:typeResult.iniate,
+            message:`Extraction des  details des produits [${productIdsList.toString()}] pour le programme ${config.program.code}`});
+            let filterProduct=[
+              {
+                key:"_id:in",
+                value:`${productIdsList.toString()}`
+              }
+            ];
+            getListHapiResourceByFilter(hapiToken,fhirProductResource,filterProduct,(productsResource)=>{
+              if(productsResource.length>0)
+              {
+                logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/getListHapiResourceByFilter`,result:typeResult.success,
+                message:`Extraction des  details des produits [${productIdsList.toString()}] pour le programme ${config.program.code}`});
+               
+                let listProgramProducts=[];
+                for(let productResource of productsResource){
+                  listProgramProducts.push(productResource.resource);
+                }
+                let listCustomRequisitionObjects = customLibrairy.buildObjectDetailsRequisitionList(listRequisitions,
+                  listProgramProducts,progDhisId);
+
+                
+                //return res.send(listCustomRequisitionObjects);
+                /* for(let requisitionObject of listCustomRequisitionObjects){
+                  let adxRequisitionObject=customLibrairy.buildADXPayloadFromRequisition(requisitionObject,
+                    metadataConfig.dataElements,config.program);
+                    listPayLoadToPushToDHIS2.push(adxRequisitionObject);
+                } */
+                let adxRequisitionObjectLists=customLibrairy.buildADXPayloadFromRequisitionsList(listCustomRequisitionObjects,
+                  metadataConfig.dataElements,config.program);
+                  logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/saveAdxData2Dhis`,result:typeResult.iniate,
+                  message:`Insertion des elements  de requisitions dans DHIS2`});
+                saveAdxData2Dhis(dhis2Token,adxRequisitionObjectLists,(adxSaveResults)=>{
+                  if(adxSaveResults){
+                    let importChildStatus=adxSaveResults.children.find(children=>children.name=="status");
+                    let importChildCount= adxSaveResults.children.find(children=>children.name=="importCount");
+                    if(importChildStatus.value=="SUCCESS")
+                    {
+                      logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/saveAdxData2Dhis`,result:typeResult.success,
+                    message:`Sommaire importation dans DHIS2. Importer: ${importChildCount.attributes.imported}, Modifier: ${importChildCount.attributes.updated}, Ignorer: ${importChildCount.attributes.ignored} `});
+                    }
+                    else{
+                      logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/saveAdxData2Dhis`,result:typeResult.success,
+                    message:`Echec de l'importation des donnees`});
+                    }
+                    return res.send(importChildCount);
+                  }
+                  else
+                  {
+                    return res.send(adxSaveResults);
+                  }
+
+                });
+                //return res.send(adxRequisitionObjectLists);
+              }
+              else{
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/getListHapiResourceByFilter`,result:typeResult.failed,
+              message:`Erreur: Echec lors de l'extraction des produits [${productIdsList.toString()}] par programme : ${config.program.code} `});
+              }
+            })//end getListHapiResourceByFilter(fhirProductResource)
+
+          }
+          else{
+            logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/getListHapiResourceByFilter`,result:typeResult.failed,
+            message:`Erreur: Echec lors de l'extraction  des details du programme : ${config.program.code} `});
+     
+          }
+        })//end getListHapiResourceByFilter(filterProgram)
       }
       else
       {
-
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/getListHapiResourceByFilterCurl`,result:typeResult.failed,
+      message:`Erreur: Echec lors de l'extraction des requisitions pour programme : ${config.program.code} et pour la periode: ${startOfMonth}-${endOfMonth}`});
       }
 
-    });
+    });//getListHapiResourceByFilterCurl(fhirRequisitionResource)
   });
   return app
 }
@@ -866,6 +1002,13 @@ function getListHapiResourceByFilterCurl(hapiToken,fhirResource,filterExpression
               url = next.url;;
           }
           //console.log(`url: ${url}`);
+          //force breack on requisition for the first loop
+          /*
+          if(fhirResource==fhirRequisitionResource  )
+          {
+             return callback(true, false);
+          } 
+          */
           return callback(null, url);
 
         });//end exec
@@ -945,6 +1088,44 @@ function getListHapiResource(hapiToken,fhirResource,callbackMain)
   );//end of async.whilst
 
 
+
+}
+function saveAdxData2Dhis(dhis2Token,adxPayload,callback){
+  let localNeedle = require('needle');
+  var parseString = require('xml2js').parseString;
+  let dicOperationResults=[];
+  localNeedle.defaults(
+      {
+          open_timeout: 600000
+      });
+  var url= URI(config.dhis2Server.url).segment("dataValueSets");
+  url.addQuery("dataElementIdScheme","UID");
+  url.addQuery("orgUnitIdScheme","UID");
+  url = url.toString();
+  let options={headers:{'Content-Type': 'application/adx+xml','Authorization':dhis2Token}};
+  localNeedle.post(url,adxPayload,options,function(err,resp){
+    if(err)
+    {
+        logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/dataValueSets`,result:typeResult.failed,
+                    message:`${err.message}`});
+    }
+    //console.log(resp.body);
+    callback(resp.body);
+    /*parseString(resp.body, function (err, result) {
+      if(err)
+      {
+        console.log(`Error to transform to json: `);
+        console.log(err);
+        callback(resp.body);
+      }
+      else{
+        callback(result);
+      }
+      
+    });*/
+    
+  });//end localNeedle
+  
 
 }
 

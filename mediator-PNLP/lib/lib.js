@@ -3,6 +3,7 @@ const fs = require('fs');
 const csv=require('csvtojson');
 const moment = require('moment');
 const url=require('url');
+var xml = require('xml');
 var csvHeaderLog=['timestamp','level','label','operationType','action','result','message'];
 var csvHeaderData=['code','id','iddhis','etablissement','categories','prefecture','possession','Adresse','telephone','fax'];
 
@@ -548,7 +549,7 @@ exports.buildRequisitionResourceEntry =function buildRequisitionResourceEntry(re
 
 		extensionElements.push(
 			{
-				url:"startDate",
+				url:"endDate",
 				valueDate:tempDate.format('YYYY-MM-DD')
 			}
 		);
@@ -745,6 +746,248 @@ function getProductProgramElement(programProductElement,programId)
 	{
 		return programProductElement;
 	}
+}
+exports.buildObjectDetailsRequisitionList=function(listRequisitions,listProductWithDetails,programId){
+	let listObjectDetailsRequisitions=[];
+	for(let oRequisition of listRequisitions){
+		let requisitionDetails={
+			reqId:oRequisition.id,
+			product:"",
+			program:"",
+			location:"",
+			initialStock:0,
+			receivedQuantity:0,
+			consumedQuantity:0,
+			losses:0,
+			positiveAdjustment:0,
+			negativeAdjustment:0,
+			stockOnHand:0,
+			averageMonthConsumption:0,
+			stockOutDay:0,
+			startDate:"",
+			endDate:""
+			};
+		for(let extension of oRequisition.extension[0].extension)
+		{
+			var fieldName=extension.url;
+			switch(fieldName)
+			{
+				case "product":
+					//Get detailed product to extract the id
+					var codeProduct=extension.valueReference.reference.split("/")[1];
+					let reqProduct=listProductWithDetails.find(oProduct=>oProduct.id==codeProduct);
+					let dhisIdentifier=reqProduct.identifier.find(id=>id.type.text=="dhisId");
+					requisitionDetails.product=dhisIdentifier.value;
+					break;
+				case "program":
+					requisitionDetails.program=programId;
+					break;
+				case "location":
+					var locationId=extension.valueReference.reference.split("/")[1];
+					requisitionDetails.location=locationId;
+					break;
+				case "initialStock":
+					requisitionDetails.initialStock=parseFloat(extension.valueDecimal);
+					break;
+				case "receivedQuantity":
+					requisitionDetails.receivedQuantity=parseFloat(extension.valueDecimal);
+					break;
+				case "consumedQuantity":
+					requisitionDetails.consumedQuantity=parseFloat(extension.valueDecimal);
+					break;
+				case "losses":
+					requisitionDetails.losses=parseFloat(extension.valueDecimal);
+					break;
+				case "positiveAdjustment":
+					requisitionDetails.positiveAdjustment=parseFloat(extension.valueDecimal);
+					break;
+				case "negativeAdjustment":
+					requisitionDetails.negativeAdjustment=parseFloat(extension.valueDecimal);
+					break;
+				case "stockOnHand":
+					requisitionDetails.stockOnHand=parseFloat(extension.valueDecimal);
+					break;
+				case "averageMonthConsumption":
+					requisitionDetails.averageMonthConsumption=parseFloat(extension.valueDecimal);
+					break;
+				case "stockOutDay":
+					requisitionDetails.stockOutDay=parseFloat(extension.valueDecimal);
+					break;
+				case "startDate":
+					requisitionDetails.startDate=extension.valueDate;
+					break;
+				case "endDate":
+					requisitionDetails.endDate=extension.valueDate;
+					
+			}//end switch
+		}
+		listObjectDetailsRequisitions.push(requisitionDetails);
+	}
+	return listObjectDetailsRequisitions;
+}
+//Build ADX xml file from requisitionObject
+exports.buildADXPayloadFromRequisition=function(requisitionObject,metaDataConfig,programConfig)
+{
+	var currentZFormatDate=moment().format('YYYY-MM-DDTHH:mm:ssZ');;
+	var validPeriodReported=requisitionObject.startDate;
+	let idQuantiteUtilisee="";
+	let idStockInitial="";
+	let idQuantiteRecue="";
+	let idSdu="";
+	let idAjustementPositive="";
+	let idAjustementNegative="";
+	let idCMM="";
+	let idNbJoursRupture="";
+	let idPertes="";
+	for(let configDataElement  of metaDataConfig)
+	{
+		if(configDataElement.id=="100001")
+		{
+			idQuantiteUtilisee=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100002")
+		{
+			idStockInitial=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100003")
+		{
+			idQuantiteRecue=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100004")
+		{
+			idSdu=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100005")
+		{
+			idAjustementPositive=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100006")
+		{
+			idAjustementNegative=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100007")
+		{
+			idCMM=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100008")
+		{
+			idNbJoursRupture=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100009")
+		{
+			idPertes=programConfig.name+configDataElement.id;
+		}
+	}
+	var xmlObject=[{adx:[{_attr:{xmlns:'urn:ihe:qrph:adx:2015','xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
+			'xsi:schemaLocation':'urn:ihe:qrph:adx:2015 ../schema/adx_loose.xsd',exported:currentZFormatDate}},
+			{group:[{_attr:{orgUnit:requisitionObject.location,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:idQuantiteUtilisee,
+					[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.consumedQuantity}}]},
+				{dataValue:[{_attr:{dataElement:idStockInitial,
+					[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.initialStock}}]},
+				{dataValue:[{_attr:{dataElement:idQuantiteRecue,
+					[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.receivedQuantity}}]},
+				{dataValue:[{_attr:{dataElement:idSdu,
+					[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.stockOnHand}}]},
+				{dataValue:[{_attr:{dataElement:idAjustementPositive,
+					[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.positiveAdjustment}}]},
+				{dataValue:[{_attr:{dataElement:idAjustementNegative,
+					[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.negativeAdjustment}}]},
+				{dataValue:[{_attr:{dataElement:idCMM,
+					[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.averageMonthConsumption}}]},
+				{dataValue:[{_attr:{dataElement:idNbJoursRupture,
+					[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.stockOutDay}}]},
+				{dataValue:[{_attr:{dataElement:idPertes,
+					[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.losses}}]},
+				]}]}]
+	var resAdxPayLoad=xml(xmlObject);
+	return resAdxPayLoad;	
+}
+exports.buildADXPayloadFromRequisitionsList=function(requisitionObjectsList,metaDataConfig,programConfig)
+{
+	var currentZFormatDate=moment().format('YYYY-MM-DDTHH:mm:ssZ');
+	var xmlObject=[{adx:[]}];
+	xmlObject[0].adx.push(
+		{_attr:{xmlns:'urn:ihe:qrph:adx:2015','xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
+			'xsi:schemaLocation':'urn:ihe:qrph:adx:2015 ../schema/adx_loose.xsd',exported:currentZFormatDate}}
+	);
+	let idQuantiteUtilisee="";
+	let idStockInitial="";
+	let idQuantiteRecue="";
+	let idSdu="";
+	let idAjustementPositive="";
+	let idAjustementNegative="";
+	let idCMM="";
+	let idNbJoursRupture="";
+	let idPertes="";
+	for(let configDataElement  of metaDataConfig)
+	{
+		if(configDataElement.id=="100001")
+		{
+			idQuantiteUtilisee=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100002")
+		{
+			idStockInitial=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100003")
+		{
+			idQuantiteRecue=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100004")
+		{
+			idSdu=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100005")
+		{
+			idAjustementPositive=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100006")
+		{
+			idAjustementNegative=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100007")
+		{
+			idCMM=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100008")
+		{
+			idNbJoursRupture=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100009")
+		{
+			idPertes=programConfig.name+configDataElement.id;
+		}
+	}//end for metaDataConfig
+	for(let requisitionObject of requisitionObjectsList){
+		let validPeriodReported=requisitionObject.startDate;
+		
+		let groupObject= {group:[{_attr:{orgUnit:requisitionObject.location,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
+		{dataValue:[{_attr:{dataElement:idQuantiteUtilisee,
+			[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.consumedQuantity}}]},
+		{dataValue:[{_attr:{dataElement:idStockInitial,
+			[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.initialStock}}]},
+		{dataValue:[{_attr:{dataElement:idQuantiteRecue,
+			[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.receivedQuantity}}]},
+		{dataValue:[{_attr:{dataElement:idSdu,
+			[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.stockOnHand}}]},
+		{dataValue:[{_attr:{dataElement:idAjustementPositive,
+			[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.positiveAdjustment}}]},
+		{dataValue:[{_attr:{dataElement:idAjustementNegative,
+			[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.negativeAdjustment}}]},
+		{dataValue:[{_attr:{dataElement:idCMM,
+			[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.averageMonthConsumption}}]},
+		{dataValue:[{_attr:{dataElement:idNbJoursRupture,
+			[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.stockOutDay}}]},
+		{dataValue:[{_attr:{dataElement:idPertes,
+			[`${programConfig.code}`]:requisitionObject.product,value:requisitionObject.losses}}]},
+		]};
+		xmlObject[0].adx.push(
+			groupObject
+		);
+	}//end for requisitionLists
+	var resAdxPayLoad=xml(xmlObject);
+	return resAdxPayLoad;	
 }
 
 

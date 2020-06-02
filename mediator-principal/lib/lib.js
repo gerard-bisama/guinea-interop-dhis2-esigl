@@ -4,7 +4,8 @@ const csv=require('csvtojson');
 const moment = require('moment');
 const url=require('url');
 var csvHeaderLog=['timestamp','level','label','operationType','action','result','message'];
-var csvHeaderData=['code','id','iddhis','etablissement','categories','prefecture','possession','Adresse','telephone','fax'];
+//var csvHeaderData=['code','id','iddhis','etablissement','categories','prefecture','possession','Adresse','telephone','fax'];
+var csvHeaderData=['code','id','iddhis','etablissement','categories','region','prefecture'];
 var csvHeaderMapping=['esigl','dhis2'];
 const logCSVConverter={
     noheader:true,
