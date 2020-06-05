@@ -79,6 +79,13 @@ exports.readLogCSVFile=function readLogCSVFile(filePath,callback)
 
     })
 }
+exports.readAppLogFile=function readAppLogFile(filePath,callback){
+	var data=[];
+	csv(logCSVConverter).fromFile(filePath).then((jsonObj)=>{
+		data=data.concat(jsonObj);
+		callback(data); 
+		})
+}
 exports.readeSIGLDataCSVFile=function readeSIGLDataCSVFile(filePath,callback)
 {
     var async = require('async');
