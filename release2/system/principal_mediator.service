@@ -1,0 +1,14 @@
+[Unit]
+Description=principal-mediator - execution du mediateur principal pour ETL des donnees eSIGL-DHIS2
+Documentation=https://github.com/gerard-bisama/guinea-interop-dhis2-esigl
+After=network.target
+
+[Service]
+Environment=NODE_PORT=5021
+Type=simple
+User=server-dev
+ExecStart=/home/server-dev/.nvm/versions/node/v10.13.0/bin/node /home/server-dev/Documents/dev_repo/guinea-interop-dhis2-esigl/mediator-principal/lib/principal.js
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
