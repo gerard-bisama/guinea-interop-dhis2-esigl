@@ -1,0 +1,25 @@
+{
+
+    "resourceType": "SearchParameter",
+    "id": "basic-reqelementtype",
+    "meta": {
+        "versionId": "1",
+        "lastUpdated": "2020-05-22T16:17:48.306+01:00"
+    },
+    "url": "https://www.hl7.org/fhir/SearchParameter/basic-reqelementtype",
+    "name": "basic-reqelementtype",
+    "status": "active",
+    "experimental": false,
+    "description": "Search requisitions amoung Basic using reqElementType as discriminator.",
+    "code": "reqElementType",
+    "base": [
+        "Basic"
+    ],
+    "type": "string",
+    "expression": "Basic.extension.where(url='https://www.hl7.org/fhir/StructureDefinition/RequisitionDetail/extension/reqElementType').value",
+    "xpathUsage": "normal",
+    "target": [
+        "Basic"
+    ]
+
+}

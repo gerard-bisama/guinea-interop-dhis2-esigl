@@ -1,0 +1,384 @@
+{
+  "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60b41c05c",
+  "version": "0.3.9",
+  "name": "Push DHIS2 and eSIGL to FHIR HAPI Server",
+  "description": "Pull DHIS2 and eSIGL resources, convert them to Fhir Related resources and push in HAPI",
+  "defaultChannelConfig": [
+    {
+      "name": "Sync DHIS2 orgUnits to FHIR Server",
+      "urlPattern": "^/syncorgunit2fhir/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "0 0 1 * *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Sync DHIS2 orgUnits to FHIR Server",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/syncorgunit2fhir",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "http"
+    },
+    {
+      "name": "Map eSIGL facilies to Organization in Fhir",
+      "urlPattern": "^/mapfacility2fhir/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "0 0 1 * *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Map eSIGL facilies to Organization in Fhir",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/mapfacility2fhir",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "polling"
+    },
+    {
+      "name": "Get Products list from eSIGL and push it to Fhir Server",
+      "urlPattern": "^/syncproduct2fhir/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "0 0 1 * *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Sync eSIGL product to FHIR ",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/syncproduct2fhir",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "polling"
+    },
+    {
+      "name": "Get program list from eSIGL and push it to Fhir Server",
+      "urlPattern": "^/syncprogram2fhir/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "0 0 1 * *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Sync eSIGL program to FHIR ",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/syncprogram2fhir",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "polling"
+    },
+    {
+      "name": "Get requisition  list from eSIGL and push it to Fhir Server",
+      "urlPattern": "^/syncrequisition2fhir/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "*/5 1-3 30 * *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Sync eSIGL requisitions to FHIR ",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/syncrequisition2fhir",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "polling"
+    },
+    {
+      "name": "Get requisition list from new API eSIGL and push it to Fhir Server",
+      "urlPattern": "^/syncrequisition2fhir_new/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "*/5 1-3 30 * *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Sync eSIGL requisitions from new API to FHIR ",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/syncrequisition2fhir_new",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "http"
+    }
+  ],
+  "endpoints": [
+    {
+      "name": " Synnc DHIS2 orgUnits to FHIR Server",
+      "host": "localhost",
+      "path": "/",
+      "port": "5021",
+      "primary": true,
+      "type": "http"
+    }
+  ],
+  "configDefs": [
+    {
+      "param": "upstreamUrl",
+      "displayName": "Upstream URL",
+      "description": "The URL of the service upstream of the mediator",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "clientPassword",
+      "displayName": "OpenHIM console client password",
+      "description": "Client password as configured in openHIM console",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "dhis2Server",
+      "displayName": "dhis2 server parameters",
+      "description": "Description of the DHIS2 server parameters",
+      "type": "struct",
+      "template": [
+		{
+			"param": "url",
+			"displayName": "url",
+			"description": "The base URL (e.g. http://192.168.1.22:8082)",
+			"type": "string"
+		},
+		{
+			"param": "username",
+			"displayName": "username",
+			"description": "username",
+			"type": "string"
+		},
+		{
+			"param": "password",
+			"displayName": "password",
+			"description": "password",
+			"type": "string"
+		},
+		{
+			"param": "orgunitapipath",
+			"displayName": "orgunitapipath",
+			"description": "The API that to query orgunits from dhis2 (e.g: /api/organisationUnits.json?fields=:all&paging=false)",
+			"type": "string"
+		}
+		
+      ]
+    },
+    {
+      "param": "hapiServer",
+      "displayName": "hapi server params",
+      "description": "Description of the hapi server parameters",
+      "type": "struct",
+      "template": [
+		{
+			"param": "url",
+			"displayName": "URL",
+			"description": "The base URL (e.g. http://192.168.1.22:8083/hapi-fhir-jpaserver)",
+			"type": "string"
+		}
+      ]
+    },
+    {
+      "param": "esiglServer",
+      "displayName": "eSIGL server parameters",
+      "description": "Description of the eSIGL server parameters",
+      "type": "struct",
+      "template": [
+		{
+			"param": "url",
+			"displayName": "url",
+			"description": "The base URL (e.g. http://192.168.1.23:8082)",
+			"type": "string"
+		},
+		{
+			"param": "username",
+			"displayName": "username",
+			"description": "username",
+			"type": "string"
+		},
+		{
+			"param": "password",
+			"displayName": "password",
+			"description": "password",
+			"type": "string"
+		},
+		{
+			"param": "resourcespath",
+			"displayName": "resourcespath",
+			"description": "The API that to query resources from eSIGL (e.g: /rest-api/lookup)",
+			"type": "string"
+		}
+		
+      ]
+    },
+    {
+      "param": "mappingFile",
+      "displayName": "mappingFile ",
+      "description": "full path of the file name (e.g: /home/me/mappingfile/mapping.csv)",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "batchSizeRequisitionFacilities",
+      "displayName": "batchSizeRequisitionFacilities ",
+      "description": "numbre of facility to process within each poll to get requisitions information (Starting from 2,default 20)",
+      "type": "string",
+      "template": []
+    }
+    ,
+    {
+      "param": "batchSizeFacilityToSync",
+      "displayName": "batchSizeFacilityToSync ",
+      "description": "numbre of facility to process at once during the dhis2=>hapi sync (default 100)",
+      "type": "string",
+      "template": []
+    } 
+    ,
+    {
+      "param": "batchSizeeSGLFacilityToSync",
+      "displayName": "batchSizeeSGLFacilityToSync ",
+      "description": "numbre of facility to process at once during the eSIGL=>hapi sync (default:10)",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "batchSizeRequisitionToProcess",
+      "displayName": "batchSizeRequisitionToProcess ",
+      "description": "Number of requisitions to process within each poll of synchronization (Defaut: 100, to Process every requisitions of the facility)",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "facilityLevesForRequisitions",
+      "displayName": "facilityLevesForRequisitions ",
+      "description": "Levels of facility (comma separated) to take into account for requisition based onorganization.type (level_4,level_5)",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "periodStartDate",
+      "displayName": "periodStartDate ",
+      "description": "Date from which to select requisitions to process - >= what is specified (format:2019-01-01)",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "periodEndDate",
+      "displayName": "periodEndDate ",
+      "description": "Date from which to select requisitions to process - <= what is specified (format:2019-01-01)",
+      "type": "string",
+      "template": []
+    }
+    ,
+    {
+      "param": "maxNumberDayRequisitionsToPull",
+      "displayName": "maxNumberDayRequisitionsToPull ",
+      "description": "Interval of date in days based on the periodStartDate to pull requisition (ex. 5 means pull each five days and to to the next 5)",
+      "type": "string",
+      "template": []
+    }
+    ,
+    {
+      "param": "pgStringConnection",
+      "displayName": "pgStringConnection ",
+      "description": "string connection to the db (ex. postgresql://<usr>:<password>@<IP>:<PORT>/<DB>)",
+      "type": "string",
+      "template": []
+    }
+     ,
+    {
+      "param": "prefixResourceId",
+      "displayName": "prefixResourceId ",
+      "description": "Prefix of the fhir resource id,if the id coming fron subsystem are only digit (default:fhir-)",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "programsToSync",
+      "displayName": "Porgram to synchronize ",
+      "description": "List of program by id to push data to dhis2.Comma separated (p.e:SIGL-INTEGRE-VIH,SIGL-INTEGRE-PNMSR)",
+      "type": "string",
+      "template": []
+    }
+  ],
+  "config": {
+    "upstreamUrl": "http://sampleApplication:7001",
+    "clientPassword":"pwd",
+    "dhis2Server":{
+		"url":"http://localhost:8082",
+		"username":"username",
+		"password":"pwd",
+		"orgunitapipath":"/api"
+		},
+	"hapiServer":{
+		"url":"http://localhost:8083/hapi-fhir-jpaserver"
+		},
+	"esiglServer":{
+		"url":"https://localhost",
+		"username":"username",
+		"password":"password",
+		"resourcespath":"/rest-api"
+		},
+	"mappingFile":"/home/user/data/mappingstructure-esigl-dhis2.csv",
+	"batchSizeRequisitionFacilities":"20",
+	"batchSizeFacilityToSync":"100",
+	"batchSizeeSGLFacilityToSync":"10",
+	"batchSizeRequisitionToProcess":"100",
+	"facilityLevesForRequisitions":"",
+	"periodStartDate":"",
+	"periodEndDate":"",
+	"maxNumberDayRequisitionsToPull":"5",
+	"pgStringConnection":"",
+	"prefixResourceId":"",
+	"programsToSync":""
+  }
+}

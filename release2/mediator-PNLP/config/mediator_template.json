@@ -1,0 +1,341 @@
+{
+  "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60medpg01",
+  "version": "0.3.1",
+  "name": "Mediateur PNLP",
+  "description": "Extraction des donnees sur les requisitions de eSIGL->DHIS2",
+  "defaultChannelConfig": [
+    {
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PUT",
+        "OPTIONS",
+        "HEAD",
+        "TRACE",
+        "CONNECT",
+        "PATCH"
+      ],
+      "name": "0-[PNLP] Generer les elements des donnees du programme dans DHIS2",
+      "urlPattern": "^/genprogmetadata/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Generer les elements des donnees du programme dans DHIS2",
+          "host": "localhost",
+          "port": "5022",
+          "primary": true,
+          "path": "/genprogmetadata",
+          "type": "http",
+          "secured": false,
+          "username": "",
+          "password": ""
+        }
+        
+      ],
+      "allow": [],
+      "type": "http",
+      "authType": "public",
+      "status": "enabled"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PUT",
+        "OPTIONS",
+        "HEAD",
+        "TRACE",
+        "CONNECT",
+        "PATCH"
+      ],
+      "name": "1-[PNLP] synchronisation les requisitions dans HAPI",
+      "urlPattern": "^/syncrequisition2fhir/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "synchronisation les requisitions dans HAPI",
+          "host": "localhost",
+          "port": "5022",
+          "primary": true,
+          "path": "/syncrequisition2fhir",
+          "type": "http",
+          "secured": false,
+          "username": "",
+          "password": ""
+        }
+        
+      ],
+      "allow": [],
+      "type": "http",
+      "authType": "public",
+      "status": "enabled"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PUT",
+        "OPTIONS",
+        "HEAD",
+        "TRACE",
+        "CONNECT",
+        "PATCH"
+      ],
+      "name": "2-[PNLP] synchronisation les requisitions dans DHIS2",
+      "urlPattern": "^/syncrequisition2dhis/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "synchronisation les requisitions dans DHIS2",
+          "host": "localhost",
+          "port": "5022",
+          "primary": true,
+          "path": "/syncrequisition2dhis",
+          "type": "http",
+          "secured": false,
+          "username": "",
+          "password": ""
+        }
+        
+      ],
+      "allow": [],
+      "type": "http",
+      "authType": "public",
+      "status": "enabled"
+    }
+  ],
+  "endpoints": [
+    {
+      "name": " ETL des donnees sur les requisitions DHIS2-eSIGL",
+      "host": "localhost",
+      "path": "/",
+      "port": "5022",
+      "primary": true,
+      "type": "http"
+    }
+  ],
+  "configDefs": [
+    {
+      "param": "appDirectory",
+      "displayName": "Le repertoire de lancement/contexte de l'application",
+      "description": "Le repertoire de lancement/contexte de l'application. Path ou se trouve le fichier package.json",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "dhis2Server",
+      "displayName": "Parametres de connexion au serveur DHIS2",
+      "description": "Parametres de connexion au serveur DHIS2",
+      "type": "struct",
+      "template": [
+		{
+			"param": "url",
+			"displayName": "URL",
+			"description": "URL de l'API DHIS2 avec port si necessaire (ex. http://192.168.1.22:8082/api)",
+			"type": "string"
+		},
+		{
+			"param": "username",
+			"displayName": "Nom utilisateur",
+			"description": "Nom utilisateur",
+			"type": "string"
+		},
+		{
+			"param": "password",
+			"displayName": "Mot de passe",
+			"description": "Mot de passe",
+			"type": "string"
+		}
+      ]
+    },
+    {
+      "param": "elasticsearchServer",
+      "displayName": "Parametres de connexion au serveur ES",
+      "description": "Parametres de connexion au serveur ES",
+      "type": "struct",
+      "template": [
+		{
+			"param": "url",
+			"displayName": "URL",
+			"description": "URL de l'API ES avec port si necessaire (ex. http://192.168.1.22:9200)",
+			"type": "string"
+		},
+		{
+			"param": "username",
+			"displayName": "Nom utilisateur",
+			"description": "Nom utilisateur",
+			"type": "string"
+		},
+		{
+			"param": "password",
+			"displayName": "Mot de passe",
+			"description": "Mot de passe",
+			"type": "string"
+		}
+      ]
+    },
+    {
+      "param": "hapiServer",
+      "displayName": "Parametres de connexion au serveur HAPI FHIR",
+      "description": "Parametres de connexion au serveur HAPI FHIR",
+      "type": "struct",
+      "template": [
+		{
+			"param": "url",
+			"displayName": "URL",
+			"description": "URL de base avec port si necessaire (ex. http://192.168.1.22:8083/hapi)",
+			"type": "string"
+    },
+    {
+			"param": "username",
+			"displayName": "Nom utilisateur",
+			"description": "Nom utilisateur",
+			"type": "string"
+		},
+		{
+			"param": "password",
+			"displayName": "Mot de passe",
+			"description": "Mot de passe",
+			"type": "string"
+		}
+      ]
+    },
+    {
+      "param": "esiglServer",
+      "displayName": "Parametres de connexion au serveur eSIGL",
+      "description": "Parametres de connexion au serveur eSIGL",
+      "type": "struct",
+      "template": [
+		{
+			"param": "url",
+			"displayName": "URL",
+			"description": "URL de base avec port si necessaire (ex. http://192.168.1.23:8080)",
+			"type": "string"
+		},
+		{
+			"param": "username",
+			"displayName": "Nom utilisateur",
+			"description": "Nom utilisateur",
+			"type": "string"
+		},
+		{
+			"param": "password",
+			"displayName": "Mot de passe",
+			"description": "Mot de passe",
+			"type": "string"
+		},
+		{
+			"param": "resourcespath",
+			"displayName": "Chemin de base de API pour extraires les donnees",
+			"description": "Chemin de base de API pour extraires les donnees (ex. /rest-api/lookup)",
+			"type": "string"
+		}
+		
+      ]
+    },
+    {
+      "param": "extensionBaseUrlRequisitionDetails",
+      "displayName": "Url de base pour l'extension de requisition",
+      "description": "Url de base pour l'extension du requisition",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "extensionBaseUrlProgramDetails",
+      "displayName": "Url de base pour l'extension du programme",
+      "description": "Url de base pour l'extension du programme",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "program",
+      "displayName": "Parametres du mediateur du programme a synchroniser",
+      "description": "Parametres du mediateur du programme a synchroniser",
+      "type": "struct",
+      "template": [
+		{
+			"param": "name",
+			"displayName": "Nom du mediateur",
+			"description": "Nom du mediateur pour la generation de logs personnalises et des metadonnees. 5 caracteres (P.ex:pnlp0)",
+			"type": "string"
+		},
+		{
+			"param": "code",
+			"displayName": "Code eSIGL du programme",
+			"description": "Code eSIGL du programme avec respect de la case. (P.ex: SIGL-INTEGRE-PNLP)",
+			"type": "string"
+		}
+      ]
+    },
+    {
+      "param": "synchronizationPeriod",
+      "displayName": "Periode de synchronisation de requisition",
+      "description": "Periode de synchronisation de requisition (Annee-mm)",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "maxNbRequisitions2PullPerLoop",
+      "displayName": "Nombre max de requisitions a extraite dans HAPI",
+      "description": "Nombre max de requisitions a extraite dans HAPI (Par defaut 20)",
+      "type": "string",
+      "template": []
+    }
+  ],
+  "config": {
+    "appDirectory":"/home/server-dev/Documents/dev_repo/guinea-interop-dhis2-esigl/mediator-PNLP",
+    "dhis2Server":{
+		"url":"http://localhost",
+		"username":"admin",
+		"password":"pwd"
+		},
+	"hapiServer":{
+    "url":"http://localhost",
+    "username":"admin",
+		"password":"pwd"
+		},
+	"esiglServer":{
+		"url":"https://localhost",
+		"username":"admin",
+		"password":"pwd",
+		"resourcespath":"/rest-api"
+    },
+  "elasticsearchServer":{
+      "url":"http://localhost",
+      "username":"admin",
+      "password":"pwd"
+    },
+  "extensionBaseUrlRequisitionDetails":"https://www.hl7.org/fhir/StructureDefinition/requisitionDetail",
+  "extensionBaseUrlProgramDetails":"https://www.hl7.org/fhir/StructureDefinition/ProgramDetails",
+  "program":{
+    "name":"pnlp0",
+    "code":"SIGL-INTEGRE-PNLP"
+  },
+  "synchronizationPeriod":"2020-01",
+  "maxNbRequisitions2PullPerLoop":"20"
+  }
+}

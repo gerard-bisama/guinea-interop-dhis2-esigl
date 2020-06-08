@@ -1,0 +1,332 @@
+{
+  "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60b41c23c",
+  "version": "0.1.4",
+  "name": "Fhir Resources from HAPI to DHIS2",
+  "description": "Pull Fhir resources form HAPI and push them to DHIS2 ",
+  "defaultChannelConfig": [
+    
+    {
+      "name": "Sync programs and associated products list to DHIS2",
+      "urlPattern": "^/programProduct2dhis2/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "* 3-4 * 5 *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Sync programs and associated products list to DHIS2",
+          "host": "localhost",
+          "port": "5022",
+          "primary": true,
+          "path": "/programProduct2dhis2",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "polling"
+    }
+    ,
+    {
+      "name": "Sync dispensingUnits list to DHIS2",
+      "urlPattern": "^/dispensingUnit2dhis2/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "* 3-4 * 5 *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Sync dispensingUnits list to DHIS2",
+          "host": "localhost",
+          "port": "5022",
+          "primary": true,
+          "path": "/dispensingUnit2dhis2",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "polling"
+    }
+    ,
+    {
+      "name": "Sync requisitions to DHIS2",
+      "urlPattern": "^/requisition2dhis2/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "* 3-4 * 5 *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Sync requisitions  to DHIS2",
+          "host": "localhost",
+          "port": "5022",
+          "primary": true,
+          "path": "/requisition2dhis2",
+          "type": "http"
+        }
+        
+      ],
+      "allow": ["exchange"],
+      "type": "polling"
+    }
+  ],
+  "endpoints": [
+    {
+      "name": " Sync FHIR resources to DHIS2",
+      "host": "localhost",
+      "path": "/launchsync",
+      "port": "5022",
+      "primary": true,
+      "type": "http"
+    }
+  ],
+  "configDefs": [
+    {
+      "param": "upstreamUrl",
+      "displayName": "Upstream URL",
+      "description": "The URL of the service upstream of the mediator",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "clientPassword",
+      "displayName": "OpenHIM console client password",
+      "description": "Client password as configured in openHIM console",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "dhis2Server",
+      "displayName": "dhis2 server parameters",
+      "description": "Description of the DHIS2 server parameters",
+      "type": "struct",
+      "template": [
+		{
+			"param": "url",
+			"displayName": "url",
+			"description": "The base URL (e.g. http://192.168.1.22:8082)",
+			"type": "string"
+		},
+		{
+			"param": "username",
+			"displayName": "username",
+			"description": "username",
+			"type": "string"
+		},
+		{
+			"param": "password",
+			"displayName": "password",
+			"description": "password",
+			"type": "string"
+		},
+		{
+			"param": "apiPath",
+			"displayName": "apiPath",
+			"description": "The API path that to query resources from dhis2 (e.g: /api)",
+			"type": "string"
+		}
+		
+      ]
+    },
+    {
+      "param": "hapiServer",
+      "displayName": "hapi server params",
+      "description": "Description of the hapi server parameters",
+      "type": "struct",
+      "template": [
+		{
+			"param": "url",
+			"displayName": "URL",
+			"description": "The base URL (e.g. http://192.168.1.22:8083/hapi-fhir-jpaserver)",
+			"type": "string"
+		}
+      ]
+    },
+    {
+      "param": "productCategoryId",
+      "displayName": "productCategoryId",
+      "description": "id of the product category in dhis2. this act as id of the collections of products",
+      "type": "string",
+      "template": []
+    }
+    ,
+    {
+      "param": "resourceCountFhir",
+      "displayName": "resourceCountFhir",
+      "description": "size of resources to pull from fhir in one call. Default :2",
+      "type": "string",
+      "template": []
+    }
+    ,
+    {
+      "param": "programCategoryId",
+      "displayName": "programCategoryId",
+      "description": "id of the programme category in dhis2. this act as id of the collections of programme",
+      "type": "string",
+      "template": []
+    }
+    ,
+    {
+      "param": "programProductCategoryId",
+      "displayName": "programProductCategoryId",
+      "description": "id of the Categorie-Produit category in dhis2. this act as id of the collections of Categorie-Produit",
+      "type": "string",
+      "template": []
+    }
+    ,
+    {
+      "param": "dispensingUnitCategoryId",
+      "displayName": "dispensingUnitCategoryId",
+      "description": "id of the dispensing unit in dhis2. this act as id of the collections of dispensing",
+      "type": "string",
+      "template": []
+    }
+    ,
+    {
+      "param": "periodStartDate",
+      "displayName": "periodStartDate ",
+      "description": "Date from which to select requisitions to process - >= what is specified (format:2019-01-01)",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "periodEndDate",
+      "displayName": "periodEndDate ",
+      "description": "Date from which to select requisitions to process - <= what is specified (format:2019-01-01)",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "programsToSync",
+      "displayName": "Porgram to synchronize ",
+      "description": "List of program by id to push data to dhis2.Comma separated (p.e:SIGL-INTEGRE-VIH,SIGL-INTEGRE-PNMSR)",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "datasetId",
+      "displayName": "dataset Id used to report requisition data",
+      "description": "dataset Id used to report requisition data",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "DataelementsRequisitionAttributeMapping",
+      "displayName": "Data Element Ids => Requisition attribute mapping to push ADX payload",
+      "description": "Data Element Ids => Requisition attribute mapping to push ADX payload",
+      "type": "struct",
+      "template": [
+		{
+			"param": "quantiteUtilisee",
+			"displayName": "Quantite utilisee",
+			"description": "Id of dataElement mapping with quantiteUtilisee (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		},
+		{
+			"param": "stockInitial",
+			"displayName": "Stock initial",
+			"description": "Id of dataElement mapping with StockInitialStockInitial (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		}
+		,
+		{
+			"param": "quantiteRecue",
+			"displayName": "Quantite recue",
+			"description": "Id of dataElement mapping with quantiteRecue (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		}
+		,
+		{
+			"param": "sdu",
+			"displayName": "Stock disponible utilisable",
+			"description": "Id of dataElement mapping with sdu (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		}
+		,
+		{
+			"param": "ajustementPositive",
+			"displayName": "Ajustement Positive",
+			"description": "Id of dataElement mapping with ajustementPositive (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		}
+		,
+		{
+			"param": "ajustementNegative",
+			"displayName": "Ajustement Negative",
+			"description": "Id of dataElement mapping with ajustementNegative (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		}
+		,
+		{
+			"param": "cmm",
+			"displayName": "Consommation Mensuelle Moyenne",
+			"description": "Id of dataElement mapping with cmm (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		}
+		,
+		{
+			"param": "nbJoursRupture",
+			"displayName": "Nombre de jours Rupture",
+			"description": "Id of dataElement mapping with nbJoursRupture (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		}
+		,
+		{
+			"param": "pertes",
+			"displayName": "Pertes",
+			"description": "Id of dataElement mapping with Pertes (format: DatalementID|RequisitionAttribute)",
+			"type": "string"
+		}
+      ]
+    }
+    
+  ],
+ "config": {
+    "upstreamUrl": "http://sampleApplication:7001",
+    "clientPassword":"pwd",
+    "dhis2Server":{
+		"url":"http://localhost:8082",
+		"username":"user",
+		"password":"pwd",
+		"apiPath":"/api"
+		},
+	"hapiServer":{
+		"url":"http://localhost:8083/hapi-fhir-jpaserver"
+		},
+	"productCategoryId":"zpMfTfkpc3m",
+	"programCategoryId":"DvLVPNEOZpq",
+	"programProductCategoryId":"",
+	"dispensingUnitCategoryId":"XMHaCy4F9IG",
+	"resourceCountFhir":"5",
+	"periodStartDate":"",
+	"periodEndDate":"",
+	"programsToSync":"SIGL-INTEGRE-PNLP",
+	"datasetId":"XfkbBsCVdkh",
+	"DataelementsRequisitionAttributeMapping":{
+		"quantiteUtilisee":"lcqZPctUePx",
+		"stockInitial":"QEtFxUKiC4s",
+		"quantiteRecue":"DsjkbZzcn5L",
+		"sdu":"YiNNbdGrI38",
+		"ajustementPositive":"BArsFlTrdes",
+		"ajustementNegative":"ycDkz6mBMSX",
+		"cmm":"GpypgMkSmjn",
+		"nbJoursRupture":"AElZS6ASt4d",
+		"pertes":"DYOVfXTYg43"
+		
+	}
+	
+  }
+}

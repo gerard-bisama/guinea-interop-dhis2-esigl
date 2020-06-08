@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<StructureDefinition xmlns="http://hl7.org/fhir">
+  <id value="Requisition" />
+  <meta>
+    <versionId value="1" />
+    <lastUpdated value="2020-05-28T03:42:28.333+01:00" />
+  </meta>
+  <text>
+    <status value="generated" />
+    <div xmlns="http://www.w3.org/1999/xhtml">Represent the detail on the request of the product</div>
+  </text>
+  <url value="https://www.hl7.org/fhir/StructureDefinition/Requisition" />
+  <name value="Requisition" />
+  <status value="draft" />
+  <fhirVersion value="4.0.0" />
+  <kind value="resource" />
+  <abstract value="false" />
+  <type value="Basic" />
+  <baseDefinition value="http://hl7.org/fhir/StructureDefinition/Basic" />
+  <derivation value="constraint" />
+  <differential>
+    <element id="Basic.extension">
+      <path value="Basic.extension" />
+      <slicing>
+        <discriminator>
+          <type value="value" />
+          <path value="url" />
+        </discriminator>
+        <rules value="open" />
+      </slicing>
+    </element>
+    <element id="Basic.extension:requisitionDetail">
+      <path value="Basic.extension" />
+      <sliceName value="requisitionDetail" />
+      <max value="1" />
+      <type>
+        <code value="Extension" />
+        <profile value="https://www.hl7.org/fhir/StructureDefinition/RequisitionDetail" />
+      </type>
+    </element>
+  </differential>
+</StructureDefinition>

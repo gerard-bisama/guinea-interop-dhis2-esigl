@@ -1,0 +1,588 @@
+<?xml version="1.0" encoding="utf-8"?>
+<StructureDefinition xmlns="http://hl7.org/fhir">
+  <id value="RequisitionDetail" />
+  <meta>
+    <versionId value="5" />
+    <lastUpdated value="2020-05-29T13:37:19.762+01:00" />
+  </meta>
+  <url value="https://www.hl7.org/fhir/StructureDefinition/RequisitionDetail" />
+  <name value="RequisitionDetail" />
+  <status value="draft" />
+  <fhirVersion value="4.0.0" />
+  <kind value="complex-type" />
+  <abstract value="false" />
+  <context>
+    <type value="element" />
+    <expression value="Basic" />
+  </context>
+  <type value="Extension" />
+  <baseDefinition value="http://hl7.org/fhir/StructureDefinition/Extension" />
+  <derivation value="constraint" />
+  <differential>
+    <element id="Extension.extension">
+      <path value="Extension.extension" />
+      <slicing>
+        <discriminator>
+          <type value="value" />
+          <path value="url" />
+        </discriminator>
+        <rules value="open" />
+      </slicing>
+    </element>
+    <element id="Extension.extension:product">
+      <path value="Extension.extension" />
+      <sliceName value="product" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:product.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="product" />
+    </element>
+    <element id="Extension.extension:product.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="Reference" />
+        <targetProfile value="Product" />
+      </type>
+    </element>
+    <element id="Extension.extension:program">
+      <path value="Extension.extension" />
+      <sliceName value="program" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:program.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="program" />
+    </element>
+    <element id="Extension.extension:program.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="Reference" />
+        <targetProfile value="Organization" />
+      </type>
+    </element>
+    <element id="Extension.extension:InitialStok">
+      <path value="Extension.extension" />
+      <sliceName value="InitialStok" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:InitialStok.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="InitialStok" />
+    </element>
+    <element id="Extension.extension:InitialStok.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="decimal" />
+      </type>
+    </element>
+    <element id="Extension.extension:receivedQuantity">
+      <path value="Extension.extension" />
+      <sliceName value="receivedQuantity" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:receivedQuantity.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="receivedQuantity" />
+    </element>
+    <element id="Extension.extension:receivedQuantity.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="decimal" />
+      </type>
+    </element>
+    <element id="Extension.extension:consumedQuantity">
+      <path value="Extension.extension" />
+      <sliceName value="consumedQuantity" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:consumedQuantity.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="consumedQuantity" />
+    </element>
+    <element id="Extension.extension:consumedQuantity.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="decimal" />
+      </type>
+    </element>
+    <element id="Extension.extension:losses">
+      <path value="Extension.extension" />
+      <sliceName value="losses" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:losses.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="losses" />
+    </element>
+    <element id="Extension.extension:losses.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="decimal" />
+      </type>
+    </element>
+    <element id="Extension.extension:positiveAdjustment">
+      <path value="Extension.extension" />
+      <sliceName value="positiveAdjustment" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:positiveAdjustment.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="positiveAdjustment" />
+    </element>
+    <element id="Extension.extension:positiveAdjustment.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="decimal" />
+      </type>
+    </element>
+    <element id="Extension.extension:NegativeAdjustment">
+      <path value="Extension.extension" />
+      <sliceName value="NegativeAdjustment" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:NegativeAdjustment.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="NegativeAdjustment" />
+    </element>
+    <element id="Extension.extension:NegativeAdjustment.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="decimal" />
+      </type>
+    </element>
+    <element id="Extension.extension:stockOnHand">
+      <path value="Extension.extension" />
+      <sliceName value="stockOnHand" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:stockOnHand.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="stockOnHand" />
+    </element>
+    <element id="Extension.extension:stockOnHand.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="decimal" />
+      </type>
+    </element>
+    <element id="Extension.extension:averageMonthConsumption">
+      <path value="Extension.extension" />
+      <sliceName value="averageMonthConsumption" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:averageMonthConsumption.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="averageMonthConsumption" />
+    </element>
+    <element id="Extension.extension:averageMonthConsumption.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="decimal" />
+      </type>
+    </element>
+    <element id="Extension.extension:stockOutDay">
+      <path value="Extension.extension" />
+      <sliceName value="stockOutDay" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:stockOutDay.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="stockOutDay" />
+    </element>
+    <element id="Extension.extension:stockOutDay.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="integer" />
+      </type>
+    </element>
+    <element id="Extension.extension:startDate">
+      <path value="Extension.extension" />
+      <sliceName value="startDate" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:startDate.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="startDate" />
+    </element>
+    <element id="Extension.extension:startDate.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="date" />
+      </type>
+    </element>
+    <element id="Extension.extension:endDate">
+      <path value="Extension.extension" />
+      <sliceName value="endDate" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:endDate.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="endDate" />
+    </element>
+    <element id="Extension.extension:endDate.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="date" />
+      </type>
+    </element>
+    <element id="Extension.extension:location">
+      <path value="Extension.extension" />
+      <sliceName value="location" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:location.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="location" />
+    </element>
+    <element id="Extension.extension:location.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="Reference" />
+        <targetProfile value="Location" />
+      </type>
+    </element>
+    <element id="Extension.extension:reqElementType">
+      <path value="Extension.extension" />
+      <sliceName value="reqElementType" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:reqElementType.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="reqElementType" />
+    </element>
+    <element id="Extension.extension:reqElementType.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="base64Binary" />
+      </type>
+      <type>
+        <code value="boolean" />
+      </type>
+      <type>
+        <code value="canonical" />
+      </type>
+      <type>
+        <code value="code" />
+      </type>
+      <type>
+        <code value="date" />
+      </type>
+      <type>
+        <code value="dateTime" />
+      </type>
+      <type>
+        <code value="decimal" />
+      </type>
+      <type>
+        <code value="id" />
+      </type>
+      <type>
+        <code value="instant" />
+      </type>
+      <type>
+        <code value="integer" />
+      </type>
+      <type>
+        <code value="markdown" />
+      </type>
+      <type>
+        <code value="oid" />
+      </type>
+      <type>
+        <code value="positiveInt" />
+      </type>
+      <type>
+        <code value="string" />
+      </type>
+      <type>
+        <code value="time" />
+      </type>
+      <type>
+        <code value="unsignedInt" />
+      </type>
+      <type>
+        <code value="uri" />
+      </type>
+      <type>
+        <code value="url" />
+      </type>
+      <type>
+        <code value="uuid" />
+      </type>
+      <type>
+        <code value="Address" />
+      </type>
+      <type>
+        <code value="Age" />
+      </type>
+      <type>
+        <code value="Annotation" />
+      </type>
+      <type>
+        <code value="Attachment" />
+      </type>
+      <type>
+        <code value="CodeableConcept" />
+      </type>
+      <type>
+        <code value="Coding" />
+      </type>
+      <type>
+        <code value="ContactPoint" />
+      </type>
+      <type>
+        <code value="Count" />
+      </type>
+      <type>
+        <code value="Distance" />
+      </type>
+      <type>
+        <code value="Duration" />
+      </type>
+      <type>
+        <code value="HumanName" />
+      </type>
+      <type>
+        <code value="Identifier" />
+      </type>
+      <type>
+        <code value="Money" />
+      </type>
+      <type>
+        <code value="Period" />
+      </type>
+      <type>
+        <code value="Quantity" />
+      </type>
+      <type>
+        <code value="Range" />
+      </type>
+      <type>
+        <code value="Ratio" />
+      </type>
+      <type>
+        <code value="Reference" />
+      </type>
+      <type>
+        <code value="SampledData" />
+      </type>
+      <type>
+        <code value="Signature" />
+      </type>
+      <type>
+        <code value="Timing" />
+      </type>
+      <type>
+        <code value="ContactDetail" />
+      </type>
+      <type>
+        <code value="Contributor" />
+      </type>
+      <type>
+        <code value="DataRequirement" />
+      </type>
+      <type>
+        <code value="Expression" />
+      </type>
+      <type>
+        <code value="ParameterDefinition" />
+      </type>
+      <type>
+        <code value="RelatedArtifact" />
+      </type>
+      <type>
+        <code value="TriggerDefinition" />
+      </type>
+      <type>
+        <code value="UsageContext" />
+      </type>
+      <type>
+        <code value="Dosage" />
+      </type>
+    </element>
+    <element id="Extension.extension:periodName">
+      <path value="Extension.extension" />
+      <sliceName value="periodName" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:periodName.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="periodName" />
+    </element>
+    <element id="Extension.extension:periodName.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="string" />
+      </type>
+    </element>
+    <element id="Extension.url">
+      <path value="Extension.url" />
+      <fixedUri value="https://www.hl7.org/fhir/StructureDefinition/RequisitionDetail" />
+    </element>
+    <element id="Extension.value[x]">
+      <path value="Extension.value[x]" />
+      <slicing>
+        <discriminator>
+          <type value="type" />
+          <path value="$this" />
+        </discriminator>
+        <rules value="open" />
+      </slicing>
+      <max value="0" />
+    </element>
+    <element id="Extension.value[x]:no name">
+      <path value="Extension.value[x]" />
+      <sliceName value="no name" />
+      <max value="0" />
+      <type>
+        <code value="base64Binary" />
+      </type>
+      <type>
+        <code value="boolean" />
+      </type>
+      <type>
+        <code value="canonical" />
+      </type>
+      <type>
+        <code value="code" />
+      </type>
+      <type>
+        <code value="date" />
+      </type>
+      <type>
+        <code value="dateTime" />
+      </type>
+      <type>
+        <code value="decimal" />
+      </type>
+      <type>
+        <code value="id" />
+      </type>
+      <type>
+        <code value="instant" />
+      </type>
+      <type>
+        <code value="integer" />
+      </type>
+      <type>
+        <code value="markdown" />
+      </type>
+      <type>
+        <code value="oid" />
+      </type>
+      <type>
+        <code value="positiveInt" />
+      </type>
+      <type>
+        <code value="string" />
+      </type>
+      <type>
+        <code value="time" />
+      </type>
+      <type>
+        <code value="unsignedInt" />
+      </type>
+      <type>
+        <code value="uri" />
+      </type>
+      <type>
+        <code value="url" />
+      </type>
+      <type>
+        <code value="uuid" />
+      </type>
+      <type>
+        <code value="Address" />
+      </type>
+      <type>
+        <code value="Age" />
+      </type>
+      <type>
+        <code value="Annotation" />
+      </type>
+      <type>
+        <code value="Attachment" />
+      </type>
+      <type>
+        <code value="CodeableConcept" />
+      </type>
+      <type>
+        <code value="Coding" />
+      </type>
+      <type>
+        <code value="ContactPoint" />
+      </type>
+      <type>
+        <code value="Count" />
+      </type>
+      <type>
+        <code value="Distance" />
+      </type>
+      <type>
+        <code value="Duration" />
+      </type>
+      <type>
+        <code value="HumanName" />
+      </type>
+      <type>
+        <code value="Identifier" />
+      </type>
+      <type>
+        <code value="Money" />
+      </type>
+      <type>
+        <code value="Period" />
+      </type>
+      <type>
+        <code value="Quantity" />
+      </type>
+      <type>
+        <code value="Range" />
+      </type>
+      <type>
+        <code value="Ratio" />
+      </type>
+      <type>
+        <code value="Reference" />
+        <targetProfile value="Product" />
+      </type>
+      <type>
+        <code value="SampledData" />
+      </type>
+      <type>
+        <code value="Signature" />
+      </type>
+      <type>
+        <code value="Timing" />
+      </type>
+      <type>
+        <code value="ContactDetail" />
+      </type>
+      <type>
+        <code value="Contributor" />
+      </type>
+      <type>
+        <code value="DataRequirement" />
+      </type>
+      <type>
+        <code value="Expression" />
+      </type>
+      <type>
+        <code value="ParameterDefinition" />
+      </type>
+      <type>
+        <code value="RelatedArtifact" />
+      </type>
+      <type>
+        <code value="TriggerDefinition" />
+      </type>
+      <type>
+        <code value="UsageContext" />
+      </type>
+      <type>
+        <code value="Dosage" />
+      </type>
+    </element>
+  </differential>
+</StructureDefinition>

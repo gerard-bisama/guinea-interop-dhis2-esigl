@@ -1,0 +1,404 @@
+{
+  "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60medprinc",
+  "version": "0.3.13",
+  "name": "Mediateur principal",
+  "description": "Extraction des donnees de base DHIS2-eSIGL et chargement dans HAPI-DHSI2",
+  "defaultChannelConfig": [
+    {
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PUT",
+        "OPTIONS",
+        "HEAD",
+        "TRACE",
+        "CONNECT",
+        "PATCH"
+      ],
+      "name": "0-[Principal] Synchroniser les UO DHIS2->HAPI",
+      "urlPattern": "^/syncorgunit2fhir/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Synchroniser les UO DHIS2->HAPI",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/syncorgunit2fhir",
+          "type": "http",
+          "secured": false,
+          "username": "",
+          "password": ""
+        }
+        
+      ],
+      "allow": [],
+      "type": "http",
+      "authType": "public",
+      "status": "enabled"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PUT",
+        "OPTIONS",
+        "HEAD",
+        "TRACE",
+        "CONNECT",
+        "PATCH"
+      ],
+      "name": "4-[Principal] Charger les logs d'activites dans Kibana",
+      "urlPattern": "^/loadlogs/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Charger les logs d'activites dans Kibana",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/loadlogs",
+          "type": "http",
+          "secured": false,
+          "username": "",
+          "password": ""
+        }
+        
+      ],
+      "allow": [],
+      "type": "http",
+      "authType": "public",
+      "status": "enabled"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PUT",
+        "OPTIONS",
+        "HEAD",
+        "TRACE",
+        "CONNECT",
+        "PATCH"
+      ],
+      "name": "1-[Principal] Mapper les structures eSIGL avec les UO de DHIS2",
+      "urlPattern": "^/mapfacility2fhir/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "pollingSchedule": "0 0 1 * *",
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Mapper les structures eSIGL avec les UO de DHIS2",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/mapfacility2fhir",
+          "type": "http",
+          "secured": false,
+          "username": "",
+          "password": ""
+        }
+        
+      ],
+      "allow": [],
+      "type": "http",
+      "authType": "public",
+      "status": "enabled"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PUT",
+        "OPTIONS",
+        "HEAD",
+        "TRACE",
+        "CONNECT",
+        "PATCH"
+      ],
+      "name": "2-[Principal] Synchroniser le programmes et les produits associes avec HAPI",
+      "urlPattern": "^/syncprogramproduct2fhir/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Synchroniser le programmes et les produits associes avec HAPI",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/syncprogramproduct2fhir",
+          "type": "http",
+          "secured": false,
+          "username": "",
+          "password": ""
+        }
+        
+      ],
+      "allow": [],
+      "type": "http",
+      "authType": "public",
+      "status": "enabled"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PUT",
+        "OPTIONS",
+        "HEAD",
+        "TRACE",
+        "CONNECT",
+        "PATCH"
+      ],
+      "name": "3-[Principal] Synchroniser le programmes et les produits associes avec DHIS2",
+      "urlPattern": "^/syncprogramproduct2dhis/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Synchroniser le programmes et les produits associes avec DHIS2",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/syncprogramproduct2dhis",
+          "type": "http",
+          "secured": false,
+          "username": "",
+          "password": ""
+        }
+        
+      ],
+      "allow": [],
+      "type": "http",
+      "authType": "public",
+      "status": "enabled"
+    }
+    
+  ],
+  "endpoints": [
+    {
+      "name": " ETL des donnees de base DHIS2-eSIGL",
+      "host": "localhost",
+      "path": "/",
+      "port": "5021",
+      "primary": true,
+      "type": "http"
+    }
+  ],
+  "configDefs": [
+    {
+      "param": "appDirectory",
+      "displayName": "Le repertoire de lancement/contexte de l'application",
+      "description": "Le repertoire de lancement/contexte de l'application. Path ou se trouve le fichier package.json",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "dhis2Server",
+      "displayName": "Parametres de connexion au serveur DHIS2",
+      "description": "Parametres de connexion au serveur DHIS2",
+      "type": "struct",
+      "template": [
+		{
+			"param": "url",
+			"displayName": "URL",
+			"description": "URL de l'API DHIS2 avec port si necessaire (ex. http://192.168.1.22:8082/api)",
+			"type": "string"
+		},
+		{
+			"param": "username",
+			"displayName": "Nom utilisateur",
+			"description": "Nom utilisateur",
+			"type": "string"
+		},
+		{
+			"param": "password",
+			"displayName": "Mot de passe",
+			"description": "Mot de passe",
+			"type": "string"
+		}
+      ]
+    },
+    {
+      "param": "elasticsearchServer",
+      "displayName": "Parametres de connexion au serveur ES",
+      "description": "Parametres de connexion au serveur ES",
+      "type": "struct",
+      "template": [
+		{
+			"param": "url",
+			"displayName": "URL",
+			"description": "URL de l'API ES avec port si necessaire (ex. http://192.168.1.22:9200)",
+			"type": "string"
+		},
+		{
+			"param": "username",
+			"displayName": "Nom utilisateur",
+			"description": "Nom utilisateur",
+			"type": "string"
+		},
+		{
+			"param": "password",
+			"displayName": "Mot de passe",
+			"description": "Mot de passe",
+			"type": "string"
+		}
+      ]
+    },
+    {
+      "param": "hapiServer",
+      "displayName": "Parametres de connexion au serveur HAPI FHIR",
+      "description": "Parametres de connexion au serveur HAPI FHIR",
+      "type": "struct",
+      "template": [
+		{
+			"param": "url",
+			"displayName": "URL",
+			"description": "URL de base avec port si necessaire (ex. http://192.168.1.22:8083/hapi)",
+			"type": "string"
+    },
+    {
+			"param": "username",
+			"displayName": "Nom utilisateur",
+			"description": "Nom utilisateur",
+			"type": "string"
+		},
+		{
+			"param": "password",
+			"displayName": "Mot de passe",
+			"description": "Mot de passe",
+			"type": "string"
+		}
+      ]
+    },
+    {
+      "param": "esiglServer",
+      "displayName": "Parametres de connexion au serveur eSIGL",
+      "description": "Parametres de connexion au serveur eSIGL",
+      "type": "struct",
+      "template": [
+		{
+			"param": "url",
+			"displayName": "URL",
+			"description": "URL de base avec port si necessaire (ex. http://192.168.1.23:8080)",
+			"type": "string"
+		},
+		{
+			"param": "username",
+			"displayName": "Nom utilisateur",
+			"description": "Nom utilisateur",
+			"type": "string"
+		},
+		{
+			"param": "password",
+			"displayName": "Mot de passe",
+			"description": "Mot de passe",
+			"type": "string"
+		},
+		{
+			"param": "resourcespath",
+			"displayName": "Chemin de base de API pour extraires les donnees",
+			"description": "Chemin de base de API pour extraires les donnees (ex. /rest-api/lookup)",
+			"type": "string"
+		}
+		
+      ]
+    },
+    {
+      "param": "batchSizeFacilityToSync",
+      "displayName": "Nombre de OU par lot pour le traitemet lors de la sync DHIS2=>Hapi",
+      "description": "Nombre de OU par lot pour le traitemet lors de la sync DHIS2=>Hapi",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "batchSizeFacilityFromHapi",
+      "displayName": "Nombre des structures par lot a extraire de HAPI",
+      "description": "Nombre des structures par lot a extraire de HAPI lors du mapping",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "extensionBaseUrlProductDetails",
+      "displayName": "Url de base pour l'extension du produit",
+      "description": "Url de base pour l'extension du produit",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "extensionBaseUrlProgramDetails",
+      "displayName": "Url de base pour l'extension du programme",
+      "description": "Url de base pour l'extension du programme",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "synchronizationPeriod",
+      "displayName": "Periode de synchronisation de requisition",
+      "description": "Periode de synchronisation de requisition (Annee-mm)",
+      "type": "string",
+      "template": []
+    }
+  ],
+  "config": {
+    "appDirectory":"/home/server-dev/Documents/dev_repo/guinea-interop-dhis2-esigl/mediator-principal",
+    "dhis2Server":{
+		"url":"http://localhost/api",
+		"username":"admin",
+		"password":"pwd"
+		},
+	"hapiServer":{
+    "url":"http://localhost/hapi/fhir",
+    "username":"admin",
+		"password":"pwd"
+		},
+	"esiglServer":{
+		"url":"https://localhost",
+		"username":"admin",
+		"password":"pwd",
+		"resourcespath":"/rest-api"
+    },
+  "elasticsearchServer":{
+      "url":"http://localhost",
+      "username":"admin",
+      "password":"pwd"
+    },
+  "batchSizeFacilityToSync":"200",
+  "batchSizeFacilityFromHapi":"200",
+  "extensionBaseUrlProductDetails":"https://www.hl7.org/fhir/StructureDefinition/ProductDetails",
+  "extensionBaseUrlProgramDetails":"https://www.hl7.org/fhir/StructureDefinition/ProgramDetails",
+  "synchronizationPeriod":"2020-01"
+  }
+}

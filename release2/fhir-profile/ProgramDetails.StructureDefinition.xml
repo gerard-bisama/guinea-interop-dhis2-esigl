@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<StructureDefinition xmlns="http://hl7.org/fhir">
+  <id value="ProgramDetails" />
+  <meta>
+    <versionId value="1" />
+    <lastUpdated value="2020-05-14T19:55:01.628+01:00" />
+  </meta>
+  <url value="https://www.hl7.org/fhir/StructureDefinition/ProgramDetails" />
+  <name value="ProgramDetails" />
+  <status value="draft" />
+  <fhirVersion value="4.0.0" />
+  <kind value="complex-type" />
+  <abstract value="false" />
+  <context>
+    <type value="element" />
+    <expression value="Organization" />
+  </context>
+  <type value="Extension" />
+  <baseDefinition value="http://hl7.org/fhir/StructureDefinition/Extension" />
+  <derivation value="constraint" />
+  <differential>
+    <element id="Extension.extension">
+      <path value="Extension.extension" />
+      <slicing>
+        <discriminator>
+          <type value="value" />
+          <path value="url" />
+        </discriminator>
+        <rules value="open" />
+      </slicing>
+    </element>
+    <element id="Extension.extension:providedProducts">
+      <path value="Extension.extension" />
+      <sliceName value="providedProducts" />
+    </element>
+    <element id="Extension.extension:providedProducts.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="providedProducts" />
+    </element>
+    <element id="Extension.extension:providedProducts.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="Reference" />
+        <targetProfile value="structureDefinition/Product" />
+      </type>
+    </element>
+    <element id="Extension.url">
+      <path value="Extension.url" />
+      <fixedUri value="https://www.hl7.org/fhir/StructureDefinition/ProgramDetails" />
+    </element>
+    <element id="Extension.value[x]">
+      <path value="Extension.value[x]" />
+      <max value="0" />
+    </element>
+  </differential>
+</StructureDefinition>

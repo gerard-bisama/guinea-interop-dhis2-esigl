@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<StructureDefinition xmlns="http://hl7.org/fhir">
+  <id value="ProductDetails" />
+  <meta>
+    <versionId value="3" />
+    <lastUpdated value="2020-05-14T17:48:58.261+01:00" />
+  </meta>
+  <url value="https://www.hl7.org/fhir/StructureDefinition/ProductDetails" />
+  <name value="ProductDetails" />
+  <status value="draft" />
+  <fhirVersion value="4.0.0" />
+  <kind value="complex-type" />
+  <abstract value="false" />
+  <context>
+    <type value="element" />
+    <expression value="Basic" />
+  </context>
+  <type value="Extension" />
+  <baseDefinition value="http://hl7.org/fhir/StructureDefinition/Extension" />
+  <derivation value="constraint" />
+  <differential>
+    <element id="Extension">
+      <path value="Extension" />
+      <short value="Extension for product profile" />
+      <definition value="Extension element for product profile" />
+      <alias value="ProductDetail" />
+    </element>
+    <element id="Extension.extension">
+      <path value="Extension.extension" />
+      <slicing>
+        <discriminator>
+          <type value="value" />
+          <path value="url" />
+        </discriminator>
+        <rules value="open" />
+      </slicing>
+    </element>
+    <element id="Extension.extension:primaryName">
+      <path value="Extension.extension" />
+      <sliceName value="primaryName" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:fullName">
+      <path value="Extension.extension" />
+      <sliceName value="fullName" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:fullName.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="fullName" />
+    </element>
+    <element id="Extension.extension:fullName.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="string" />
+      </type>
+    </element>
+    <element id="Extension.extension:dispensingUnit">
+      <path value="Extension.extension" />
+      <sliceName value="dispensingUnit" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:dispensingUnit.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="dispensingUnit" />
+    </element>
+    <element id="Extension.extension:dispensingUnit.value[x]">
+      <path value="Extension.extension.value[x]" />
+      <type>
+        <code value="string" />
+      </type>
+    </element>
+    <element id="Extension.extension:sigleElementType">
+      <path value="Extension.extension" />
+      <sliceName value="sigleElementType" />
+      <max value="1" />
+    </element>
+    <element id="Extension.extension:sigleElementType.url">
+      <path value="Extension.extension.url" />
+      <fixedUri value="sigleElementType" />
+    </element>
+    <element id="Extension.url">
+      <path value="Extension.url" />
+      <fixedUri value="https://www.hl7.org/fhir/StructureDefinition/ProductDetails" />
+    </element>
+    <element id="Extension.value[x]">
+      <path value="Extension.value[x]" />
+      <slicing>
+        <discriminator>
+          <type value="type" />
+          <path value="$this" />
+        </discriminator>
+        <rules value="open" />
+      </slicing>
+      <max value="0" />
+    </element>
+    <element id="Extension.value[x]:no name">
+      <path value="Extension.value[x]" />
+      <sliceName value="no name" />
+      <label value="Manufacturer" />
+      <max value="0" />
+    </element>
+  </differential>
+</StructureDefinition>
