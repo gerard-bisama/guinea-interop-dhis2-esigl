@@ -65,6 +65,7 @@ var mediatorName="mediateur_"+mediatorConfig.config.program.name;
 
 var port = process.env.NODE_ENV === 'test' ? 7001 : mediatorConfig.endpoints[0].port
 var logger=null;
+var indexSearchName=`program_activities`;
 
 
 /**
@@ -107,20 +108,81 @@ function setupApp () {
 	
   app.get('/test', (req, res) => {
     const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;
+    let listFacilities=[
+      {
+      id:1,
+      identifier:[
+        {
+          type:{text:"dhiscode"},
+          value:"code1"
+        },
+        {
+          type:{text:"siglid"},
+          value:"id1"
+        }
+      ],
+      name:"facility1"
+    },
+    {
+      id:2,
+      identifier:[
+        {
+          type:{text:"dhiscode"},
+          value:"code2"
+        },
+        {
+          type:{text:"siglid"},
+          value:"id2"
+        }
+      ],
+      name:"facility1"
+    },
+    {
+      id:3,
+      identifier:[
+        {
+          type:{text:"dhiscode"},
+          value:"code3"
+        }
+      ],
+      name:"facility3"
+    },
+    {
+      id:4,
+      identifier:[
+        {
+          type:{text:"siglid"},
+          value:"id4"
+        }
+      ],
+      name:"facility4"
+    }
+    ];
+    //let listFacilitiesMapped=listFacilities.find(mapped=>mapped.identifier.find(id=>id.value="id4"));
+    let listFacilitiesMapped=[];
+    for(let oFacility of listFacilities)
+    {
+      let find=oFacility.identifier.find(id=>id.value=="id2");
+      if(find)
+      {
+        listFacilitiesMapped.push(oFacility);
+      }
+    }
+    res.send(listFacilitiesMapped);
+
+    /*
     var exec = require('child_process').exec;
     exec('ls -l ', function (error, stdout, stderr) {
       console.log(stdout);
       return res.send(stdout);
     })
-
-    /*
     const currentPeriod = moment(config.synchronizationPeriod,'YYYY-MM');
     console.log(`--------------${config.synchronizationPeriod}------------------`);
     const startOfMonth= currentPeriod.startOf('month').format('YYYY-MM-DD');
     const endOfMonth   = currentPeriod.endOf('month').format('YYYY-MM-DD');
     console.log(`${startOfMonth} / ${endOfMonth}`);
     res.send(endOfMonth);*/
-    let listProduct=['MINJ0054','MORA0052'];
+    
     /* let filterProgram=[
       {
         key:"_id",
@@ -162,7 +224,7 @@ function setupApp () {
     globalRes=res;
     
     let esToken = `Basic ${btoa(config.elasticsearchServer.username+':'+config.elasticsearchServer.password)}`;
-    let url= URI(config.elasticsearchServer.url).segment(indexName).segment("logs");
+    let url= URI(config.elasticsearchServer.url).segment(program_activities).segment("logs");
     url=url.toString();
     logger.log({level:levelType.info,operationType:typeOperation.startTheService,action:"/loadlogs",result:typeResult.iniate,
      message:`Lancement de de l'importation des logs dans Kibana`});
@@ -475,209 +537,226 @@ function setupApp () {
 
     logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${filePath}`,result:typeResult.iniate,
     message:`Extraction des requisitions pour le programme ${config.program.code}`});
-        
-    customLibrairy.readeSIGLRequisitionCSVFile(filePath,(listAllRequisitions)=>{
-      //then filter only program specific requisition
-      if(listAllRequisitions && listAllRequisitions.length>0)
+    //First extract all the mapping structure and keep them in memory
+    let filterExpresionAllMappedLocation=[
       {
-        operationOutcome=operationOutcome && true;
-        let listProgramRequisitions=listAllRequisitions.filter(element=>{
-          if(element.program_code==config.program.code)
+        key:"identifier:text",
+        value:"siglid"
+      }
+    ];
+    logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/Location`,result:typeResult.iniate,
+    message:`HAPI: Extraction des toutes les structures mappees `});    
+    getListHapiResourceByFilter(hapiToken,fhirLocationResource,filterExpresionAllMappedLocation,(locationEntries)=>{
+      if(locationEntries.length>0)
+      {
+        let listMappedFacilities=[];
+        for(let oEntry of locationEntries)
+        {
+          listMappedFacilities.push(oEntry.resource);
+        }
+        customLibrairy.readeSIGLRequisitionCSVFile(filePath,(listAllRequisitions)=>{
+          //then filter only program specific requisition
+          if(listAllRequisitions && listAllRequisitions.length>0)
           {
-            return element;
-          }
-        });//end listAllRequisitions.filter
-        logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${filePath}`,result:typeResult.success,
-        message:`Fichier: ${listProgramRequisitions.length}/${listAllRequisitions.length} requisitions pour le programme ${config.program.code}`});
-        //Now get the facility id and  build the RequisitionResource
-        let async = require('async');
-        var facilitiesListNotFound=[];
-        logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/${fhirLocationResource}`,result:typeResult.iniate,
-          message:`HAPI: Extraction des details sur les structures pour le traitement des requisitions`}); 
-        async.eachSeries(listProgramRequisitions, function(reqRecord, nextRecord) {
-
-          let correspondantFacility=facilityListCorrespondance.find(facility=>facility.sigleId==reqRecord.facility_id);
-
-          if(correspondantFacility)
-          {
-            let requisitionEntry= customLibrairy.buildRequisitionResourceEntry(reqRecord,correspondantFacility.hapiId,config.extensionBaseUrlRequisitionDetails,
-              config.esiglServer.url);
-            listRequistionEntries.push(requisitionEntry);
-            nextRecord();
-          }
-          else
-          {
-            getListHapiResourceByIdentifier(hapiToken,fhirLocationResource,reqRecord.facility_id,(entryResource)=>{
-              if(entryResource && entryResource.length>0)
-              { 
-                
-                let hapiFacilityId=entryResource[0].resource.id;
-                facilityListCorrespondance.push({
-                  sigleId:reqRecord.facility_id,
-                  hapiId:hapiFacilityId
-                });
-                let requisitionEntry= customLibrairy.buildRequisitionResourceEntry(reqRecord,hapiFacilityId,config.extensionBaseUrlRequisitionDetails,
-                  config.esiglServer.url);
-                  listRequistionEntries.push(requisitionEntry);
-                //console.log(requisitionEntry);
-                  //nextRecord("Break on the first loop")
-                  nextRecord();
+            operationOutcome=operationOutcome && true;
+            let listProgramRequisitions=listAllRequisitions.filter(element=>{
+              if(element.program_code==config.program.code)
+              {
+                return element;
               }
-              else{
-                let facilityId=facilitiesListNotFound.find(id=>id==reqRecord.facility_id);
-                if(!facilityId)
+            });//end listAllRequisitions.filter
+            logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${filePath}`,result:typeResult.success,
+            message:`Fichier: ${listProgramRequisitions.length}/${listAllRequisitions.length} requisitions pour le programme ${config.program.code}`});
+            //Now get the facility id and  build the RequisitionResource
+            let async = require('async');
+            var facilitiesListNotFound=[];
+            logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/${fhirLocationResource}`,result:typeResult.iniate,
+              message:`HAPI: Extraction des details sur les structures pour le traitement des requisitions`}); 
+            async.eachSeries(listProgramRequisitions, function(reqRecord, nextRecord) {
+              let facilityFound=false;
+              for(let oFacility of listMappedFacilities)
+              {
+                let temp=oFacility.identifier.find(id=>id.type.text=="siglid" && id.value==reqRecord.facility_id);
+                if(temp)
                 {
-                  /* logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/fhir/${fhirLocationResource}`,
-                  result:typeResult.failed,message:`HAPI: Erreur lors de l'extraction de la resource ${fhirLocationResource}/${reqRecord.facility_id} `}); */
+                  let requisitionEntry= customLibrairy.buildRequisitionResourceEntry(reqRecord,oFacility.id,config.extensionBaseUrlRequisitionDetails,
+                    config.esiglServer.url);
+                  listRequistionEntries.push(requisitionEntry);
+                  facilityFound=true;
+                }
+                else
+                {
+                  continue;
+                }
+              }
+              if(!facilityFound)
+              {
+                if(!facilitiesListNotFound.includes(reqRecord.facility_id)){
                   facilitiesListNotFound.push(reqRecord.facility_id);
                 }
+                
+              }
               nextRecord();
-              }
-  
-            });//end getListHapiResourceByIdentifier
-          }
-          
-
-        },(err)=>{
-          if(err)
-          {
-            logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/fhir/${fhirLocationResource}`,
-            result:typeResult.failed,message:`Extraction des details sur les structures pour le traitement des requisitions. ${err}`});
-            operationOutcome= operationOutcome && false;
-          }
-          logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/${fhirLocationResource}`,result:typeResult.success,
-        message:`${listRequistionEntries.length}/${listProgramRequisitions.length} requisitions resolues pour le programme ${config.program.code}`});
-        if(facilitiesListNotFound.length >0)
-        {
-          let stringList=facilitiesListNotFound.toString();
-          stringList=stringList.split(",").join("|");
-          logger.log({level:levelType.warning,operationType:typeOperation.getData,action:`/fhir/${fhirLocationResource}`,result:typeResult.failed,
-          message:`${stringList} structures pour les requisitions ne sont pas traitees `});
-        }
-        //Now transform the requisition to bundle of batch type
-          let bundleRequisition={
-            resourceType : "Bundle",
-            type: "batch",
-            entry:listRequistionEntries
-          };
-          //return res.send(bundleRequisition);
-          logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/fhir/requisition`,result:typeResult.iniate,
-          message:`HAPI: Insertion des requisitions dans HAPI`});
-          saveBundle2Fhir(hapiToken,fhirRequisitionResource,bundleRequisition,(hapiRequisitionBundleResponse)=>{
-            if(hapiRequisitionBundleResponse.status==200)
-            {
-              operationOutcome= operationOutcome && true;
-              logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/fhir/requisition`,result:typeResult.success,
-          message:`HAPI: ${bundleRequisition.entry.length}  Insertion des requisitions dans HAPI`});
-              logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/syncrequisition2fhir`,result:typeResult.success,
-                      message:`${hapiRequisitionBundleResponse.message}: ${bundleRequisition.entry.length} Requisition mise a jour`});
-                     
-            }
-            else
-            {
-              operationOutcome=operationOutcome && false;
-              logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/fhir/requisition`,result:typeResult.failed,
-                      message:`${hapiRequisitionBundleResponse.message}: Echec de la mise a jour des Requisitions`});
-              logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/syncrequisition2fhir`,result:typeResult.failed,
-                      message:`${hapiRequisitionBundleResponse.message}: Echec de la mise a jour des Requisitions`});
-            }
-            //res.status(200).send("OK");
-            let urn = mediatorConfig.urn;
-            let status = '';
-            let response = {};
-            if(operationOutcome)
-            {
-              status = 'Successful';
-              response = {
-                status: 200,
-                headers: {
-                'content-type': 'application/json'
-                },
-                body:JSON.stringify( {'Process':`L'operation de creation des requisitions dans HAPI effectuees avec success`}),
-                timestamp: new Date().getTime()
-              };
-            }
-            else{
-              status = 'Failed';
-              response = {
-                status: 500,
-                headers: {
-                'content-type': 'application/json'
-                },
-                body:JSON.stringify( {'Process':`Echec de creation des requisitions dans HAPI`}),
-                timestamp: new Date().getTime()
-              };
-            }
-            var orchestrationToReturn=[
+              
+    
+            },(err)=>{
+              if(err)
               {
-                name: "syncrequisition2fhir",
-                request: {
-                  path :"/syncrequisition2fhir",
-                  headers: {'Content-Type': 'application/json'},
-                  querystring: "",
-                  body:JSON.stringify( {'Process':`Operation de creation des requisitions dans HAPI`}),
-                  method: "POST",
-                  timestamp: new Date().getTime()
-                },
-                response: response
-              }];
-              var returnObject = {
-                "x-mediator-urn": urn,
-                "status": status,
-                "response": response,
-                "orchestrations": orchestrationToReturn,
-                "properties": ""
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/fhir/${fhirLocationResource}`,
+                result:typeResult.failed,message:`Extraction des details sur les structures pour le traitement des requisitions. ${err}`});
+                operationOutcome= operationOutcome && false;
               }
-              res.set('Content-Type', 'application/json+openhim');
-              res.status(response.status).send(returnObject);
+              logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/${fhirLocationResource}`,result:typeResult.success,
+              message:`${listRequistionEntries.length}/${listProgramRequisitions.length} requisitions resolues pour le programme ${config.program.code}`});
+            if(facilitiesListNotFound.length >0)
+            {
+              //let stringList=facilitiesListNotFound.toString();
+              let stringList=facilitiesListNotFound.sort().toString().split(",").join("|").substr(0,400);
+              logger.log({level:levelType.warning,operationType:typeOperation.getData,action:`/fhir/${fhirLocationResource}`,result:typeResult.failed,
+              message:`${stringList} structures pour les requisitions ne sont pas traitees `});
+            }
+            //return res.send(facilitiesListNotFound);
+            //Now transform the requisition to bundle of batch type
+              let bundleRequisition={
+                resourceType : "Bundle",
+                type: "batch",
+                entry:listRequistionEntries
+              };
+              //return res.send(bundleRequisition);
+              logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/fhir/requisition`,result:typeResult.iniate,
+              message:`HAPI: Insertion des requisitions dans HAPI`});
+              saveBundle2Fhir(hapiToken,fhirRequisitionResource,bundleRequisition,(hapiRequisitionBundleResponse)=>{
+                if(hapiRequisitionBundleResponse.status==200)
+                {
+                  operationOutcome= operationOutcome && true;
+                  logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/fhir/requisition`,result:typeResult.success,
+                  message:`HAPI: ${bundleRequisition.entry.length}  Insertion des requisitions dans HAPI`});
+                  logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/syncrequisition2fhir`,result:typeResult.success,
+                          message:`${hapiRequisitionBundleResponse.message}: ${bundleRequisition.entry.length} Requisition mise a jour`});
+                         
+                }
+                else
+                {
+                  operationOutcome=operationOutcome && false;
+                  logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/fhir/requisition`,result:typeResult.failed,
+                          message:`${hapiRequisitionBundleResponse.message}: Echec de la mise a jour des Requisitions`});
+                  logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/syncrequisition2fhir`,result:typeResult.failed,
+                          message:`${hapiRequisitionBundleResponse.message}: Echec de la mise a jour des Requisitions`});
+                }
+                //res.status(200).send("OK");
+                let urn = mediatorConfig.urn;
+                let status = '';
+                let response = {};
+                if(operationOutcome)
+                {
+                  status = 'Successful';
+                  response = {
+                    status: 200,
+                    headers: {
+                    'content-type': 'application/json'
+                    },
+                    body:JSON.stringify( {'Process':`L'operation de creation des requisitions dans HAPI effectuees avec success`}),
+                    timestamp: new Date().getTime()
+                  };
+                }
+                else{
+                  status = 'Failed';
+                  response = {
+                    status: 500,
+                    headers: {
+                    'content-type': 'application/json'
+                    },
+                    body:JSON.stringify( {'Process':`Echec de creation des requisitions dans HAPI`}),
+                    timestamp: new Date().getTime()
+                  };
+                }
+                var orchestrationToReturn=[
+                  {
+                    name: "syncrequisition2fhir",
+                    request: {
+                      path :"/syncrequisition2fhir",
+                      headers: {'Content-Type': 'application/json'},
+                      querystring: "",
+                      body:JSON.stringify( {'Process':`Operation de creation des requisitions dans HAPI`}),
+                      method: "POST",
+                      timestamp: new Date().getTime()
+                    },
+                    response: response
+                  }];
+                  var returnObject = {
+                    "x-mediator-urn": urn,
+                    "status": status,
+                    "response": response,
+                    "orchestrations": orchestrationToReturn,
+                    "properties": ""
+                  }
+                  res.set('Content-Type', 'application/json+openhim');
+                  res.status(response.status).send(returnObject);
+    
+    
+              });
+              //res.status(200).send(listRequistionEntries);
+              
+            });//end async.eachSeries(listProgramRequisitions)
+            //getListHapiResourceByIdentifier(hapiToken,fhirLocationResource,)
+          }
+          else{
+            logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${filePath}`,result:typeResult.failed,
+          message:`Erreur lors la lecture du fichier CSV de requisitions`});
+            logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/syncrequisition2fhir`,result:typeResult.failed,
+          message:`Erreur lors la lecture du fichier CSV de requisitions`});
+          //res.status(500).send("Failed");
+          let urn = mediatorConfig.urn;
+          let status = 'Failed';
+          let response = {
+            status: 500,
+            headers: {
+            'content-type': 'application/json'
+            },
+            body:JSON.stringify( {'Process':`Echec Lors de la lecture du fichier de requisition`}),
+            timestamp: new Date().getTime()
+          };
+          var orchestrationToReturn=[
+          {
+            name: "syncrequisition2fhir",
+            request: {
+              path :"/syncrequisition2fhir",
+              headers: {'Content-Type': 'application/json'},
+              querystring: "",
+              body:JSON.stringify( {'Process':`Operation de creation des requisitions dans HAPI`}),
+              method: "POST",
+              timestamp: new Date().getTime()
+            },
+            response: response
+          }];
+          var returnObject = {
+            "x-mediator-urn": urn,
+            "status": status,
+            "response": response,
+            "orchestrations": orchestrationToReturn,
+            "properties": ""
+          }
+            res.set('Content-Type', 'application/json+openhim');
+            res.status(response.status).send(returnObject);
+          }//end else
+        });//end of customLibrairy.readeSIGLRequisitionCSVFile
 
-
-          });
-          //res.status(200).send(listRequistionEntries);
-          
-        });//end async.eachSeries(listProgramRequisitions)
-        //getListHapiResourceByIdentifier(hapiToken,fhirLocationResource,)
       }
-      else{
-        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${filePath}`,result:typeResult.failed,
-      message:`Erreur lors la lecture du fichier CSV de requisitions`});
-        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/syncrequisition2fhir`,result:typeResult.failed,
-      message:`Erreur lors la lecture du fichier CSV de requisitions`});
-      //res.status(500).send("Failed");
-      let urn = mediatorConfig.urn;
-      let status = 'Failed';
-      let response = {
-        status: 500,
-        headers: {
-        'content-type': 'application/json'
-        },
-        body:JSON.stringify( {'Process':`Echec Lors de la lecture du fichier de requisition`}),
-        timestamp: new Date().getTime()
-      };
-      var orchestrationToReturn=[
+      else
       {
-        name: "syncrequisition2fhir",
-        request: {
-          path :"/syncrequisition2fhir",
-          headers: {'Content-Type': 'application/json'},
-          querystring: "",
-          body:JSON.stringify( {'Process':`Operation de creation des requisitions dans HAPI`}),
-          method: "POST",
-          timestamp: new Date().getTime()
-        },
-        response: response
-      }];
-      var returnObject = {
-        "x-mediator-urn": urn,
-        "status": status,
-        "response": response,
-        "orchestrations": orchestrationToReturn,
-        "properties": ""
-      }
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/fhir/${fhirLocationResource}`,result:typeResult.failed,
+          message:`Aucun mapping des structures n'a encore ete effectue`});
+          logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/syncrequisition2fhir`,result:typeResult.failed,
+        message:`Aucun mapping des structures n'a encore ete effectue`});
+        let responseMessage=`Aucun mapping des structures n'a encore ete effectue`;
+        let bodyMessage=`Lancement du processus de synchronisation des requisitions dans HAPI`;
+        let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"getListHapiResourceByFilter","GET");
         res.set('Content-Type', 'application/json+openhim');
-        res.status(response.status).send(returnObject);
-      }//end else
-    });
+        return res.status(returnObject.response.status).send(returnObject);
+
+      }
+    });//end of getListHapiResourceByFilter.filterExpresionAllMappedLocation
+    
   });
   app.get('/syncrequisition2dhis',(req, res) => {
     globalRes=res;
@@ -740,9 +819,9 @@ function setupApp () {
           }
         }
         logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:`/syncrequisition2dhis`,result:typeResult.ongoing,
-        message:`HAPI: Structure IDs: ${listFacilitiesProcessed.toString().split(",").join("|").substr(0,400)}... `});
+        message:`HAPI: Structure IDs: ${listFacilitiesProcessed.sort().toString().split(",").join("|").substr(0,400)}... `});
         logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:`/syncrequisition2dhis`,result:typeResult.ongoing,
-        message:`HAPI: Requisition IDs: ${listRequisitionId2Process.toString().split(",").join("|").substr(0,400)}... `});
+        message:`HAPI: Requisition IDs: ${listRequisitionId2Process.sort().toString().split(",").join("|").substr(0,400)}... `});
         
         logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/requisition`,result:typeResult.success,
         message:`HAPI: Requisitions des ${listFacilitiesProcessed.length} structures a traiter  pour le programme ${config.program.code} pour la periode:${startOfMonth} ${endOfMonth}`});
@@ -913,6 +992,7 @@ function saveEntryToElastic(url,esToken,logEntries,callbackMain)
             if(err)
             {
                 console.log(err);
+                callback(err);
             }
 			if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
           console.log(`Code d'erreur http: ${resp.statusCode}`);
@@ -933,7 +1013,7 @@ function saveEntryToElastic(url,esToken,logEntries,callbackMain)
     },function(err){
         if(err)
         {
-            console.log(err);
+            //console.log(err);
         }
         callbackMain(responseCollection);
     });//end of aysnc.each
@@ -960,8 +1040,9 @@ function getListDHIS2ResourceByFilter(dhis2Token,dhisResource,filterExpression,c
           localNeedle.get(url,options, function(err, resp) {
               //url = false;
               if (err) {
-        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
                       message:`${err.message}`});
+                return callback(true, false);
               }
               if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
         logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
@@ -1020,7 +1101,8 @@ function saveMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
       if(err)
       {
           logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${url}`,result:typeResult.failed,
-                      message:`${err.message}`});
+                      message:`${err.Error}`});
+          nextResource(err);
       }
       dicOperationResults.push({
         httpStatus:resp.body.httpStatus,
@@ -1043,8 +1125,8 @@ function saveMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
   },(err)=>{
     if(err)
     {
-      logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
-      message:`${err.message}`});
+      /* logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+      message:`${err.message}`}); */
     }
     callback(dicOperationResults);
     
@@ -1055,6 +1137,7 @@ function saveMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
 function getListHapiResourceByIdentifier(hapiToken,fhirResource,identifierValue,callbackMain)
 {
   let localNeedle = require('needle');
+  var listResourcesNotResolved=[];
     localNeedle.defaults(
         {
             open_timeout: 600000
@@ -1075,18 +1158,21 @@ function getListHapiResourceByIdentifier(hapiToken,fhirResource,identifierValue,
           localNeedle.get(url,options, function(err, resp) {
               //url = false;
               if (err) {
-        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
-                      message:`${err.message}`});
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                              message:`${err}`});
+                return callback(err);
               }
               if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
+                console.log("----------here 1-----------------");
         logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
                       message:`Code d'erreur http: ${resp.statusCode}`});
                   return callback(true, false);
               }
               let body = JSON.parse(resp.body);
               if (!body.entry) {
-                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
-                      message:`Ressource invalide [${identifierValue}] retourner par le serveur FHIR`});
+                /* logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`Ressource invalide [${identifierValue}] retourner par le serveur FHIR`}); */
+                
                 return callback(true, false);
               }
               if (body.total === 0 && body.entry && body.entry.length > 0) {
@@ -1111,6 +1197,13 @@ function getListHapiResourceByIdentifier(hapiToken,fhirResource,identifierValue,
             
       },//end callback 2
       err=>{
+
+        /* if(listResourcesNotResolved.length>0)
+        {
+          let stringIvalidResource=listResourcesNotResolved.sort().toString().split(",").join("|").substr(0,400);
+          logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/fhir/${fhirResource}`,result:typeResult.failed,
+          message:`Ressources invalides: ${stringIvalidResource}... retourner par le serveur FHIR`})
+        } */
           return callbackMain(resourceData);
 
       }
@@ -1132,7 +1225,12 @@ function saveBundle2Fhir(fhirToken,fhirResource,bundle,callback){
       if(err)
       {
           logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${url}`,result:typeResult.failed,
-                      message:`${err.message}`});
+          message:`${err.Error}`});
+          return callback({
+            status: 500,
+            message: `${err.Error}`,
+            timestamp:new Date().getTime()
+          });
       }
       var response={
           status: resp.statusCode,
@@ -1179,6 +1277,7 @@ function getListHapiResourceByFilter(hapiToken,fhirResource,filterExpressionDic,
               if (err) {
                 logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
                       message:`${err.message}`});
+                return callback(true, false);
               }
               if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
                 logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
@@ -1379,22 +1478,10 @@ function saveAdxData2Dhis(dhis2Token,adxPayload,callback){
     if(err)
     {
         logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/dataValueSets`,result:typeResult.failed,
-                    message:`${err.message}`});
+                    message:`${err.Error}`});
+        callback({});
     }
-    //console.log(resp.body);
     callback(resp.body);
-    /*parseString(resp.body, function (err, result) {
-      if(err)
-      {
-        console.log(`Error to transform to json: `);
-        console.log(err);
-        callback(resp.body);
-      }
-      else{
-        callback(result);
-      }
-      
-    });*/
     
   });//end localNeedle
   
@@ -1459,44 +1546,59 @@ function  getOpenhimResult(responseMessage, bodyMessage,statusValue,orchestratio
  * server is started
  */
 function start (callback) {
+  var filePath=mediatorConfig.config.appDirectory;
+  let processMonth= parseInt(mediatorConfig.config.synchronizationPeriod.split("-")[1]);
+  let processYear= parseInt(mediatorConfig.config.synchronizationPeriod.split("-")[0]);
+  var indexName=`${mediatorConfig.config.program.name}_activities_${processMonth}-${processYear}`;
+  var logFileName=path.join(filePath,`/logs/${indexName}.log`);
+  logger = createLogger({
+      format: combine(
+        label({ label: mediatorName }),
+        timestamp(),
+        myFormat
+      ),
+      transports: [new transports.Console(),
+          new transports.File({ filename: logFileName })
+      ]
+    });
 
   if (apiConf.api.trustSelfSigned) { process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0' }
 
   if (apiConf.register) {
     medUtils.registerMediator(apiConf.api, mediatorConfig, (err) => {
       if (err) {
-        /* logger.log({level:levelType.error,operationType:typeOperation.normalProcess,action:`Enregistrement du mediateur`,result:typeResult.failed,
-                        message:`Echec d'enregistrement du mediateur ${mediatorName}`}); */
-        console.log(`Echec d'enregistrement du mediateur ${mediatorName}`);
+        logger.log({level:levelType.error,operationType:typeOperation.normalProcess,action:`Enregistrement du mediateur`,result:typeResult.failed,
+                        message:`Echec d'enregistrement du mediateur ${mediatorName}`}); 
+        //console.log(`Echec d'enregistrement du mediateur ${mediatorName}`);
         console.log(err.stack)
         process.exit(1)
       }
       apiConf.api.urn = mediatorConfig.urn
       medUtils.fetchConfig(apiConf.api, (err, newConfig) => {
-        /* logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"Reception des configurations intiales",
-        result:typeResult.ongoing,message:`Reception des configurations intiales`}); */
-        console.log(`Reception des configurations intiales`);
+        logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"Reception des configurations intiales",
+        result:typeResult.ongoing,message:`Reception des configurations intiales`}); 
+        //console.log(`Reception des configurations intiales`);
         config = newConfig
         if (err) {
-          /* logger.log({level:levelType.error,operationType:typeOperation.normalProcess,action:`Echec d'obtention des configurations initiales`,result:typeResult.failed,
-                        message:`Echec d'obtention des configurations initiales`}); */
-          console.log(`Echec d'obtention des configurations initiales`);
+          logger.log({level:levelType.error,operationType:typeOperation.normalProcess,action:`Echec d'obtention des configurations initiales`,result:typeResult.failed,
+                        message:`Echec d'obtention des configurations initiales`}); 
+          //console.log(`Echec d'obtention des configurations initiales`);
           console.log(err.stack)
           process.exit(1)
         } else {
-          /* logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"Reception des configurations intiales",
-        result:typeResult.success,message:`Enregistrement du mediateur avec succes`}); */
-        console.log(`Enregistrement du mediateur avec succes`);
+          logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"Reception des configurations intiales",
+        result:typeResult.success,message:`Enregistrement du mediateur avec succes`}); 
+        //console.log(`Enregistrement du mediateur avec succes`);
           let app = setupApp()
           const server = app.listen(port, () => {
             if (apiConf.heartbeat) {
               let configEmitter = medUtils.activateHeartbeat(apiConf.api)
               configEmitter.on('config', (newConfig) => {
-                /* logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"Obtension des configuratiobns a jour",
-        result:typeResult.success,message:`Obtention des configurations avec succes`}); */
-                console.log(`Obtention des configurations avec succes`);
+                logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"Obtension des configuratiobns a jour",
+        result:typeResult.success,message:`Obtention des configurations avec succes`}); 
+                //console.log(`Obtention des configurations avec succes`);
                 //winston.info('Received updated config:')
-                console.log(JSON.stringify(newConfig))
+                //console.log(JSON.stringify(newConfig))
                 // set new config for mediator
                 config = newConfig
 
