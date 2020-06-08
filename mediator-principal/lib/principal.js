@@ -58,7 +58,8 @@ var config = {} // this will vary depending on whats set in openhim-core
 const apiConf = process.env.NODE_ENV === 'test' ? require('../config/test') : require('../config/config')
 const mediatorConfig = require('../config/mediator')
 
-var port = process.env.NODE_ENV === 'test' ? 7001 : mediatorConfig.endpoints[0].port
+var port = process.env.NODE_ENV === 'test' ? 7001 : mediatorConfig.endpoints[0].port;
+var indexSearchName=`principal_activities`;
 var logger=null;
 var filePath;
 var processMonth;
@@ -88,6 +89,7 @@ filePath=config.appDirectory;
 processMonth= parseInt(config.synchronizationPeriod.split("-")[1]);
 processYear= parseInt(config.synchronizationPeriod.split("-")[0]);
 indexName=`principal_activities_${processMonth}-${processYear}`;
+
 logFileName=path.join(filePath,`/logs/${indexName}.log`);
 logger = createLogger({
     format: combine(
@@ -111,7 +113,7 @@ logger = createLogger({
     globalRes=res;
 
     let esToken = `Basic ${btoa(config.elasticsearchServer.username+':'+config.elasticsearchServer.password)}`;
-    let url= URI(config.elasticsearchServer.url).segment(indexName).segment("logs");
+    let url= URI(config.elasticsearchServer.url).segment(indexSearchName).segment("logs");
     url=url.toString();
     logger.log({level:levelType.info,operationType:typeOperation.startTheService,action:"/loadlogs",result:typeResult.iniate,
      message:`Lancement de de l'importation des logs dans Kibana`});
@@ -833,7 +835,6 @@ function saveEntryToElastic(url,esToken,logEntries,callbackMain)
             if(err)
             {
                 console.log(err);
-                //console.log("----------------------------");
                 callback(err);
             }
 			if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
@@ -886,8 +887,9 @@ function getListDHIS2OrgUnit(dhis2Token,callbackMain){
             localNeedle.get(url,options, function(err, resp) {
                 //url = false;
                 if (err) {
-					logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
-                        message:`${err.message}`});
+                  logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                  message:`${err.Error}`});
+                  return callback(true, false);
                 }
                 if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
 					logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
@@ -952,11 +954,12 @@ function getListHapiResource(hapiToken,fhirResource,callbackMain)
           localNeedle.get(url,options, function(err, resp) {
               //url = false;
               if (err) {
-        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
-                      message:`${err.message}`});
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`${err.Error}`});
+                return callback(true, false);
               }
               if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
-        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+              logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
                       message:`Code d'erreur http: ${resp.statusCode}`});
                   return callback(true, false);
               }
@@ -973,11 +976,7 @@ function getListHapiResource(hapiToken,fhirResource,callbackMain)
               }
               url = false;
               if (body.entry && body.entry.length > 0) {
-              /* logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${fhirResource} page:${body.entry.length}/${body.total}`,
-              result:typeResult.success,message:`Extraction de  ${body.entry.length} ${fhirResource} de HAPI`}); */
                   resourceData = resourceData.concat(body.entry);
-                  //force return only one loop data
-                  //return callback(true, false);
               }
               const next =  body.link && body.link.find(link => link.relation === 'next');
 
@@ -1013,31 +1012,23 @@ function getListHAPILocationByIds(hapiToken,listLocationIds,callbackMain){
     currentIdToFetch=locationId;
     url= URI(config.hapiServer.url).segment('Location').segment(locationId); 
     url=url.toString();
-    /* logger.log({level:levelType.info,operationType:typeOperation.getData,action:`${url}`,result:typeResult.iniate,
-      message:`Mapping: Extraction de la structure`});  */
     localNeedle.get(url,options, function(err, resp) {
       if(err)
       {
         logger.log({level:levelType.error,operationType:typeOperation.getData,action:`${url}`,result:typeResult.failed,
-      message:`${err.message}`});
+      message:`${err.Error}`});
+      return callback(`${err}`);
       }
       if (resp.statusCode && (resp.statusCode == 200)) {
-        /* logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/Location/${locationId}`,result:typeResult.ongoing,
-      message:`Mapping: Structure extraite`});  */
         listLocationsToMap.push(JSON.parse(resp.body.toString('utf8')));
       }
-      //To force break of the eachseries.loop
-     /*  if(listLocationsToMap.length>=2)
-      {
-        return callback({message:"break the loop on 10"});
-      } */
       callback();
     });//end of localNeedle
   },function(error){
     if(error)
     {
-      logger.log({level:levelType.error,operationType:typeOperation.getData,action:`${url}`,result:typeResult.failed,
-      message:`${error.message}`});
+      /* logger.log({level:levelType.error,operationType:typeOperation.getData,action:`${url}`,result:typeResult.failed,
+      message:`${error.message}`}); */
     }
     callbackMain(listLocationsToMap);
   });//end of localAsync.each
@@ -1064,12 +1055,11 @@ function getListHAPIResourcesByIds(hapiToken,fhirResource,listResourcesIds,callb
       if(err)
       {
         logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
-      message:`${err.message}`});
+        message:`${err.Error}`});
+        callback(err);
       }
       
       if (resp.statusCode && (resp.statusCode == 200)) {
-        /* logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${fhirResource}/${resourceId}`,result:typeResult.ongoing,
-        message:`Mapping: donnees extraites`}); */ 
       listResources.push(JSON.parse(resp.body.toString('utf8')));
       callback();
       }
@@ -1079,8 +1069,8 @@ function getListHAPIResourcesByIds(hapiToken,fhirResource,listResourcesIds,callb
   },function(error){
     if(error)
     {
-      logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
-      message:`${error.message}`});
+      /* logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+      message:`${error.message}`}); */
     }
     callbackMain(listResources);
   });//end of localAsync.each
@@ -1100,7 +1090,8 @@ function saveBundle2Fhir(fhirToken,fhirResource,bundle,callback){
         if(err)
         {
             logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${url}`,result:typeResult.failed,
-                        message:`${err.message}`});
+                        message:`${err.Error}`});
+            return callback({status:500});
         }
         var response={
             status: resp.statusCode,
@@ -1111,7 +1102,7 @@ function saveBundle2Fhir(fhirToken,fhirResource,bundle,callback){
         if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
 			logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${url}`,result:typeResult.failed,
                         message:`Code d'erreur http: ${resp.statusCode}`});
-            return callback(null);
+            return callback({status:500});
           }
         callback(response);
     });
@@ -1130,20 +1121,14 @@ function saveMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
   let options={headers:{'Content-Type': 'application/json','Authorization':dhis2Token}};
   let listAlreadyExistedResources=[];
   localAsync.eachSeries(listMetadata, function(metadata, nextResource) {
-    /*if(dhisResource=="categoryCombos")
-    {
-      console.log(url)
-      console.log(JSON.stringify(metadata));
-      console.log("--------------------------");  
-    }
-     console.log(url);
-    console.log(JSON.stringify(metadata));
-    console.log("--------------------------");  */
+    
     localNeedle.post(url,JSON.stringify(metadata),options,function(err,resp){
       if(err)
       {
           logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${url}`,result:typeResult.failed,
-                      message:`${err.message}`});
+                      message:`${err.Error}`});
+          nextResource(err);
+
       }
       dicOperationResults.push({
         httpStatus:resp.body.httpStatus,
@@ -1168,8 +1153,8 @@ function saveMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
   },(err)=>{
     if(err)
     {
-      logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${dhisResource}`,result:typeResult.failed,
-      message:`${err.message}`});
+      /* logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${dhisResource}`,result:typeResult.failed,
+      message:`${err.message}`}); */
     }
     if(listAlreadyExistedResources.length>0)
     {
@@ -1204,6 +1189,10 @@ function saveMetadataCollection2Dhis(dhis2Token,dhisParentResource,parentId,dhis
     {
         logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${url}`,result:typeResult.failed,
                     message:`${err.message}`});
+        callback({
+          httpStatus:"Failed",
+          metadata:{}
+        });
     }
     let httpStatus="";
     //console.log(resp.body);
@@ -1243,7 +1232,9 @@ function updateMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
       if(err)
       {
           logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisResource}`,result:typeResult.failed,
-                      message:`${err.message}`});
+                      message:`${err.Error}`});
+          nextResource(err);
+          
       }
       dicOperationResults.push({
         httpStatus:resp.body.httpStatus,
@@ -1252,13 +1243,6 @@ function updateMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
       if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
         logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisResource}`,result:typeResult.failed,
                           message:`Code d'erreur http: ${resp.statusCode}`});
-        /* if(resp.statusCode == 404){
-          console.error("---------404 Error code-------");
-          console.log(url);
-          console.log(JSON.stringify(metadata));
-        } */
-        //nextResource({message:`Code d'erreur http: ${resp.statusCode}`});
-        //if(resp.body.htt)
       }
       nextResource();
       
@@ -1266,8 +1250,8 @@ function updateMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
   },(err)=>{
     if(err)
     {
-      logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${dhisResource}`,result:typeResult.failed,
-      message:`${err.message}`});
+      /* logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${dhisResource}`,result:typeResult.failed,
+      message:`${err.message}`}); */
     }
     callback(dicOperationResults);
     

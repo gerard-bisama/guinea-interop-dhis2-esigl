@@ -1,6 +1,6 @@
 {
   "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60medprinc",
-  "version": "0.3.11",
+  "version": "0.3.13",
   "name": "Mediateur principal",
   "description": "Extraction des donnees de base DHIS2-eSIGL et chargement dans HAPI-DHSI2",
   "defaultChannelConfig": [
@@ -16,7 +16,7 @@
         "CONNECT",
         "PATCH"
       ],
-      "name": "0-Synchroniser les UO DHIS2->HAPI",
+      "name": "0-[Principal] Synchroniser les UO DHIS2->HAPI",
       "urlPattern": "^/syncorgunit2fhir/$",
       "alerts": [],
       "txRerunAcl": [],
@@ -24,7 +24,6 @@
       "txViewAcl": [],
       "properties": [],
       "matchContentTypes": [],
-      "pollingSchedule": "0 0 1 * *",
       "timeout":"600000",
       "routes": [
         {
@@ -57,7 +56,7 @@
         "CONNECT",
         "PATCH"
       ],
-      "name": "Charger les logs d'activites dans Kibana",
+      "name": "4-[Principal] Charger les logs d'activites dans Kibana",
       "urlPattern": "^/loadlogs/$",
       "alerts": [],
       "txRerunAcl": [],
@@ -65,7 +64,6 @@
       "txViewAcl": [],
       "properties": [],
       "matchContentTypes": [],
-      "pollingSchedule": "0 0 1 * *",
       "timeout":"600000",
       "routes": [
         {
@@ -98,7 +96,7 @@
         "CONNECT",
         "PATCH"
       ],
-      "name": "1- Mapper les structures eSIGL avec les UO de DHIS2",
+      "name": "1-[Principal] Mapper les structures eSIGL avec les UO de DHIS2",
       "urlPattern": "^/mapfacility2fhir/$",
       "alerts": [],
       "txRerunAcl": [],
@@ -126,7 +124,88 @@
       "type": "http",
       "authType": "public",
       "status": "enabled"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PUT",
+        "OPTIONS",
+        "HEAD",
+        "TRACE",
+        "CONNECT",
+        "PATCH"
+      ],
+      "name": "2-[Principal] Synchroniser le programmes et les produits associes avec HAPI",
+      "urlPattern": "^/syncprogramproduct2fhir/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Synchroniser le programmes et les produits associes avec HAPI",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/syncprogramproduct2fhir",
+          "type": "http",
+          "secured": false,
+          "username": "",
+          "password": ""
+        }
+        
+      ],
+      "allow": [],
+      "type": "http",
+      "authType": "public",
+      "status": "enabled"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PUT",
+        "OPTIONS",
+        "HEAD",
+        "TRACE",
+        "CONNECT",
+        "PATCH"
+      ],
+      "name": "3-[Principal] Synchroniser le programmes et les produits associes avec DHIS2",
+      "urlPattern": "^/syncprogramproduct2dhis/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Synchroniser le programmes et les produits associes avec DHIS2",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/syncprogramproduct2dhis",
+          "type": "http",
+          "secured": false,
+          "username": "",
+          "password": ""
+        }
+        
+      ],
+      "allow": [],
+      "type": "http",
+      "authType": "public",
+      "status": "enabled"
     }
+    
   ],
   "endpoints": [
     {
@@ -258,14 +337,6 @@
       ]
     },
     {
-      "param": "mappingFile",
-      "displayName": "Chemin complet acces au fichier CSV de mapping",
-      "description": "Chemin complet acces au fichier CSV de mapping (e.g: /home/me/mappingfile/mapping.csv)",
-      "type": "string",
-      "template": []
-    }
-    ,
-    {
       "param": "batchSizeFacilityToSync",
       "displayName": "Nombre de OU par lot pour le traitemet lors de la sync DHIS2=>Hapi",
       "description": "Nombre de OU par lot pour le traitemet lors de la sync DHIS2=>Hapi",
@@ -278,33 +349,56 @@
       "description": "Nombre des structures par lot a extraire de HAPI lors du mapping",
       "type": "string",
       "template": []
+    },
+    {
+      "param": "extensionBaseUrlProductDetails",
+      "displayName": "Url de base pour l'extension du produit",
+      "description": "Url de base pour l'extension du produit",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "extensionBaseUrlProgramDetails",
+      "displayName": "Url de base pour l'extension du programme",
+      "description": "Url de base pour l'extension du programme",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "synchronizationPeriod",
+      "displayName": "Periode de synchronisation de requisition",
+      "description": "Periode de synchronisation de requisition (Annee-mm)",
+      "type": "string",
+      "template": []
     }
   ],
   "config": {
     "appDirectory":"/home/server-dev/Documents/dev_repo/guinea-interop-dhis2-esigl/mediator-principal",
     "dhis2Server":{
-		"url":"https://localhost:8080",
+		"url":"http://localhost/api",
 		"username":"admin",
-		"password":"pass"
+		"password":"pwd"
 		},
 	"hapiServer":{
     "url":"http://localhost/hapi/fhir",
-    "username":"",
-		"password":""
+    "username":"admin",
+		"password":"pwd"
 		},
 	"esiglServer":{
-		"url":"https://localhost:9000",
+		"url":"https://localhost",
 		"username":"admin",
-		"password":"pass",
+		"password":"pwd",
 		"resourcespath":"/rest-api"
     },
   "elasticsearchServer":{
-      "url":"http://localhost:9200",
-      "username":"",
-      "password":""
+      "url":"http://localhost",
+      "username":"admin",
+      "password":"pwd"
     },
-	"mappingFile":"/home/user/data/mappingstructure-esigl-dhis2.csv",
   "batchSizeFacilityToSync":"200",
-  "batchSizeFacilityFromHapi":"200"
+  "batchSizeFacilityFromHapi":"200",
+  "extensionBaseUrlProductDetails":"https://www.hl7.org/fhir/StructureDefinition/ProductDetails",
+  "extensionBaseUrlProgramDetails":"https://www.hl7.org/fhir/StructureDefinition/ProgramDetails",
+  "synchronizationPeriod":"2020-01"
   }
 }
