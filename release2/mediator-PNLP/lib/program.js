@@ -542,6 +542,10 @@ function setupApp () {
       {
         key:"identifier:text",
         value:"siglid"
+      },
+      {
+        key:"_count",
+        value:"10"
       }
     ];
     logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/Location`,result:typeResult.iniate,
