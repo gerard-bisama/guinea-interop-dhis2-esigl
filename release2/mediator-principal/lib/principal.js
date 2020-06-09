@@ -176,6 +176,99 @@ logger = createLogger({
       }); 
     });
   });
+  app.get('/refactorproduct2dhis', (req, res) => {
+    const eSIGLToken = `Basic ${btoa(config.esiglServer.username+':'+config.esiglServer.password)}`;
+    const dhis2Token = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
+    var orchestration = 
+		  {
+			ctxObjectRef: "products",
+			name: "products", 
+			domain: config.esiglServer.url,
+			path:config.esiglServer.resourcespath+"/lookup/products",
+			params: "?paging=false",
+			body: "",
+			method: "GET",
+			headers: {'Authorization': eSIGLToken,'Content-Type': 'application/json'}
+      };
+    var productsList=[];
+    console.log(`Extraction de la liste des produits et programme associe`);
+    var orchUrl = orchestration.domain + orchestration.path + orchestration.params;
+      let localNeedle = require('needle');
+      localNeedle.defaults(
+      {
+          open_timeout: 600000
+      });
+      let options={headers:orchestration.headers};
+      //console.log(orchUrl);
+      localNeedle.get(orchUrl,options, function(err, resp) {
+        if(err)
+        {
+          console.log(err);
+          return res.status(500).send(err);
+        }
+       
+        if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
+          console.log(`status code :${resp.statusCode}`);
+          return res.status(500).send(`status code :${resp.statusCode}`);
+			  }
+        if (resp.statusCode && (resp.statusCode == 200)) {
+          productsList=productsList.concat(resp.body.products);
+          let listProcuctsCode=[];
+          for(let oProduct of productsList )
+          {
+            /* if(listProcuctsCode.length>3){
+              break;
+            } */
+            listProcuctsCode.push(oProduct.code);
+          }
+          let filterExpressionDic=
+          [
+            {
+              key:'filter',
+              value:`code:in:[${listProcuctsCode.toString()}]`
+            },
+            {
+              key:'fields',
+              value:"id,code,name,displayName"
+            }
+          ];
+          console.log(`Extraction des produits correspondants de DHIS2`);
+          getListDHIS2ResourceByFilter(dhis2Token,dhisCategoryOption,filterExpressionDic,(resourceDhisCatOptions)=>{
+            //return res.send(resourceDhisCatOptions);
+            //refactor the categorieOptions by adding '_' the name and code
+            if(resourceDhisCatOptions.length)
+            {
+              console.log(`${resourceDhisCatOptions.length} produits a refactorer`);
+              let refactoredCatOptions=[];
+              for(let productCatOption of resourceDhisCatOptions ){
+                refactoredCatOptions.push(
+                  {
+                    id:productCatOption.id,
+                    name:`_${productCatOption.name}`,
+                    displayName:`_${productCatOption.displayName}`
+                  }
+                );
+              }
+              //return res.send(refactoredCatOptions);
+              updateMetadataList2Dhis(dhis2Token,dhisCategoryOption,refactoredCatOptions,(resUpdateCatOptions)=>{
+                console.log(`Fin de l'operation de refactorage`);
+                res.send(resUpdateCatOptions);
+                
+              });//end UpdateCategoryOptions
+
+            }
+            else
+            {
+              res.send('No dhis2 catoptions to refactor');
+            }
+          });//end getListDHIS2ResourceByFilter(code:in:)
+
+
+        }
+      })//end of localNeedle.get(url orchestration)
+
+  });
+
 	app.get('/syncorgunit2fhir', (req, res) => {
         
         globalRes=res;
@@ -549,6 +642,7 @@ logger = createLogger({
 
     
   });
+
   app.get('/syncprogramproduct2dhis', (req, res) => {
     globalRes=res;
     var operationOutcome=true;
@@ -932,6 +1026,75 @@ function getListDHIS2OrgUnit(dhis2Token,callbackMain){
 
         }
     );//end of async.whilst
+}
+function getListDHIS2ResourceByFilter(dhis2Token,dhisResource,filterExpressionDic,callbackMain){
+  let localNeedle = require('needle');
+  localNeedle.defaults(
+      {
+          open_timeout: 600000
+      });
+  let localAsync = require('async');
+  var resourceData = [];
+  var url= URI(config.dhis2Server.url).segment(dhisResource+".json");
+  for(let dic of filterExpressionDic)
+  {
+    url.addQuery(dic.key, dic.value);
+  }
+  url = url.toString();
+  localAsync.whilst(
+      callback => {
+          return callback(null, url !== false);
+        },
+      callback => {
+          
+          var options={headers:{'Authorization':dhis2Token}};
+          localNeedle.get(url,options, function(err, resp) {
+              //url = false;
+              if (err) {
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`${err.message}`});
+                return callback(true, false);
+              }
+              if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`Code d'erreur http: ${resp.statusCode}`});
+                  return callback(true, false);
+              }
+              var body = resp.body;
+              //var body = JSON.parse(resp.body);
+              if (!body[dhisResource]) {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`Invalid ${dhisResource} retournees par DHIS2`});
+                  return callback(true, false);
+              }
+              if (body.pager.total === 0) {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`Pas de ressources retournees par DHIS2 - page: ${body.pager.page}`});
+                  return callback(true, false);
+              }
+              url = false;
+              if (body[dhisResource] && body[dhisResource].length > 0) {
+        /* logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${dhisResource} => page:${body.pager.page}/${body.pager.pageCount}`,
+        result:typeResult.success,message:`Extraction de  ${body[dhisResource].length} ${dhisResource} de DHIS2`}); */
+                  resourceData = resourceData.concat(body[dhisResource]);
+                  //force return only one loop data
+                  //return callback(true, false);
+              }
+              const next = body.pager.nextPage;
+
+              if(next)
+              {
+                  url = next;
+              }
+              return callback(null, url);
+          })//end of needle.get
+            
+      },//end callback 2
+      err=>{
+          return callbackMain(resourceData);
+
+      }
+  );//end of async.whilst
 }
 function getListHapiResource(hapiToken,fhirResource,callbackMain)
 {
