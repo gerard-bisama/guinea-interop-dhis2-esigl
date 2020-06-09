@@ -849,9 +849,9 @@ logger = createLogger({
                       else{
                         operationOutcome=operationOutcome&&false;
                         logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisCategory}`,result:typeResult.failed,
-                        message:`Erreur:${dhisProgComboAddResponse[0].httpStatus}: echec de la creation de ${dhisCategory} ${programEntry.resource.name} dans DHIS2`});
+                        message:`Erreur:${dhisCreateCollectionOp[0].httpStatus}: echec de la creation de ${dhisCategory} ${programEntry.resource.name} dans DHIS2`});
                     
-                        let err={message:`Erreur:${dhisProgAddResponse[0].httpStatus}: echec de la creation de ${dhisCategory} ${programEntry.resource.name} dans DHIS2`};
+                        let err={message:`Erreur:${dhisCreateCollectionOp[0].httpStatus}: echec de la creation de ${dhisCategory} ${programEntry.resource.name} dans DHIS2`};
                         nextStep(err);
                       }
                        //nextStep();
@@ -1367,15 +1367,16 @@ function saveMetadataCollection2Dhis(dhis2Token,dhisParentResource,parentId,dhis
     else{
       httpStatus="OK";
     }
-    dicOperationResults.push({
-      httpStatus:httpStatus,
-      metadata:metaDataCollection
-    });
+    
     
     if (httpStatus!="OK") {
       logger.log({level:levelType.warning,operationType:typeOperation.postData,action:`/${url}`,result:typeResult.failed,
                         message:`Code: ${httpStatus}. Impossible de creer la ressource`});
     }
+    dicOperationResults.push({
+      httpStatus:httpStatus,
+      metadata:metaDataCollection
+    });
     callback(dicOperationResults);
   });//end localNeedle
 }
