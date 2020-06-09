@@ -911,7 +911,8 @@ function getListDHIS2OrgUnit(dhis2Token,callbackMain){
                 url=false;
                 if (body.organisationUnits && body.organisationUnits.length > 0) {
 					/* logger.log({level:levelType.info,operationType:typeOperation.getData,action:`getListDHIS2OrgUnit page:${body.pager.page}/${body.pager.pageCount}`,
-					result:typeResult.success,message:`Extraction de  ${body.organisationUnits.length} orgunits de DHIS2`}); */
+          result:typeResult.success,message:`Extraction de  ${body.organisationUnits.length} orgunits de DHIS2`}); */
+                    console.log(`${body.pager.page}/${body.pager.pageCount}`);
                     resourceData = resourceData.concat(body.organisationUnits);
                     //force return only one loop data
                     //return callback(true, false);
@@ -1090,7 +1091,7 @@ function saveBundle2Fhir(fhirToken,fhirResource,bundle,callback){
         if(err)
         {
             logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${url}`,result:typeResult.failed,
-                        message:`${err.Error}`});
+                        message:`${err}`});
             return callback({status:500});
         }
         var response={
