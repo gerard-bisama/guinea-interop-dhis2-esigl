@@ -765,9 +765,9 @@ logger = createLogger({
                       else{
                         operationOutcome= operationOutcome&& false;
                         logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/api/${dhisCategory}`,result:typeResult.failed,
-                        message:`Erreur:${dhisProgComboAddResponse[0].httpStatus}: Echec de la creation de ${dhisCategory} ${programEntry.resource.name} dans DHIS2`});
+                        message:`Erreur:${dhisCreateCollectionOp[0].httpStatus}: Echec de la creation de ${dhisCategory} ${programEntry.resource.name} dans DHIS2`});
                     
-                        let err={message:`Erreur:${dhisProgAddResponse[0].httpStatus}: Echec de la creation de ${dhisCategory} ${programEntry.resource.name} dans DHIS2`};
+                        let err={message:`Erreur:${dhisCreateCollectionOp[0].httpStatus}: Echec de la creation de ${dhisCategory} ${programEntry.resource.name} dans DHIS2`};
                         nextStep(err);
                       }
                        //nextStep();
