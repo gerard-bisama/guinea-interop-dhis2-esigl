@@ -1092,19 +1092,20 @@ function saveBundle2Fhir(fhirToken,fhirResource,bundle,callback){
         {
             logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${url}`,result:typeResult.failed,
                         message:`${err}`});
-            return callback({status:500});
+            return callback({status:500,message:err});
         }
-        var response={
-            status: resp.statusCode,
-            message: `${bundle.entry.length} ${fhirResource} synchronisees dans HAPI`,
-            timestamp:new Date().getTime()
-        }
+        
         
         if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
 			logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${url}`,result:typeResult.failed,
                         message:`Code d'erreur http: ${resp.statusCode}`});
-            return callback({status:500});
+            return callback({status:500,message:`Code d'erreur http: ${resp.statusCode}`});
           }
+          var response={
+            status: resp.statusCode,
+            message: `${bundle.entry.length} ${fhirResource} synchronisees dans HAPI`,
+            timestamp:new Date().getTime()
+        }
         callback(response);
     });
 
