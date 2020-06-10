@@ -224,7 +224,7 @@ function setupApp () {
     globalRes=res;
     
     let esToken = `Basic ${btoa(config.elasticsearchServer.username+':'+config.elasticsearchServer.password)}`;
-    let url= URI(config.elasticsearchServer.url).segment(program_activities).segment("logs");
+    let url= URI(config.elasticsearchServer.url).segment(indexSearchName).segment("logs");
     url=url.toString();
     logger.log({level:levelType.info,operationType:typeOperation.startTheService,action:"/loadlogs",result:typeResult.iniate,
      message:`Lancement de de l'importation des logs dans Kibana`});
