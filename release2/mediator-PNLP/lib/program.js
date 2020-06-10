@@ -764,7 +764,7 @@ function setupApp () {
   });
   app.get('/syncrequisition2dhis',(req, res) => {
     globalRes=res;
-    logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.iniate,
+    logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
     message:`Lancement du processus de synchronisation des requisitions dans DHIS2`});
     const dhis2Token = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
     const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;
