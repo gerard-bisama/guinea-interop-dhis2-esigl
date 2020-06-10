@@ -126,6 +126,46 @@
       "type": "http",
       "authType": "public",
       "status": "enabled"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PUT",
+        "OPTIONS",
+        "HEAD",
+        "TRACE",
+        "CONNECT",
+        "PATCH"
+      ],
+      "name": "3-[PNLP] Charger les logs d'activites dans Kibana",
+      "urlPattern": "^/loadlogs/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Charger les logs d'activites dans Kibana",
+          "host": "localhost",
+          "port": "5022",
+          "primary": true,
+          "path": "/loadlogs",
+          "type": "http",
+          "secured": false,
+          "username": "",
+          "password": ""
+        }
+        
+      ],
+      "allow": [],
+      "type": "http",
+      "authType": "public",
+      "status": "enabled"
     }
   ],
   "endpoints": [
