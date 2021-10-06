@@ -1,0 +1,6 @@
+node_modules/
+logs/
+package-lock.json
+/mediator-principal/src/env.list
+/mediator-principal/src/config/config.json
+/mediator-principal/src/config/mediator.json
