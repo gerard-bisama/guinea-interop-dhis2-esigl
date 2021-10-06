@@ -112,7 +112,7 @@ console.log("************************** updated route information **************
 
 const mediatorConfig=mediatorConfigTemp;
 //var port = process.env.NODE_ENV === 'test' ? 7001 : mediatorConfig.endpoints[0].port;
-var port=process.env.MEDIATOR_PORT;
+var port=process.env.MEDIATOR_PORT?process.env.MEDIATOR_PORT:mediatorConfig.endpoints[0].port;
 var indexSearchName=`principal_activities`;
 var logger=null;
 var filePath;
@@ -419,14 +419,18 @@ logger = createLogger({
         }
         logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/Location`,result:typeResult.iniate,
         message:`Resolution des correspondances avec les structures DHIS2 dans HAPI`});
-        getListHAPILocationByIds(hapiToken,listLocationIds,function(listLocationToMap){
+        //getListHAPILocationByIds(hapiToken,listLocationIds,function(listLocationToMap){
+          getListHAPILocationByIdChunk(hapiToken,listLocationIds,config.batchSizeFacilityFromHapi,function(listLocationToMap){
+            //return res.send(`Size=${listLocationToMap.length}`);
+            //return res.send(listLocationToMap.length);
           if(listLocationToMap.length>0)
           {
             logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/Location`,result:typeResult.success,
              message:`${listLocationToMap.length} structures resolues pour mapping`});
+            //return res.send(listLocationToMap);
             let updatedLocationBundle=customLibrairy.updateLocationFromSIGL(listLocationToMap,config.esiglServer.url,listStructures);
             //console.log()
-            //res.send(updatedLocationBundle);
+            
             if(updatedLocationBundle.entry && updatedLocationBundle.entry.length>=1)
             {
               logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/fhir/Location`,result:typeResult.iniate,
@@ -1256,6 +1260,66 @@ function getListHAPILocationByIds(hapiToken,listLocationIds,callbackMain){
 }
 function getListHAPILocationByIdChunk(hapiToken,listLocationIds,batchSizeFacilityFromHapi,callbackMain)
 {
+  let listLocationIdsChunked=chunckOfResources(listLocationIds,batchSizeFacilityFromHapi);
+  //return listLocationIdsChunked;
+  //callbackMain(listLocationIdsChunked);
+  let localNeedle = require('needle');
+  localNeedle.defaults(
+      {
+          open_timeout: 600000
+      });
+  let options={headers:{'Content-Type': 'application/json','Authorization':hapiToken}};
+  let localAsync = require('async');
+  var listLocationsToMap = [];
+  var currentIdToFetch="";
+  var url=null;
+  localAsync.eachSeries(listLocationIdsChunked, function(locationIds, callback) {
+    currentIdToFetch=locationIds.toString();
+    //url= URI(config.hapiServer.url).segment('Location').segment(currentIdToFetch);
+    url= URI(config.hapiServer.url).segment('Location');
+    url.addQuery("_id",currentIdToFetch);
+    url=url.toString();
+    //console.log(url);
+    //callback();
+    localNeedle.get(url,options, function(err, resp) {
+      if(err)
+      {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`${url}`,result:typeResult.failed,
+      message:`${err.Error}`});
+      return callback(`${err}`);
+      }
+      if (resp.statusCode && (resp.statusCode == 200)) {
+        //listLocationsToMap.push(JSON.parse(resp.body.toString('utf8')));
+        //Extract list of location from Bundle searchset
+        let body = JSON.parse(resp.body);
+        if (!body.entry) {
+          logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                message:`Ressource invalid retourner par le serveur FHIR: ${resp.statusCode}`});
+          return callback(true, false);
+        }
+        if (body.total === 0 && body.entry && body.entry.length > 0) {
+          logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+          message:`Aucune resource retourne par le serveur HAPI: ${resp.statusCode}`});
+          return callback(true, false);
+        }
+        if (body.entry && body.entry.length > 0) {
+          //listLocationsToMap = listLocationsToMap.concat(body.entry);
+          for(let oEntry of body.entry)
+          {
+            listLocationsToMap = listLocationsToMap.concat(oEntry.resource);
+          }
+        }
+      }
+      callback();
+    });//end of localNeedle
+  },function(error){
+    if(error)
+    {
+      /* logger.log({level:levelType.error,operationType:typeOperation.getData,action:`${url}`,result:typeResult.failed,
+      message:`${error.message}`}); */
+    }
+    callbackMain(listLocationsToMap);
+  });//end of localAsync.each
 
 }
 function chunckOfResources(array,size){
