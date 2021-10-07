@@ -7,6 +7,7 @@ const URI = require('urijs');
 const isJSON = require('is-json');
 const path = require('path');
 var btoa = require('btoa');
+const moment = require('moment');
 //const winston = require('winston')
 const {createLogger,format,transports} = require('winston');
 const { combine, timestamp, label, printf } = format;
@@ -53,6 +54,7 @@ var mediatorName="mediateur_principal";
 const myFormat = printf(({ level, message, label, timestamp,operationType,action,result }) => {
     return `${timestamp},${level},${label},${operationType},${action},${result},${message}`;
   });
+const currentZFormatDate=moment();
 // Config
 var config = {} // this will vary depending on whats set in openhim-core
 //const apiConf = process.env.NODE_ENV === 'test' ? require('../config/test') : require('../config/config')
@@ -60,7 +62,7 @@ var apiConfTemp=require('../config/config');
 //----------- Pull env openhim config from docker envlist ----------------------------------//
 /*
 console.log("**************************process env ***********************");
-console.log(process.env);
+console.log(process.env.MEDIATOR_REGISTER);
 console.log("**************************process env ***********************");
 */
 
@@ -68,8 +70,8 @@ apiConfTemp.api.apiURL=process.env.OPENHIM_APIURL?process.env.OPENHIM_APIURL:api
 apiConfTemp.api.username=process.env.OPENHIM_USERNAME?process.env.OPENHIM_USERNAME:apiConfTemp.api.username;
 apiConfTemp.api.password=process.env.OPENHIM_PASSWORD?process.env.OPENHIM_PASSWORD:apiConfTemp.api.trustSelfSigned;
 apiConfTemp.api.trustSelfSigned=process.env.OPENHIM_TRUSTSELFSIGNED?process.env.OPENHIM_TRUSTSELFSIGNED:apiConfTemp.api.trustSelfSigned;
-apiConfTemp.register=process.env.MEDIATOR_REGISTER?process.env.MEDIATOR_REGISTER:apiConfTemp.register;
-apiConfTemp.heartbeat=process.env.MEDIATOR_HEARTBEAT?process.env.MEDIATOR_HEARTBEAT:apiConfTemp.heartbeat;
+apiConfTemp.register=process.env.MEDIATOR_REGISTER=='false'?false:true;
+apiConfTemp.heartbeat=process.env.MEDIATOR_HEARTBEAT=='false'?false:true;
 
 
 const apiConf=apiConfTemp;
@@ -93,7 +95,7 @@ mediatorConfigTemp.config.batchSizeFacilityToSync=process.env.MEDIATOR_BATCHSIZE
 mediatorConfigTemp.config.batchSizeFacilityFromHapi=process.env.MEDIATOR_BATCHSIZEFACILITYFROMHAPI?process.env.MEDIATOR_BATCHSIZEFACILITYFROMHAPI:mediatorConfigTemp.config.batchSizeFacilityFromHapi;
 mediatorConfigTemp.config.extensionBaseUrlProductDetails=process.env.MEDIATOR_EXTENSIONBASEURLPRODUCTDETAILS?process.env.MEDIATOR_EXTENSIONBASEURLPRODUCTDETAILS:mediatorConfigTemp.config.extensionBaseUrlProductDetails;
 mediatorConfigTemp.config.extensionBaseUrlProgramDetails=process.env.MEDIATOR_EXTENSIONBASEURLPROGRAMDETAILS?process.env.MEDIATOR_EXTENSIONBASEURLPROGRAMDETAILS:mediatorConfigTemp.config.extensionBaseUrlProgramDetails;
-mediatorConfigTemp.config.synchronizationPeriod=process.env.MEDIATOR_SYNCHRONIZATIONPERIOD?MEDIATOR_SYNCHRONIZATIONPERIOD:mediatorConfigTemp.config.synchronizationPeriod;
+//mediatorConfigTemp.config.synchronizationPeriod=process.env.MEDIATOR_SYNCHRONIZATIONPERIOD?MEDIATOR_SYNCHRONIZATIONPERIOD:mediatorConfigTemp.config.synchronizationPeriod;
 //Update the channel route host
 //var listMediatorChannels=mediatorConfigTemp.defaultChannelConfig;
 for (let i=0;i< mediatorConfigTemp.defaultChannelConfig.length;i++)
@@ -140,8 +142,10 @@ var logFileName;
 function setupApp () {
 //----------------------------Define logger information -------------------------------------/
 filePath=config.appDirectory;
-processMonth= parseInt(config.synchronizationPeriod.split("-")[1]);
-processYear= parseInt(config.synchronizationPeriod.split("-")[0]);
+//processMonth= parseInt(config.synchronizationPeriod.split("-")[1]);
+//processYear= parseInt(config.synchronizationPeriod.split("-")[0]);
+processMonth=currentZFormatDate.month();
+processYear=currentZFormatDate.year();
 indexName=`principal_activities_${processMonth}-${processYear}`;
 
 logFileName=path.join(filePath,`/logs/${indexName}.log`);
@@ -420,78 +424,78 @@ logger = createLogger({
         logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/Location`,result:typeResult.iniate,
         message:`Resolution des correspondances avec les structures DHIS2 dans HAPI`});
         //getListHAPILocationByIds(hapiToken,listLocationIds,function(listLocationToMap){
-          getListHAPILocationByIdChunk(hapiToken,listLocationIds,config.batchSizeFacilityFromHapi,function(listLocationToMap){
+         getListHAPILocationByIdChunk(hapiToken,listLocationIds,config.batchSizeFacilityFromHapi,function(listLocationToMap){
             //return res.send(`Size=${listLocationToMap.length}`);
-            //return res.send(listLocationToMap.length);
-          if(listLocationToMap.length>0)
-          {
-            logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/Location`,result:typeResult.success,
-             message:`${listLocationToMap.length} structures resolues pour mapping`});
             //return res.send(listLocationToMap);
-            let updatedLocationBundle=customLibrairy.updateLocationFromSIGL(listLocationToMap,config.esiglServer.url,listStructures);
-            //console.log()
-            
-            if(updatedLocationBundle.entry && updatedLocationBundle.entry.length>=1)
+            if(listLocationToMap.length>0)
             {
-              logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/fhir/Location`,result:typeResult.iniate,
-              message:`${listLocationToMap.length} structures a mapper`});
-
-              saveBundle2Fhir(hapiToken,fhirLocationResource,updatedLocationBundle,function(hapiServerResponse)
+              logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/Location`,result:typeResult.success,
+              message:`${listLocationToMap.length} structures resolues pour mapping`});
+              //return res.send(listLocationToMap);
+              let updatedLocationBundle=customLibrairy.updateLocationFromSIGL(listLocationToMap,config.esiglServer.url,listStructures);
+              //console.log()
+              
+              if(updatedLocationBundle.entry && updatedLocationBundle.entry.length>=1)
               {
-                //console.log(hapiServerResponse.status);
-                let returnObject=null;
-                if(hapiServerResponse.status==200)
-                {
-                  logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/fhir/Location",result:typeResult.success,
-                  message:`${hapiServerResponse.message}: ${updatedLocationBundle.entry.length} structures mappes`});
-                  logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/mapfacility2fhir",result:typeResult.success,
-                  message:`${updatedLocationBundle.entry.length} structures mappes`});
+                logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/fhir/Location`,result:typeResult.iniate,
+                message:`${listLocationToMap.length} structures a mapper`});
 
-                  let responseMessage=`${updatedLocationBundle.entry.length} Location ont ete charger avec success dans HAPI FHIR`;
-                  let bodyMessage=`${updatedLocationBundle.entry.length} Location a charger dans HAPI FHIR`;
-                  returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"mapfacility2fhir","GET");
-                  
-                }
-                else
+                saveBundle2Fhir(hapiToken,fhirLocationResource,updatedLocationBundle,function(hapiServerResponse)
                 {
-                  logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/fhir/Location",result:typeResult.failed,
-                  message:`Erreur: ${hapiServerResponse.message}`});
-                  logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/mapfacility2fhir",result:typeResult.failed,
-                  message:`Erreur: ${hapiServerResponse.message}`});
-                  let responseMessage=`Erreur: ${hapiServerResponse.message}`;
-                  let bodyMessage=`${updatedLocationBundle.entry.length} Location a charger dans HAPI FHIR`;
-                  returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"mapfacility2fhir","GET");
-                }
+                  //console.log(hapiServerResponse.status);
+                  let returnObject=null;
+                  if(hapiServerResponse.status==200)
+                  {
+                    logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/fhir/Location",result:typeResult.success,
+                    message:`${hapiServerResponse.message}: ${updatedLocationBundle.entry.length} structures mappes`});
+                    logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/mapfacility2fhir",result:typeResult.success,
+                    message:`${updatedLocationBundle.entry.length} structures mappes`});
+
+                    let responseMessage=`${updatedLocationBundle.entry.length} Location ont ete charger avec success dans HAPI FHIR`;
+                    let bodyMessage=`${updatedLocationBundle.entry.length} Location a charger dans HAPI FHIR`;
+                    returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"mapfacility2fhir","GET");
+                    
+                  }
+                  else
+                  {
+                    logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/fhir/Location",result:typeResult.failed,
+                    message:`Erreur: ${hapiServerResponse.message}`});
+                    logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/mapfacility2fhir",result:typeResult.failed,
+                    message:`Erreur: ${hapiServerResponse.message}`});
+                    let responseMessage=`Erreur: ${hapiServerResponse.message}`;
+                    let bodyMessage=`${updatedLocationBundle.entry.length} Location a charger dans HAPI FHIR`;
+                    returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"mapfacility2fhir","GET");
+                  }
+                  res.set('Content-Type', 'application/json+openhim');
+                  return res.status(returnObject.response.status).send(returnObject);
+                }); //end saveBundle2Fhir
+
+              }//end if updatedLocationBundle.entry
+              else
+              {
+                logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/fhir/Location",result:typeResult.failed,
+                message:`Erreur: Impossible de construire le Bundle de correspondance`});
+                logger.log({level:levelType.info,operationType:typeOperation.getData,action:"/mapfacility2fhir",result:typeResult.failed,
+                message:`Erreur: Impossible de construire le Bundle de correspondance`});
+                let responseMessage=`Erreur: Impossible de construire le Bundle de correspondance`;
+                let bodyMessage=`Resolution des correspondances avec les structures DHIS2 dans HAPI`;
+                returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"mapfacility2fhir","GET");
                 res.set('Content-Type', 'application/json+openhim');
                 return res.status(returnObject.response.status).send(returnObject);
-              }); //end saveBundle2Fhir
-
-            }//end if updatedLocationBundle.entry
+              }//end else updatedLocationBundle.entry
+            }
             else
             {
               logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/fhir/Location",result:typeResult.failed,
-              message:`Erreur: Impossible de construire le Bundle de correspondance`});
+              message:`Erreur: Aucune correspondance pour le mapping des structures`});
               logger.log({level:levelType.info,operationType:typeOperation.getData,action:"/mapfacility2fhir",result:typeResult.failed,
-              message:`Erreur: Impossible de construire le Bundle de correspondance`});
-              let responseMessage=`Erreur: Impossible de construire le Bundle de correspondance`;
+              message:`Erreur: Aucune correspondance pour le mapping des structures`});
+              let responseMessage=`Erreur: Aucune correspondance pour le mapping des structures`;
               let bodyMessage=`Resolution des correspondances avec les structures DHIS2 dans HAPI`;
               returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"mapfacility2fhir","GET");
               res.set('Content-Type', 'application/json+openhim');
               return res.status(returnObject.response.status).send(returnObject);
-            }//end else updatedLocationBundle.entry
-          }
-          else
-          {
-            logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/fhir/Location",result:typeResult.failed,
-            message:`Erreur: Aucune correspondance pour le mapping des structures`});
-            logger.log({level:levelType.info,operationType:typeOperation.getData,action:"/mapfacility2fhir",result:typeResult.failed,
-            message:`Erreur: Aucune correspondance pour le mapping des structures`});
-            let responseMessage=`Erreur: Aucune correspondance pour le mapping des structures`;
-            let bodyMessage=`Resolution des correspondances avec les structures DHIS2 dans HAPI`;
-            returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"mapfacility2fhir","GET");
-            res.set('Content-Type', 'application/json+openhim');
-            return res.status(returnObject.response.status).send(returnObject);
-          }
+            }
         });
       }
       else{
@@ -630,6 +634,7 @@ logger = createLogger({
 
         let productProgram=customLibrairy.buildProgamProductRessourceBundle(programsList,productsList,programproductsList,config.esiglServer.url,
         config.extensionBaseUrlProductDetails,config.extensionBaseUrlProgramDetails);
+        //return res.send(productProgram[1]);
         if(productProgram && productProgram.length>0)
         {
           let bundleProducts=productProgram[0];
@@ -729,12 +734,14 @@ logger = createLogger({
         }
         logger.log({level:levelType.info,operationType:typeOperation.getData,action:"/fhir/product",result:typeResult.iniate,
         message:`Extraction des details sur les produits du programme ${programEntry.resource.name}`});
-        getListHAPIResourcesByIds(hapiToken,fhirProductResource,listResourceIds,(listProducts)=>{
+        //getListHAPIResourcesByIds(hapiToken,fhirProductResource,listResourceIds,(listProducts)=>{
+        getListHAPIResourcesByIdsChunk(hapiToken,fhirProductResource,listResourceIds,config.batchSizeFacilityFromHapi,(listProducts)=>{
           logger.log({level:levelType.info,operationType:typeOperation.getData,action:"/fhir/product",result:typeResult.success,
           message:`Extraction des details sur les produits du programme ${programEntry.resource.name} effectuees`});
           let listCategoryOptions =customLibrairy.buildCategoryOptionsMetadata(prodIDPrefixe,listProducts);
           
           //console.log(JSON.stringify(payload));
+          //return res.status(200).send(listCategoryOptions);
           logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/api/${dhisCategoryOption}`,result:typeResult.iniate,
           message:`Lancement de la mise a jour des ${listCategoryOptions.length} produits du ${programEntry.resource.name}`});
           saveMetadataList2Dhis(dhis2Token,dhisCategoryOption,listCategoryOptions,(dhisOpResponse)=>{
@@ -1306,7 +1313,7 @@ function getListHAPILocationByIdChunk(hapiToken,listLocationIds,batchSizeFacilit
           //listLocationsToMap = listLocationsToMap.concat(body.entry);
           for(let oEntry of body.entry)
           {
-            listLocationsToMap = listLocationsToMap.concat(oEntry.resource);
+            listLocationsToMap.push(oEntry.resource);
           }
         }
       }
@@ -1376,7 +1383,66 @@ function getListHAPIResourcesByIds(hapiToken,fhirResource,listResourcesIds,callb
   });//end of localAsync.each
 
 }
-
+function getListHAPIResourcesByIdsChunk(hapiToken,fhirResource,listResourcesIds,batchSizeFacilityFromHapi,callbackMain){
+  let listResourceIdsChunked=chunckOfResources(listResourcesIds,batchSizeFacilityFromHapi);
+  let localNeedle = require('needle');
+  localNeedle.defaults(
+      {
+          open_timeout: 600000
+      });
+  let options={headers:{'Content-Type': 'application/json','Authorization':hapiToken}};
+  let localAsync = require('async');
+  var listResources = [];
+  var currentIdToFetch="";
+  var url=null;
+  localAsync.eachSeries(listResourceIdsChunked, function(resourceIds, callback) {
+    currentIdToFetch=resourceIds.toString();
+    //url= URI(config.hapiServer.url).segment('Location').segment(currentIdToFetch);
+    url= URI(config.hapiServer.url).segment(fhirResource);
+    url.addQuery("_id",currentIdToFetch);
+    url=url.toString();
+    //console.log(url);
+    //callback();
+    localNeedle.get(url,options, function(err, resp) {
+      if(err)
+      {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`${url}`,result:typeResult.failed,
+      message:`${err.Error}`});
+      return callback(`${err}`);
+      }
+      if (resp.statusCode && (resp.statusCode == 200)) {
+        //listLocationsToMap.push(JSON.parse(resp.body.toString('utf8')));
+        //Extract list of location from Bundle searchset
+        let body = JSON.parse(resp.body);
+        if (!body.entry) {
+          logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                message:`Ressource invalid retourner par le serveur FHIR: ${resp.statusCode}`});
+          return callback(true, false);
+        }
+        if (body.total === 0 && body.entry && body.entry.length > 0) {
+          logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+          message:`Aucune resource retourne par le serveur HAPI: ${resp.statusCode}`});
+          return callback(true, false);
+        }
+        if (body.entry && body.entry.length > 0) {
+          //listLocationsToMap = listLocationsToMap.concat(body.entry);
+          for(let oEntry of body.entry)
+          {
+            listResources.push(oEntry.resource);
+          }
+        }
+      }
+      callback();
+    });//end of localNeedle
+  },function(error){
+    if(error)
+    {
+      /* logger.log({level:levelType.error,operationType:typeOperation.getData,action:`${url}`,result:typeResult.failed,
+      message:`${error.message}`}); */
+    }
+    callbackMain(listResources);
+  });//end of localAsync.each
+}
 function saveBundle2Fhir(fhirToken,fhirResource,bundle,callback){
     let localNeedle = require('needle');
     localNeedle.defaults(
@@ -1621,8 +1687,10 @@ function  getOpenhimResult(responseMessage, bodyMessage,statusValue,orchestratio
  */
 function start (callback) {
   filePath=mediatorConfig.config.appDirectory;
-  processMonth= parseInt(mediatorConfig.config.synchronizationPeriod.split("-")[1]);
-  processYear= parseInt(mediatorConfig.config.synchronizationPeriod.split("-")[0]);
+  //processMonth= parseInt(mediatorConfig.config.synchronizationPeriod.split("-")[1]);
+  //processYear= parseInt(mediatorConfig.config.synchronizationPeriod.split("-")[0]);
+  processMonth=currentZFormatDate.month();
+  processYear=currentZFormatDate.year();
   indexName=`principal_activities_${processMonth}-${processYear}`;
   logFileName=path.join(filePath,`/logs/${indexName}.log`);
   logger = createLogger({
@@ -1636,6 +1704,7 @@ function start (callback) {
       ]
     });
   //let winstonLocal=require();
+  console.log(apiConf);
   if (apiConf.api.trustSelfSigned) { process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0' }
 
   if (apiConf.register) {
