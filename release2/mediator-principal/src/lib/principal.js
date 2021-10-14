@@ -68,10 +68,18 @@ console.log("**************************process env ***********************");
 
 apiConfTemp.api.apiURL=process.env.OPENHIM_APIURL?process.env.OPENHIM_APIURL:apiConfTemp.api.apiURL;
 apiConfTemp.api.username=process.env.OPENHIM_USERNAME?process.env.OPENHIM_USERNAME:apiConfTemp.api.username;
-apiConfTemp.api.password=process.env.OPENHIM_PASSWORD?process.env.OPENHIM_PASSWORD:apiConfTemp.api.trustSelfSigned;
+apiConfTemp.api.password=process.env.OPENHIM_PASSWORD?process.env.OPENHIM_PASSWORD:apiConfTemp.api.password;
 apiConfTemp.api.trustSelfSigned=process.env.OPENHIM_TRUSTSELFSIGNED?process.env.OPENHIM_TRUSTSELFSIGNED:apiConfTemp.api.trustSelfSigned;
-apiConfTemp.register=process.env.MEDIATOR_REGISTER=='false'?false:true;
-apiConfTemp.heartbeat=process.env.MEDIATOR_HEARTBEAT=='false'?false:true;
+if(process.env.MEDIATOR_REGISTER)
+{
+  apiConfTemp.register=process.env.MEDIATOR_REGISTER=='false'?false:true;
+}
+if(process.env.MEDIATOR_HEARTBEAT)
+{
+  apiConfTemp.register=process.env.MEDIATOR_HEARTBEAT=='false'?false:true;
+}
+//apiConfTemp.register=process.env.MEDIATOR_REGISTER=='false'?false:apiConfTemp.register;
+//apiConfTemp.heartbeat=process.env.MEDIATOR_HEARTBEAT=='false'?false:true;
 
 
 const apiConf=apiConfTemp;
@@ -341,7 +349,7 @@ logger = createLogger({
         message:`DHIS2: Extraction des structures de DHIS2`});
         getListDHIS2OrgUnit(dhis2Token,function(listOrgUnits)
         {
-            //return res.send(listOrgUnits);
+            return res.send(listOrgUnits);
             if(listOrgUnits.length>0)
             {
                 let bundle=customLibrairy.buildLocationHierarchy(listOrgUnits);
