@@ -62,7 +62,7 @@ var apiConfTemp=require('../config/config');
 //----------- Pull env openhim config from docker envlist ----------------------------------//
 /*
 console.log("**************************process env ***********************");
-console.log(process.env.MEDIATOR_REGISTER);
+console.log(process.cwd());
 console.log("**************************process env ***********************");
 */
 
@@ -76,7 +76,7 @@ if(process.env.MEDIATOR_REGISTER)
 }
 if(process.env.MEDIATOR_HEARTBEAT)
 {
-  apiConfTemp.register=process.env.MEDIATOR_HEARTBEAT=='false'?false:true;
+  apiConfTemp.heartbeat=process.env.MEDIATOR_HEARTBEAT=='false'?false:true;
 }
 //apiConfTemp.register=process.env.MEDIATOR_REGISTER=='false'?false:apiConfTemp.register;
 //apiConfTemp.heartbeat=process.env.MEDIATOR_HEARTBEAT=='false'?false:true;
@@ -149,7 +149,7 @@ var logFileName;
 
 function setupApp () {
 //----------------------------Define logger information -------------------------------------/
-filePath=config.appDirectory;
+filePath=path.join(process.cwd(),`/data`);
 //processMonth= parseInt(config.synchronizationPeriod.split("-")[1]);
 //processYear= parseInt(config.synchronizationPeriod.split("-")[0]);
 processMonth=currentZFormatDate.month();
@@ -1694,13 +1694,13 @@ function  getOpenhimResult(responseMessage, bodyMessage,statusValue,orchestratio
  * server is started
  */
 function start (callback) {
-  filePath=mediatorConfig.config.appDirectory;
+  filePath=process.cwd();
   //processMonth= parseInt(mediatorConfig.config.synchronizationPeriod.split("-")[1]);
   //processYear= parseInt(mediatorConfig.config.synchronizationPeriod.split("-")[0]);
   processMonth=currentZFormatDate.month();
   processYear=currentZFormatDate.year();
   indexName=`principal_activities_${processMonth}-${processYear}`;
-  logFileName=path.join(filePath,`/logs/${indexName}.log`);
+  logFileName=path.join(filePath,`/data/logs/${indexName}.log`);
   logger = createLogger({
       format: combine(
         label({ label: mediatorName }),
