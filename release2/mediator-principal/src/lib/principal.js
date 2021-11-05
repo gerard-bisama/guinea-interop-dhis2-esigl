@@ -123,6 +123,7 @@ console.log("************************** updated route information **************
 const mediatorConfig=mediatorConfigTemp;
 //var port = process.env.NODE_ENV === 'test' ? 7001 : mediatorConfig.endpoints[0].port;
 var port=process.env.MEDIATOR_PORT?process.env.MEDIATOR_PORT:mediatorConfig.endpoints[0].port;
+
 var indexSearchName=`principal_activities`;
 var logger=null;
 var filePath;
@@ -341,7 +342,7 @@ logger = createLogger({
         logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncorgunit2fhir",result:typeResult.iniate,
         message:`Lancement de la synchro des orgunits DHIS2=>HAPI`});
         console.log("*****************DHIS2 credentials********************");
-        console.log(`${config.dhis2Server.username}+${config.dhis2Server.password}`);
+        //console.log(`${config.dhis2Server.username}+${config.dhis2Server.password}`);
         const dhis2Token = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
         const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;
 
@@ -349,7 +350,7 @@ logger = createLogger({
         message:`DHIS2: Extraction des structures de DHIS2`});
         getListDHIS2OrgUnit(dhis2Token,function(listOrgUnits)
         {
-            return res.send(listOrgUnits);
+            //return res.send(listOrgUnits);
             if(listOrgUnits.length>0)
             {
                 let bundle=customLibrairy.buildLocationHierarchy(listOrgUnits);
@@ -434,6 +435,7 @@ logger = createLogger({
         //getListHAPILocationByIds(hapiToken,listLocationIds,function(listLocationToMap){
          getListHAPILocationByIdChunk(hapiToken,listLocationIds,config.batchSizeFacilityFromHapi,function(listLocationToMap){
             //return res.send(`Size=${listLocationToMap.length}`);
+            //console.log(`Size List location to map=${listLocationToMap.length}`);
             //return res.send(listLocationToMap);
             if(listLocationToMap.length>0)
             {

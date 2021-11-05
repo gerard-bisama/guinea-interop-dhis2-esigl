@@ -576,7 +576,8 @@ function setupApp () {
 
   });
 
-  app.get('/syncrequisition2fhir',(req, res) => {
+  //This endpoint is used to sync form one file
+  app.get('/_syncrequisition2fhir',(req, res) => {
     globalRes=res;
     var facilityListCorrespondance=[];
     var listRequistionEntries=[];
@@ -796,6 +797,111 @@ function setupApp () {
             res.status(response.status).send(returnObject);
           }//end else
         });//end of customLibrairy.readeSIGLRequisitionCSVFile
+
+      }
+      else
+      {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/fhir/${fhirLocationResource}`,result:typeResult.failed,
+          message:`Aucun mapping des structures n'a encore ete effectue`});
+          logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/syncrequisition2fhir`,result:typeResult.failed,
+        message:`Aucun mapping des structures n'a encore ete effectue`});
+        let responseMessage=`Aucun mapping des structures n'a encore ete effectue`;
+        let bodyMessage=`Lancement du processus de synchronisation des requisitions dans HAPI`;
+        let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"getListHapiResourceByFilter","GET");
+        res.set('Content-Type', 'application/json+openhim');
+        return res.status(returnObject.response.status).send(returnObject);
+
+      }
+    });//end of getListHapiResourceByFilter.filterExpresionAllMappedLocation
+    
+  });
+  ////This endpoint is used to sync from the list of files
+  app.get('/syncrequisition2fhir',(req, res) => {
+
+    const dataDireSIGL="data";
+    globalRes=res;
+    var facilityListCorrespondance=[];
+    var listRequistionEntries=[];
+    var listAllRequistions=[];
+    var operationOutcome=true;
+    logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.iniate,
+    message:`Lancement du processus de synchronisation des requisitions dans HAPI`});
+    const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;
+    //console.log(config);
+
+    logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${filePath}`,result:typeResult.iniate,
+    message:`Extraction des requisitions pour le programme ${config.program.code}`});
+    //First extract all the mapping structure and keep them in memory
+    let filterExpresionAllMappedLocation=[
+      {
+        key:"identifier:text",
+        value:"siglid"
+      },
+      {
+        key:"_count",
+        value:"10"
+      }
+    ];
+    logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/Location`,result:typeResult.iniate,
+    message:`HAPI: Extraction des toutes les structures mappees `});    
+    getListHapiResourceByFilter(hapiToken,fhirLocationResource,filterExpresionAllMappedLocation,(locationEntries)=>{
+      logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/Location`,result:typeResult.success,
+    message:`HAPI: Extraction des ${locationEntries.length} structures mappees `});   
+      if(locationEntries.length>0)
+      {
+        let listMappedFacilities=[];
+        for(let oEntry of locationEntries)
+        {
+          listMappedFacilities.push(oEntry.resource);
+        }
+        customLibrairy.getListFiles2(filePath,`${dataDireSIGL}/`,(listRequisitionFiles)=>{
+          //res.send (listRequisitionFiles);
+          let asyncCsvHandler = require('async');
+          asyncCsvHandler.eachSeries(listRequisitionFiles, function(requisitionFile, nextFile) {
+            customLibrairy.getContentSIGLRequisitionCSVFile(filePath,requisitionFile, (requisitionFileContent)=>{
+              listAllRequisitions.push({index:requisitionFile,content:requisitionFileContent})
+              
+              nextFile();
+            })//end of customLibrairy.getContentSIGLRequisitionCSVFile
+          },(err)=>{
+            if(err)
+            {
+              logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${filePath}`,
+              result:typeResult.failed,message:`EErreur lors la lecture du fichier CSV de requisitions. ${err}`});
+              
+            }
+            var nbreRequisition=0;
+            var nbreFichierRequisition=0;
+            nbreFichierRequisition=listAllRequistions.length;
+            for(let oRequisitionGroup of listAllRequisitions){
+              nbreRequisition+=oRequisitionGroup.content.length;
+            }
+            logger.log({level:levelType.info,operationType:typeOperation.getData,action:`requistionfile`,result:typeResult.success,
+            message:`HAPI: Extraction des ${nbreFichierRequisition} fichiers avec un total des ${nbreRequisition} requisitions`});  
+            //return res.send(listAllRequistions);
+            //listAllRequisitions=requisitionFileContent;
+              if(listAllRequisitions && listAllRequisitions.length>0)
+              {
+                operationOutcome=operationOutcome && true;
+
+                for(let oRequisitionGroup of listAllRequisitions )
+                {
+                  let listProgramRequisitions=oRequisitionGroup.content.filter(element=>{
+                    if(element.program_code==config.program.code)
+                    {
+                      return element;
+                    }
+                  });//end listAllRequisitions.filter
+                  logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${oRequisitionGroup.index}`,result:typeResult.success,
+                  message:`Fichier: ${listProgramRequisitions.length}/${oRequisitionGroup.content.length} requisitions pour le programme ${config.program.code}`});
+                  
+                }
+                
+                
+              }
+          });//End of eachSeries
+
+        });//end of getListFiles2
 
       }
       else
@@ -1305,6 +1411,8 @@ function saveBundle2Fhir(fhirToken,fhirResource,bundle,callback){
 }
 function getListHapiResourceByFilter(hapiToken,fhirResource,filterExpressionDic,callbackMain)
 {
+  //to comment
+  return callbackMain([{id:1},{id:2}]);
   let localNeedle = require('needle');
     localNeedle.defaults(
         {

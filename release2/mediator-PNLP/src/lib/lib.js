@@ -50,6 +50,21 @@ function getListFiles(logFilePath,dirName,callback)
         return callback(listLogFiles);
     });
 }
+//Same as above but exposed
+exports.getListFiles2=function getListFiles2(logFilePath,dirName,callback)
+{
+    var listLogFiles=[];
+    const directoryPath = path.join(logFilePath, dirName);
+    fs.readdir(directoryPath, function (err, files) {
+        if (err) {
+            return console.log('Unable to scan directory: ' + err);
+        } 
+        files.forEach(function (file) {
+            listLogFiles.push(file);
+        });
+        return callback(listLogFiles);
+    });
+}
 //Return collection of {fileName,[record]} from log directory
 exports.readLogCSVFile=function readLogCSVFile(filePath,callback)
 {
@@ -115,6 +130,15 @@ exports.readeSIGLRequisitionCSVFile=function readeSIGLRequisitionCSVFile(filePat
         });
 
     })
+}
+exports.getContentSIGLRequisitionCSVFile=function getContentSIGLRequisitionCSVFile(filePath,fileName,callback)
+{
+	var fileRecords=[];
+	var csvFilePath = path.join(filePath, `${dataDireSIGL}/`+ fileName);
+		csv(siglRequisitionCSVConverter).fromFile(csvFilePath).then((jsonObj)=>{
+            fileRecords=fileRecords.concat(jsonObj);
+            callback(fileRecords);
+        });	
 }
 exports.readMappingCSVFile=function readMappingCSVFile(filePath,callback)
 {
