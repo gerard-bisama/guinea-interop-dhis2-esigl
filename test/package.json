@@ -1,0 +1,39 @@
+{
+  "name": "test-utils",
+  "version": "0.0.1",
+  "description": "Test endpoind and coding during development",
+  "main": "lib/principal.js",
+  "scripts": {
+    "start": "node lib/principal.js"
+  },
+  "keywords": [
+    "openhim",
+    "mediator",
+    "Guinea",
+    "eSIGL",
+    "DHIS2"
+  ],
+  "author": "Gerard Bisama",
+  "license": "MPL-2.0",
+  "contributors": [
+    "https://github.com/gerard-bisama"
+  ],
+  "dependencies": {
+    "async": "^3.0.1",
+    "btoa": "^1.2.1",
+    "express": "^4.13.4",
+    "is-json": "^2.0.1",
+    "needle": "^2.4.0",
+    "urijs": "^1.17.1",
+    "url": "^0.11.0",
+    "moment": "^2.24.0"
+  },
+  "devDependencies": {
+    "onchange": "^2.3.0",
+    "winston": "^3.2.0",
+    "rewire": "^2.5.1",
+    "snazzy": "^3.0.1",
+    "standard": "^6.0.8",
+    "tap": "^5.7.1"
+  }
+}
