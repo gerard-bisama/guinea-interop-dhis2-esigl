@@ -36,9 +36,16 @@ app.get('/listFacilities/:regionid', function(req, res) {
         //for each district get the list of facilities
         if(listPrefectures && listPrefectures.length>0)
         {
+            let listPrefectureMapped=listPrefectures.filter(element =>{
+                if(element.identifier.find(id=>id.type.text=="siglid")){
+                    return element;
+                }
+            });
+            listFacilityMapped=listFacilityMapped.concat(listPrefectureMapped);
             let listkeyValueParmsList=[];
             for(let oLocation of listPrefectures)
             {
+                
                 //console.log(oLocation);
                 listkeyValueParmsList.push([{key:'partof',value:oLocation.id}]);
             }
@@ -49,8 +56,8 @@ app.get('/listFacilities/:regionid', function(req, res) {
             {
                 console.log(`total =${listSousPrefecture.length}`)
                 //Modified array
-                listSousPrefecture=listSousPrefecture.splice(0,2);
-                if(listSousPrefecture && listSousPrefecture.length)
+                //listSousPrefecture=listSousPrefecture.splice(0,2);
+                if(listSousPrefecture && listSousPrefecture.length>0)
                 {
                     let listSousPrefectureMapped=listSousPrefecture.filter(element =>{
                         if(element.identifier.find(id=>id.type.text=="siglid")){
@@ -68,7 +75,7 @@ app.get('/listFacilities/:regionid', function(req, res) {
                         function(listeFormationSanitaires)
                     {
                         console.log(`Liste fosa =${listeFormationSanitaires.length}`);
-                        if(listeFormationSanitaires && listeFormationSanitaires.length)
+                        if(listeFormationSanitaires && listeFormationSanitaires.length>0)
                         {
                             let listFosaMapped=listeFormationSanitaires.filter(element =>{
                                 if(element.identifier.find(id=>id.type.text=="siglid")){
@@ -140,7 +147,7 @@ app.get('/listFacilities/:regionid', function(req, res) {
                                     //callback(listAllrequisitions);
                                     res.send(listAllBundleItemRequisitions)
                                     
-                                })
+                                })//end localAsync listFacilityMapped
                                 
 
                             });
@@ -157,6 +164,47 @@ app.get('/listFacilities/:regionid', function(req, res) {
                 }
                 else{
                     console.log(`Aucune Sous-Prefecture trouvée pour la liste des prefectures`);
+                    //Get Requistion from facility list mapped
+                    let localAsync = require('async');
+                    let listAllrequisitions=[];
+                    //let reducedList=listFacilityMapped.splice(0,10);
+                    console.log(`**** List Facilities mapped of ${listFacilityMapped.length}`)
+                    localAsync.eachSeries(listFacilityMapped, function(facilityMapped, callback) {
+                        keyValueParmsList=[];
+                        let eSIGLFacilityIdentifier=facilityMapped.identifier.find(id=>id.type.text=="siglid");
+
+                        keyValueParmsList.push({key:`facilityId`,value:eSIGLFacilityIdentifier.value});
+                        keyValueParmsList.push({key:`periodId`,value:periodId});
+                        keyValueParmsList.push({key:`page`,value:0});
+                        keyValueParmsList.push({key:`pageSize`,value:100});
+                        
+                        getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,
+                            function(listRequisitions)
+                        {
+                            console.log(`eSIGLFacilityIdentifier.value returns ${listRequisitions.length} requisitons`)
+                            listAllrequisitions=listAllrequisitions.concat(listRequisitions);
+                            return callback();
+                        })
+
+                    },function(error){
+                        if(error)
+                        {
+                            console.log(`Error while fetching the requisitions ${error}`);
+                        }
+                        console.log(`Fetched all ${listAllrequisitions.length}`);
+                        //Build requisition bundle item based on he structure definition
+                        let listAllBundleItemRequisitions=[];
+                        for(let oRequisition of listAllrequisitions)
+                        {
+                            listAllBundleItemRequisitions.push(
+                                buildRequisitionResourceEntryFromESIGL(oRequisition,config.extensionBaseUrlRequisitionDetails,
+                                    config.esiglServer.url)
+                            )
+                        }
+                        //callback(listAllrequisitions);
+                        res.send(listAllBundleItemRequisitions)
+                        
+                    })//end localAsync listFacilityMapped
                 }
                 //listResourcesFound
             })
@@ -491,9 +539,23 @@ function getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,cal
                 if (body.data && body.data.rows.length > 0) {
                     //console.log(`returned a result`);
                     //console.log(body.entry);
-                    
-                  resourceData = resourceData.concat(body.data.rows);
-                  console.log(`${resourceData.length} requisitions retreived /${body.data.totalRecords} expected`)
+                    let listApprovedRequisition=body.data.rows.filter(element =>{
+                        if(element.requisitionStatus=="APPROVED")
+                        {
+                            return element;
+                        }
+                    })
+                    if(listApprovedRequisition && listApprovedRequisition.length>0)
+                    {
+                        resourceData = resourceData.concat(listApprovedRequisition);
+                        console.log(`${resourceData.length} requisitions retreived /${body.data.totalRecords} expected`)
+                    }
+                    else
+                    {
+                        console.log(`No approuved requisttion for ${initUrl}`)
+                    }
+                  
+                   
                 }
                 const next =  resourceData.length < body.data.totalRecords?true:false;
   
@@ -548,8 +610,10 @@ function buildRequisitionResourceEntryFromESIGL(oRequisition,extensionBaseUrlReq
 	var identifierCodingSystem=urlSIGLDomain+"/identifier-type";
 	var oIdentifier=[];
 	let resourceId=oRequisition.requisitionId+"-"+oRequisition.productCode+"-"+oRequisition.programCode;
-	let tempDate1=moment(oRequisition.periodStartDate,'YYYY-MM-DDTHH:mm:ssZ');
-	var createdDate=tempDate1.format('YYYY-MM-DD');
+	//let tempDate1=moment(oRequisition.periodStartDate,'YYYY-MM-DDTHH:mm:ssZ');
+    let tempDate1=new Date(oRequisition.periodStartDate).toJSON();
+	let createdDate=tempDate1.split("T")[0];
+	//var createdDate=tempDate1.format('YYYY-MM-DD');
 	let requisitionCode={coding:[{system:extensionBaseUrlRequisitionDetails,code:"requisition",display:"requisition"}],text:"requisition"};
 	oIdentifier.push({
 		use:"official",
@@ -579,21 +643,21 @@ function buildRequisitionResourceEntryFromESIGL(oRequisition,extensionBaseUrlReq
 		);
 	}
 	if(oRequisition.periodStartDate){
-		var tempDate=moment(oRequisition.periodStartDate,'YYYY-MM-DDTHH:mm:ssZ');
+		var tempDate= new Date(oRequisition.periodStartDate).toJSON();
 		extensionElements.push(
 			{
 				url:"startDate",
-				valueDate:tempDate.format('YYYY-MM-DD')
+				valueDate:tempDate.split("T")[0]
 			}
 		);
 	}
 	if(oRequisition.periodEndDate){
-		var tempDate=moment(oRequisition.periodEndDate,'YYYY-MM-DDTHH:mm:ssZ');
+		var tempDate=new Date(oRequisition.periodEndDate).toJSON();
 
 		extensionElements.push(
 			{
 				url:"endDate",
-				valueDate:tempDate.format('YYYY-MM-DD')
+				valueDate:tempDate.split("T")[0]
 			}
 		);
 	}
