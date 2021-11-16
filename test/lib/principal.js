@@ -181,7 +181,7 @@ app.get('/listFacilities/:regionid', function(req, res) {
                         getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,
                             function(listRequisitions)
                         {
-                            console.log(`eSIGLFacilityIdentifier.value returns ${listRequisitions.length} requisitons`)
+                            console.log(`Returns ${listRequisitions.length} requisitons`)
                             listAllrequisitions=listAllrequisitions.concat(listRequisitions);
                             return callback();
                         })
@@ -539,12 +539,14 @@ function getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,cal
                 if (body.data && body.data.rows.length > 0) {
                     //console.log(`returned a result`);
                     //console.log(body.entry);
+                    /*
                     let listApprovedRequisition=body.data.rows.filter(element =>{
-                        if(element.requisitionStatus=="APPROVED")
+                        if(element.requisitionStatus=="APPROVED" && element.programCode==config.program.code)
                         {
                             return element;
                         }
                     })
+                    listApprovedRequisition=listApprovedRequisition.concat(body.data.rows);
                     if(listApprovedRequisition && listApprovedRequisition.length>0)
                     {
                         resourceData = resourceData.concat(listApprovedRequisition);
@@ -553,7 +555,9 @@ function getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,cal
                     else
                     {
                         console.log(`No approuved requisttion for ${initUrl}`)
-                    }
+                    }*/
+                    resourceData = resourceData.concat(body.data.rows);
+                    console.log(`${resourceData.length} requisitions retreived /${body.data.totalRecords} expected`)
                   
                    
                 }
@@ -595,8 +599,15 @@ function getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,cal
               
         },//end callback 2
         err=>{
-            console.log(`*************Requisition fetch completed************************`)
-            return callbackMain(resourceData);
+            console.log(`*************Requisition fetch completed! Get Approuved requisitions************************`)
+            let listApprovedRequisition=resourceData.filter(element =>{
+                if(element.requisitionStatus=="APPROVED" && element.programCode==config.program.code)
+                {
+                    return element;
+                }
+            })
+            console.log(`${config.program.code}: ${listApprovedRequisition.length} approuved requisitions/${resourceData.length} total`);
+            return callbackMain(listApprovedRequisition);
   
         }
     );//end of async.whilst
@@ -669,7 +680,7 @@ function buildRequisitionResourceEntryFromESIGL(oRequisition,extensionBaseUrlReq
 			}
 		);
 	}
-	if(oRequisition.amc && isNaN(oRequisition.amc)==false)
+	if(oRequisition.amc!=null && isNaN(oRequisition.amc)==false)
 	{
 		extensionElements.push(
 			{
@@ -678,16 +689,16 @@ function buildRequisitionResourceEntryFromESIGL(oRequisition,extensionBaseUrlReq
 			}
 		);
 	}
-	if(oRequisition.beginningBalance && isNaN(oRequisition.beginningbalance)==false)
+	if(oRequisition.beginningBalance!=null && isNaN(oRequisition.beginningBalance)==false)
 	{
 		extensionElements.push(
 			{
 				url:"initialStock",
-				valueDecimal:parseFloat(oRequisition.beginningbalance)
+				valueDecimal:parseFloat(oRequisition.beginningBalance)
 			}
 		);
 	}
-	if(oRequisition.quantityDispensed && isNaN(oRequisition.quantityDispensed)==false)
+	if(oRequisition.quantityDispensed!=null && isNaN(oRequisition.quantityDispensed)==false)
 	{
 		extensionElements.push(
 			{
@@ -696,7 +707,7 @@ function buildRequisitionResourceEntryFromESIGL(oRequisition,extensionBaseUrlReq
 			}
 		);
 	}
-	if(oRequisition.quantityReceived && isNaN(oRequisition.quantityReceived)==false)
+	if(oRequisition.quantityReceived!=null && isNaN(oRequisition.quantityReceived)==false)
 	{
 		extensionElements.push(
 			{
@@ -705,7 +716,7 @@ function buildRequisitionResourceEntryFromESIGL(oRequisition,extensionBaseUrlReq
 			}
 		);
 	}
-	if(oRequisition.stockInHand && isNaN(oRequisition.stockInHand)==false)
+	if(oRequisition.stockInHand!=null && isNaN(oRequisition.stockInHand)==false)
 	{
 		extensionElements.push(
 			{
@@ -714,7 +725,7 @@ function buildRequisitionResourceEntryFromESIGL(oRequisition,extensionBaseUrlReq
 			}
 		);
 	}
-	if(oRequisition.stockOutDays && isNaN(oRequisition.stockOutDays)==false)
+	if(oRequisition.stockOutDays!=null && isNaN(oRequisition.stockOutDays)==false)
 	{
 		extensionElements.push(
 			{
@@ -723,7 +734,7 @@ function buildRequisitionResourceEntryFromESIGL(oRequisition,extensionBaseUrlReq
 			}
 		);
 	}
-	if(oRequisition.totalLossesAndAdjustments && isNaN(oRequisition.totalLossesAndAdjustments)==false)
+	if(oRequisition.totalLossesAndAdjustments!=null && isNaN(oRequisition.totalLossesAndAdjustments)==false)
 	{
 		extensionElements.push(
 			{
