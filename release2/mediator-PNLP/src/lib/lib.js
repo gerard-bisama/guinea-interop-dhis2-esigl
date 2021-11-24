@@ -687,6 +687,165 @@ exports.buildRequisitionResourceEntry =function buildRequisitionResourceEntry(re
 	return requisitionEntry;
 	
 }
+exports.buildRequisitionResourceEntryFromESIGL=function buildRequisitionResourceEntryFromESIGL(oRequisition,extensionBaseUrlRequisitionDetails,urlSIGLDomain){
+	let extensionElements=[];
+	var identifierCodingSystem=urlSIGLDomain+"/identifier-type";
+	var oIdentifier=[];
+	let resourceId=oRequisition.requisitionId+"-"+oRequisition.productCode+"-"+oRequisition.programCode;
+	//let tempDate1=moment(oRequisition.periodStartDate,'YYYY-MM-DDTHH:mm:ssZ');
+    let tempDate1=new Date(oRequisition.periodStartDate).toJSON();
+	let createdDate=tempDate1.split("T")[0];
+	//var createdDate=tempDate1.format('YYYY-MM-DD');
+	let requisitionCode={coding:[{system:extensionBaseUrlRequisitionDetails,code:"requisition",display:"requisition"}],text:"requisition"};
+	oIdentifier.push({
+		use:"official",
+		type:{coding:[{system:identifierCodingSystem,code:"requisitionId",display:"requisitionId"}],text:"requisitionId"},
+		value:oRequisition.requisitionId
+	});
+	if(oRequisition.programCode){
+		extensionElements.push(
+			{
+				url:"program",
+				valueReference:{reference:"Organization/"+oRequisition.programCode}
+		});
+	}
+	if(oRequisition.facilityId){
+		extensionElements.push(
+			{
+				url:"location",
+				valueReference:{reference:"Location/"+oRequisition.facilityId}
+		});
+	}
+	if(oRequisition.periodName){
+		extensionElements.push(
+			{
+				url:"periodName",
+				valueString:oRequisition.periodName
+			}
+		);
+	}
+	if(oRequisition.periodStartDate){
+		var tempDate= new Date(oRequisition.periodStartDate).toJSON();
+		extensionElements.push(
+			{
+				url:"startDate",
+				valueDate:tempDate.split("T")[0]
+			}
+		);
+	}
+	if(oRequisition.periodEndDate){
+		var tempDate=new Date(oRequisition.periodEndDate).toJSON();
+
+		extensionElements.push(
+			{
+				url:"endDate",
+				valueDate:tempDate.split("T")[0]
+			}
+		);
+	}
+	if(oRequisition.productCode){
+		extensionElements.push(
+			{
+				url:"product",
+				valueReference:{reference:"Basic/"+oRequisition.productCode}
+			}
+		);
+	}
+	if(oRequisition.amc!=null && isNaN(oRequisition.amc)==false)
+	{
+		extensionElements.push(
+			{
+				url:"averageMonthConsumption",
+				valueDecimal:parseFloat(oRequisition.amc)
+			}
+		);
+	}
+	if(oRequisition.beginningBalance!=null && isNaN(oRequisition.beginningBalance)==false)
+	{
+		extensionElements.push(
+			{
+				url:"initialStock",
+				valueDecimal:parseFloat(oRequisition.beginningBalance)
+			}
+		);
+	}
+	if(oRequisition.quantityDispensed!=null && isNaN(oRequisition.quantityDispensed)==false)
+	{
+		extensionElements.push(
+			{
+				url:"consumedQuantity",
+				valueDecimal:parseFloat(oRequisition.quantityDispensed)
+			}
+		);
+	}
+	if(oRequisition.quantityReceived!=null && isNaN(oRequisition.quantityReceived)==false)
+	{
+		extensionElements.push(
+			{
+				url:"receivedQuantity",
+				valueDecimal:parseFloat(oRequisition.quantityReceived)
+			}
+		);
+	}
+	if(oRequisition.stockInHand!=null && isNaN(oRequisition.stockInHand)==false)
+	{
+		extensionElements.push(
+			{
+				url:"stockOnHand",
+				valueDecimal:parseFloat(oRequisition.stockInHand)
+			}
+		);
+	}
+	if(oRequisition.stockOutDays!=null && isNaN(oRequisition.stockOutDays)==false)
+	{
+		extensionElements.push(
+			{
+				url:"stockOutDay",
+				valueDecimal:parseFloat(oRequisition.stockOutDays)
+			}
+		);
+	}
+	if(oRequisition.totalLossesAndAdjustments!=null && isNaN(oRequisition.totalLossesAndAdjustments)==false)
+	{
+		extensionElements.push(
+			{
+				url:"losses",
+				valueDecimal:parseFloat(oRequisition.totalLossesAndAdjustments)
+			}
+		);
+	}
+	extensionElements.push(
+		{
+			url:"reqElementType",
+			valueString:'requisition'
+		}
+	);
+	//let newRequisitionId=
+	let requisitionResource={
+		resourceType:"Basic",
+		id:resourceId,
+		identifier:oIdentifier,
+		code:requisitionCode,
+		created:createdDate,
+		author:{"reference":"Organization/"+oRequisition.programCode},
+		extension:[
+			{
+				url:extensionBaseUrlRequisitionDetails,
+				extension:extensionElements
+			}
+		]
+	}
+	let requisitionEntry={
+		resource:requisitionResource,
+		request: {
+			method: 'PUT',
+			url: requisitionResource.resourceType + '/' + requisitionResource.id
+		  }
+	}
+	return requisitionEntry;
+	
+}
+
 exports.buildCategoryOptionsMetadata=function buildCategoryOptionsMetadata(prefix,listProducts){
 	let listCategoryOptions=[];
 	for(let product of listProducts)
