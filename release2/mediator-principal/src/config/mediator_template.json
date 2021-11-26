@@ -219,13 +219,6 @@
   ],
   "configDefs": [
     {
-      "param": "appDirectory",
-      "displayName": "Le repertoire de lancement/contexte de l'application",
-      "description": "Le repertoire de lancement/contexte de l'application. Path ou se trouve le fichier package.json",
-      "type": "string",
-      "template": []
-    },
-    {
       "param": "dhis2Server",
       "displayName": "Parametres de connexion au serveur DHIS2",
       "description": "Parametres de connexion au serveur DHIS2",
@@ -335,11 +328,12 @@
 		}
 		
       ]
-    },
+    }
+    ,
     {
       "param": "batchSizeFacilityToSync",
-      "displayName": "Nombre de OU par lot pour le traitemet lors de la sync DHIS2=>Hapi",
-      "description": "Nombre de OU par lot pour le traitemet lors de la sync DHIS2=>Hapi",
+      "displayName": "Nombre de OU par lot pour le traitement lors de la sync DHIS2=>Hapi",
+      "description": "Nombre de OU par lot pour le traitement lors de la sync DHIS2=>Hapi",
       "type": "string",
       "template": []
     },
@@ -363,42 +357,33 @@
       "description": "Url de base pour l'extension du programme",
       "type": "string",
       "template": []
-    },
-    {
-      "param": "synchronizationPeriod",
-      "displayName": "Periode de synchronisation de requisition",
-      "description": "Periode de synchronisation de requisition (Annee-mm)",
-      "type": "string",
-      "template": []
     }
   ],
   "config": {
-    "appDirectory":"/home/server-dev/Documents/dev_repo/guinea-interop-dhis2-esigl/mediator-principal",
     "dhis2Server":{
-		"url":"http://localhost/api",
-		"username":"admin",
+		"url":"https://localhost/api",
+		"username":"user",
 		"password":"pwd"
 		},
 	"hapiServer":{
-    "url":"http://localhost/hapi/fhir",
-    "username":"admin",
-		"password":"pwd"
+    "url":"http://localhost:8080/fhir",
+    "username":"",
+		"password":""
 		},
 	"esiglServer":{
 		"url":"https://localhost",
-		"username":"admin",
+		"username":"user",
 		"password":"pwd",
 		"resourcespath":"/rest-api"
     },
   "elasticsearchServer":{
-      "url":"http://localhost",
-      "username":"admin",
-      "password":"pwd"
+      "url":"http://localhost:9200",
+      "username":"",
+      "password":""
     },
   "batchSizeFacilityToSync":"200",
-  "batchSizeFacilityFromHapi":"200",
+  "batchSizeFacilityFromHapi":"20",
   "extensionBaseUrlProductDetails":"https://www.hl7.org/fhir/StructureDefinition/ProductDetails",
-  "extensionBaseUrlProgramDetails":"https://www.hl7.org/fhir/StructureDefinition/ProgramDetails",
-  "synchronizationPeriod":"2020-01"
+  "extensionBaseUrlProgramDetails":"https://www.hl7.org/fhir/StructureDefinition/ProgramDetails"
   }
 }

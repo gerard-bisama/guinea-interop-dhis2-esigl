@@ -86,7 +86,8 @@ const apiConf=apiConfTemp;
 var mediatorConfigTemp = require('../config/mediator')
 //----------- Pull env mediator config from docker envlist ----------------------------------//
 
-mediatorConfigTemp.config.appDirectory=process.env.MEDIATOR_APPDIRECTORY?process.env.MEDIATOR_APPDIRECTORY:mediatorConfigTemp.config.appDirectory;
+//mediatorConfigTemp.config.appDirectory=process.env.MEDIATOR_APPDIRECTORY?process.env.MEDIATOR_APPDIRECTORY:mediatorConfigTemp.config.appDirectory;
+/*
 mediatorConfigTemp.config.dhis2Server.url=process.env.MEDIATOR_DHIS2SERVER_URL?process.env.MEDIATOR_DHIS2SERVER_URL:mediatorConfigTemp.config.dhis2Server.url;
 mediatorConfigTemp.config.dhis2Server.username=process.env.MEDIATOR_DHIS2SERVER_USERNAME?process.env.MEDIATOR_DHIS2SERVER_USERNAME:mediatorConfigTemp.config.dhis2Server.username;
 mediatorConfigTemp.config.dhis2Server.password=process.env.MEDIATOR_DHIS2SERVER_PASSWORD?process.env.MEDIATOR_DHIS2SERVER_PASSWORD:mediatorConfigTemp.config.dhis2Server.password;
@@ -103,22 +104,12 @@ mediatorConfigTemp.config.batchSizeFacilityToSync=process.env.MEDIATOR_BATCHSIZE
 mediatorConfigTemp.config.batchSizeFacilityFromHapi=process.env.MEDIATOR_BATCHSIZEFACILITYFROMHAPI?process.env.MEDIATOR_BATCHSIZEFACILITYFROMHAPI:mediatorConfigTemp.config.batchSizeFacilityFromHapi;
 mediatorConfigTemp.config.extensionBaseUrlProductDetails=process.env.MEDIATOR_EXTENSIONBASEURLPRODUCTDETAILS?process.env.MEDIATOR_EXTENSIONBASEURLPRODUCTDETAILS:mediatorConfigTemp.config.extensionBaseUrlProductDetails;
 mediatorConfigTemp.config.extensionBaseUrlProgramDetails=process.env.MEDIATOR_EXTENSIONBASEURLPROGRAMDETAILS?process.env.MEDIATOR_EXTENSIONBASEURLPROGRAMDETAILS:mediatorConfigTemp.config.extensionBaseUrlProgramDetails;
-//mediatorConfigTemp.config.synchronizationPeriod=process.env.MEDIATOR_SYNCHRONIZATIONPERIOD?MEDIATOR_SYNCHRONIZATIONPERIOD:mediatorConfigTemp.config.synchronizationPeriod;
-//Update the channel route host
-//var listMediatorChannels=mediatorConfigTemp.defaultChannelConfig;
+*/
 for (let i=0;i< mediatorConfigTemp.defaultChannelConfig.length;i++)
 {
   mediatorConfigTemp.defaultChannelConfig[i].routes[0].host=process.env.MEDIATOR_HOST;
 }
-/*
-console.log("**************************updated route information ***********************");
 
-for(let mediatorChannel of mediatorConfigTemp.defaultChannelConfig)
-{
-  console.log(mediatorChannel.routes[0]);
-}
-console.log("************************** updated route information ***********************");
-*/
 
 const mediatorConfig=mediatorConfigTemp;
 //var port = process.env.NODE_ENV === 'test' ? 7001 : mediatorConfig.endpoints[0].port;
