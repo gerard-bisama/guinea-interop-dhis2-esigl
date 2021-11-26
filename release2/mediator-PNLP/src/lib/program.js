@@ -84,6 +84,7 @@ if(process.env.MEDIATOR_HEARTBEAT)
 }
 const apiConf=apiConfTemp;
 var mediatorConfigTemp = require('../config/mediator')
+/*
 mediatorConfigTemp.config.dhis2Server.url=process.env.MEDIATOR_DHIS2SERVER_URL?process.env.MEDIATOR_DHIS2SERVER_URL:mediatorConfigTemp.config.dhis2Server.url;
 mediatorConfigTemp.config.dhis2Server.username=process.env.MEDIATOR_DHIS2SERVER_USERNAME?process.env.MEDIATOR_DHIS2SERVER_USERNAME:mediatorConfigTemp.config.dhis2Server.username;
 mediatorConfigTemp.config.dhis2Server.password=process.env.MEDIATOR_DHIS2SERVER_PASSWORD?process.env.MEDIATOR_DHIS2SERVER_PASSWORD:mediatorConfigTemp.config.dhis2Server.password;
@@ -102,6 +103,8 @@ mediatorConfigTemp.config.extensionBaseUrlProgramDetails=process.env.MEDIATOR_EX
 mediatorConfigTemp.config.program.name=process.env.MEDIATOR_PROGRAM_NAME?process.env.MEDIATOR_PROGRAM_NAME:mediatorConfigTemp.config.program.name;
 mediatorConfigTemp.config.program.code=process.env.MEDIATOR_PROGRAM_CODE?process.env.MEDIATOR_PROGRAM_CODE:mediatorConfigTemp.config.program.code;
 mediatorConfigTemp.config.maxNbRequisitions2PullPerLoop=process.env.MEDIATOR_MAXREQUISITION2PULLPERPERIOD?process.env.MEDIATOR_MAXREQUISITION2PULLPERPERIOD:mediatorConfigTemp.config.maxNbRequisitions2PullPerLoop;
+
+*/
 for (let i=0;i< mediatorConfigTemp.defaultChannelConfig.length;i++)
 {
   mediatorConfigTemp.defaultChannelConfig[i].routes[0].host=process.env.MEDIATOR_HOST;
@@ -819,17 +822,26 @@ function setupApp () {
     
   });
   ////This endpoint is used to sync from the list of files
-  app.get('/syncrequisition2fhir/:regionid',(req, res) => {
-    const regionId=req.params.regionid;
-    if(!req.query.periodid)
+  app.get('/syncrequisition2fhir',(req, res) => {
+    //const regionId=req.params.regionid;
+    const regionId=config.zoneGeographiqueId;
+    let periodId=config.extractionPeriodId;
+    if (!config.zoneGeographiqueId)
     {
-        console.log(`Le parametre periodId est obligatoire`);
+      logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
+      message:`Le parametre zoneGeographiqueId est obligatoire`});
+    }
+    if(!config.extractionPeriodId)
+    {
+        
+        logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
+      message:`Le parametre periodId est obligatoire`});
         return res.send({});
 
     }
     var operationOutcome=true;
     const eSIGLToken = `Basic ${btoa(config.esiglServer.username+':'+config.esiglServer.password)}`;
-    let periodId=req.query.periodid;
+    
     let keyValueParmsList=[];
     keyValueParmsList.push({key:'partof',value:regionId});
     keyValueParmsList.push({key:'_sort',value:'name'});
@@ -957,8 +969,8 @@ function setupApp () {
                             for(let oRequisition of listAllrequisitions)
                             {
                                 listAllBundleItemRequisitions.push(
-                                    customLibrairy.buildRequisitionResourceEntryFromESIGL(oRequisition,config.extensionBaseUrlRequisitionDetails,
-                                        config.esiglServer.url)
+                                    customLibrairy.buildRequisitionResourceWithRegionRefEntryFromESIGL(oRequisition,config.extensionBaseUrlRequisitionDetails,
+                                        config.esiglServer.url,regionId)
                                 )
                             }
                             operationOutcome=operationOutcome && true;
@@ -1088,8 +1100,8 @@ function setupApp () {
                     for(let oRequisition of listAllrequisitions)
                     {
                         listAllBundleItemRequisitions.push(
-                            customLibrairy.buildRequisitionResourceEntryFromESIGL(oRequisition,config.extensionBaseUrlRequisitionDetails,
-                                config.esiglServer.url)
+                            customLibrairy.buildRequisitionResourceWithRegionRefEntryFromESIGL(oRequisition,config.extensionBaseUrlRequisitionDetails,
+                                config.esiglServer.url,regionId)
                         )
                     }
                     //res.send(listAllBundleItemRequisitions)
@@ -1221,8 +1233,8 @@ function setupApp () {
                   for(let oRequisition of listAllrequisitions)
                   {
                       listAllBundleItemRequisitions.push(
-                          customLibrairy.buildRequisitionResourceEntryFromESIGL(oRequisition,config.extensionBaseUrlRequisitionDetails,
-                              config.esiglServer.url)
+                          customLibrairy.buildRequisitionResourceWithRegionRefEntryFromESIGL(oRequisition,config.extensionBaseUrlRequisitionDetails,
+                              config.esiglServer.url,regionId)
                       )
                   }
                   //callback(listAllrequisitions);
@@ -1324,12 +1336,28 @@ function setupApp () {
 
   });
   app.get('/syncrequisition2dhis',(req, res) => {
+    const syncPeriod=null;
+    if(!req.query.syncperiod)
+    {
+        logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
+      message:`Le parametre syncperiod est obligatoire`});
+        return res.send({});
+
+    }
+    if(req.query.syncperiod.split("-").length>0)
+    {
+      logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
+      message:`Le parametre syncperiod invalid. Utilisé le format YYYY-MM`});
+      return res.send({});
+    }
+
+    syncPeriod=req.query.syncperiod
     globalRes=res;
     logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
     message:`Lancement du processus de synchronisation des requisitions dans DHIS2`});
     const dhis2Token = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
     const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;
-    const currentPeriod = moment(config.synchronizationPeriod,'YYYY-MM');
+    const currentPeriod = moment(syncPeriod,'YYYY-MM');
     const startOfMonth= currentPeriod.startOf('month').format('YYYY-MM-DD');
     const endOfMonth   = currentPeriod.endOf('month').format('YYYY-MM-DD');
     let filterExpresion=[
@@ -2326,7 +2354,8 @@ function  getOpenhimResult(responseMessage, bodyMessage,statusValue,orchestratio
  * server is started
  */
 function start (callback) {
-  var filePath=mediatorConfig.config.appDirectory;
+  //var filePath=mediatorConfig.config.appDirectory;
+  filePath=path.join(process.cwd(),`/data`);
   let processMonth= parseInt(mediatorConfig.config.synchronizationPeriod.split("-")[1]);
   let processYear= parseInt(mediatorConfig.config.synchronizationPeriod.split("-")[0]);
   var indexName=`${mediatorConfig.config.program.name}_activities_${processMonth}-${processYear}`;
