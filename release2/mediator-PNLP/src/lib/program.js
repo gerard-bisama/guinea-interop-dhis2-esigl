@@ -943,13 +943,13 @@ function setupApp () {
                         localAsync.eachSeries(listFacilityMapped, function(facilityMapped, callback) {
                             keyValueParmsList=[];
                             let eSIGLFacilityIdentifier=facilityMapped.identifier.find(id=>id.type.text=="siglid");
-
+                            let dhis2FacilityId=facilityMapped.id;
                             keyValueParmsList.push({key:`facilityId`,value:eSIGLFacilityIdentifier.value});
                             keyValueParmsList.push({key:`periodId`,value:periodId});
                             keyValueParmsList.push({key:`page`,value:0});
                             keyValueParmsList.push({key:`pageSize`,value:100});
                             
-                            getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,
+                            getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,dhis2FacilityId,
                                 function(listRequisitions)
                             {
                                 listAllrequisitions=listAllrequisitions.concat(listRequisitions);
@@ -1072,13 +1072,13 @@ function setupApp () {
                   localAsync.eachSeries(listFacilityMapped, function(facilityMapped, callback) {
                     keyValueParmsList=[];
                     let eSIGLFacilityIdentifier=facilityMapped.identifier.find(id=>id.type.text=="siglid");
-  
+                    let dhis2FacilityId=facilityMapped.id;
                     keyValueParmsList.push({key:`facilityId`,value:eSIGLFacilityIdentifier.value});
                     keyValueParmsList.push({key:`periodId`,value:periodId});
                     keyValueParmsList.push({key:`page`,value:0});
                     keyValueParmsList.push({key:`pageSize`,value:100});
                     
-                    getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,
+                    getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,dhis2FacilityId,
                         function(listRequisitions)
                     {
                         //console.log(`Returns ${listRequisitions.length} requisitons`)
@@ -1204,13 +1204,13 @@ function setupApp () {
               localAsync.eachSeries(listFacilityMapped, function(facilityMapped, callback) {
                   keyValueParmsList=[];
                   let eSIGLFacilityIdentifier=facilityMapped.identifier.find(id=>id.type.text=="siglid");
-
+                  let dhis2FacilityId=facilityMapped.id;
                   keyValueParmsList.push({key:`facilityId`,value:eSIGLFacilityIdentifier.value});
                   keyValueParmsList.push({key:`periodId`,value:periodId});
                   keyValueParmsList.push({key:`page`,value:0});
                   keyValueParmsList.push({key:`pageSize`,value:100});
                   
-                  getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,
+                  getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,dhis2FacilityId,
                       function(listRequisitions)
                   {
                       //console.log(`Returns ${listRequisitions.length} requisitons`)
@@ -1336,22 +1336,21 @@ function setupApp () {
 
   });
   app.get('/syncrequisition2dhis',(req, res) => {
-    const syncPeriod=null;
-    if(!req.query.syncperiod)
-    {
-        logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
-      message:`Le parametre syncperiod est obligatoire`});
-        return res.send({});
-
-    }
-    if(req.query.syncperiod.split("-").length>0)
+    const syncPeriod=config.synchronizationPeriod;
+    
+    if(syncPeriod.split("-").length!=2)
     {
       logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
       message:`Le parametre syncperiod invalid. Utilisé le format YYYY-MM`});
       return res.send({});
     }
 
-    syncPeriod=req.query.syncperiod
+    const regionId=config.zoneGeographiqueId;
+    if (!config.zoneGeographiqueId)
+    {
+      logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
+      message:`Le parametre zoneGeographiqueId est obligatoire`});
+    }
     globalRes=res;
     logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
     message:`Lancement du processus de synchronisation des requisitions dans DHIS2`});
@@ -1380,6 +1379,10 @@ function setupApp () {
       {
         key:"author",
         value:config.program.code
+      },
+      {
+        key:"subject",
+        value:regionId
       }
 
     ];
@@ -1431,6 +1434,7 @@ function setupApp () {
     
         getListHapiResourceByFilter(hapiToken,fhirProgramResource,filterProgram,(programResource)=>{
           //console.log(programResource);
+          //return res.send(programResource);
           if(programResource.length>0)
           {
             var oProgIdentifier=programResource[0].resource.identifier.find(id=>id.type.text=="dhisId");
@@ -1469,14 +1473,15 @@ function setupApp () {
                 }
                 let listCustomRequisitionObjects = customLibrairy.buildObjectDetailsRequisitionList(listRequisitions,
                   listProgramProducts,progDhisId);
-
+                  //return res.send(listCustomRequisitionObjects);
                 let adxRequisitionObjectLists=customLibrairy.buildADXPayloadFromRequisitionsList(listCustomRequisitionObjects,
                   metadataConfig.dataElements,config.program);
                   /* logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/saveAdxData2Dhis`,result:typeResult.iniate,
                   message:`Insertion des elements  de requisitions dans DHIS2`}); */
                   logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/api/saveAdxData2Dhis`,result:typeResult.iniate,
-                  message:`Importation des donnees des requisitions dans DHIS2`});
-                saveAdxData2Dhis(dhis2Token,adxRequisitionObjectLists,(adxSaveResults)=>{
+                  message:`Importation des ${listCustomRequisitionObjects.length} élements des requisitions dans DHIS2`});
+                  return res.send(adxRequisitionObjectLists);
+                  saveAdxData2Dhis(dhis2Token,adxRequisitionObjectLists,(adxSaveResults)=>{
                   if(adxSaveResults){
 
                     let importChildStatus=adxSaveResults.children.find(children=>children.name=="status");
@@ -1843,7 +1848,7 @@ function saveBundle2Fhir(fhirToken,fhirResource,bundle,callback){
 function getListHapiResourceByFilter(hapiToken,fhirResource,filterExpressionDic,callbackMain)
 {
   //to comment
-  return callbackMain([{id:1},{id:2}]);
+  //return callbackMain([{id:1},{id:2}]);
   let localNeedle = require('needle');
     localNeedle.defaults(
         {
@@ -2026,7 +2031,7 @@ function getListHapiResourceByFilterCurl(hapiToken,fhirResource,filterExpression
     url = url.toString();
     let args="";
 
-    //console.log(`Url: ${url}`);
+    console.log(`Url: ${url}`);
     localAsync.whilst(
       callback => {
           return callback(null, url !== false);
@@ -2150,7 +2155,7 @@ function getListHapiResource(hapiToken,fhirResource,callbackMain)
 
 
 }
-function getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,callbackMain)
+function getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,dhis2FacilityId,callbackMain)
   {
     let localNeedle = require('needle');
       localNeedle.defaults(
@@ -2253,12 +2258,19 @@ function getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,cal
             
             logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/getListApprovedRequisitionsByFacility3`,result:typeResult.success,
                     message:`Total ${resourceData.length} Requisitions fetch completed for facility ${initFacilityId}`})
-            let listApprovedRequisition=resourceData.filter(element =>{
+            let listApprovedRequisitionTemp=resourceData.filter(element =>{
                 if(element.requisitionStatus=="APPROVED" && element.programCode==config.program.code)
                 {
                     return element;
                 }
             })
+            let listApprovedRequisition=[];
+            for(let requisition of listApprovedRequisitionTemp)
+            {
+              let requisitionWithDhisId=requisition;
+              requisitionWithDhisId.facilityId=dhis2FacilityId;
+              listApprovedRequisition.push(requisitionWithDhisId);
+            }
             logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/getListApprovedRequisitionsByFacility3`,result:typeResult.success,
                   message:`${config.program.code}: ${listApprovedRequisition.length} approuved requisitions/${resourceData.length} total`})
             return callbackMain(listApprovedRequisition);
