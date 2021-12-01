@@ -25,6 +25,7 @@ var fhirLocationResource="Location";
 var dhisCategoryOption="categoryOptions";
 var dhisCategory="categories";
 var dhisCategoryCombo="categoryCombos";
+var dhisCategoryComboOptions="categoryOptionCombos";
 var prodIDPrefixe="prod";
 var typeOpenhimResultStatus={
   successful:"Successful",
@@ -718,7 +719,17 @@ logger = createLogger({
     const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;
     logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/program`,result:typeResult.iniate,
     message:`HAPI: Extraction de la liste des programmes`});
-    getListHapiResource(hapiToken,fhirProgramResource,(listProgramsEntries)=>{
+    let filterExpresion=[];
+    if(config.program.code)
+    {
+      filterExpresion=[
+        {
+          key:"_id",
+          value:config.program.code
+        }
+      ];
+    }
+      getListHapiResourceByFilter(hapiToken,fhirProgramResource,filterExpresion,(listProgramsEntries)=>{
       //res.status(200).send(listProgramsEntry);
       logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/program`,result:typeResult.success,
       message:`HAPI: ${listProgramsEntries.length} programmes extraits`});
@@ -977,6 +988,82 @@ logger = createLogger({
 
     });//end getListHapiResource
   });
+  app.get('/updatecatcombodhis', (req, res) => {
+    globalRes=res;
+    var operationOutcome=true;
+    logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/updatecatcombodhis",result:typeResult.iniate,
+    message:`Lancement du processus des mises à jour des categoryOptionCombos dans DHIS2`});
+    const dhis2Token = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
+    const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;
+    logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/program`,result:typeResult.iniate,
+    message:`HAPI: Extraction de la liste des programmes`});
+    let listProductName=[];
+    let filterExpresion=[];
+    let listProductDetails=[];
+    if(config.program.code)
+    {
+      filterExpresion=[
+        {
+          key:"_id",
+          value:config.program.code
+        }
+      ];
+    }
+    getListHapiResourceByFilter(hapiToken,fhirProgramResource,filterExpresion,(listProgramsEntries)=>{
+      logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/program`,result:typeResult.success,
+      message:`HAPI: ${listProgramsEntries.length} programmes extraits`});
+      let async = require('async');
+      async.eachSeries(listProgramsEntries, function(programEntry, nextStep) {
+        var listResourceIds=[];
+        for(let extensionElement of programEntry.resource.extension[0].extension)
+        {
+          if(extensionElement.url=="providedProducts")
+          {
+            listResourceIds.push(extensionElement.valueReference.reference.split("/")[1]);
+          }
+        }
+        logger.log({level:levelType.info,operationType:typeOperation.getData,action:"/fhir/product",result:typeResult.iniate,
+        message:`Extraction des details sur les produits du programme ${programEntry.resource.name}`});
+        getListHAPIResourcesByIdsChunk(hapiToken,fhirProductResource,listResourceIds,config.batchSizeFacilityFromHapi,(listProductEntries)=>{
+          logger.log({level:levelType.info,operationType:typeOperation.getData,action:"/fhir/product",result:typeResult.success,
+          message:`Extraction des ${listProductEntries.length} produits du programme ${programEntry.resource.name} effectuees`});
+          
+          for(let productEntry of listProductEntries)
+          {
+            let productDetail=productEntry.extension[0].extension.find(extElement=>extElement.url=="primaryName");
+            listProductDetails.push(
+              {
+                id:productEntry.id,
+                name:productDetail.valueString
+              }
+            )
+            
+            listProductName=listProductName.concat(productDetail.valueString);
+          }
+          nextStep();
+          
+        });//end getListHAPIResourcesByIds(...)
+        
+      },(err)=>{
+        logger.log({level:levelType.info,operationType:typeOperation.getData,action:"/updatecatcombodhis",result:typeResult.iniate,
+        message:`Search for catCamboOptions`});
+        getListDHISResourceByParamsChunk(dhis2Token,dhisCategoryComboOptions,listProductName,20,
+          (listDhisCategoryComboOptions)=>{
+            logger.log({level:levelType.info,operationType:typeOperation.getData,action:"/updatecatcombodhis",result:typeResult.success,
+            message:`${listDhisCategoryComboOptions.length} catCamboOptions retreived`});
+            let listCatComboPayLoadToUpdate=customLibrairy.buildCategoryComboOptionsMetadata(listProductDetails,listDhisCategoryComboOptions);
+            //return res.send(listCatComboPayLoadToUpdate);
+            logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/updatecatcombodhis",result:typeResult.iniate,
+            message:`${listCatComboPayLoadToUpdate.length} formatted and ready to be update in DHIS2`});
+            partialUpdateMetadataList2Dhis(dhis2Token,dhisCategoryComboOptions,listCatComboPayLoadToUpdate,
+              (dhisUpdateOperation)=>{
+                return res.send(dhisUpdateOperation);
+              });
+          })
+      })//end of async
+    });// end of getListHapiResourceByFilter
+    
+  });
 
   return app
 }
@@ -1108,7 +1195,10 @@ function getListDHIS2ResourceByFilter(dhis2Token,dhisResource,filterExpressionDi
   {
     url.addQuery(dic.key, dic.value);
   }
-  url = url.toString();
+  url = url.toString(url);
+  
+  /*console.log(url)
+  console.log(`-------------------------------`)*/
   localAsync.whilst(
       callback => {
           return callback(null, url !== false);
@@ -1175,6 +1265,148 @@ function getListHapiResource(hapiToken,fhirResource,callbackMain)
     let localAsync = require('async');
     var resourceData = [];
     var url= URI(config.hapiServer.url).segment(fhirResource);
+    url.addQuery('_format', "json");
+    url = url.toString();
+    localAsync.whilst(
+      callback => {
+          return callback(null, url !== false);
+        },
+      callback => {
+          
+          localNeedle.get(url,options, function(err, resp) {
+              //url = false;
+              if (err) {
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`${err.Error}`});
+                return callback(true, false);
+              }
+              if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
+              logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`Code d'erreur http: ${resp.statusCode}`});
+                  return callback(true, false);
+              }
+              let body = JSON.parse(resp.body);
+              if (!body.entry) {
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`Ressource invalid retourner par le serveur FHIR: ${resp.statusCode}`});
+                return callback(true, false);
+              }
+              if (body.total === 0 && body.entry && body.entry.length > 0) {
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                message:`Aucune resource retourne par le serveur HAPI: ${resp.statusCode}`});
+                return callback(true, false);
+              }
+              url = false;
+              if (body.entry && body.entry.length > 0) {
+                  resourceData = resourceData.concat(body.entry);
+              }
+              const next =  body.link && body.link.find(link => link.relation === 'next');
+
+              if(next)
+              {
+                  url = next.url;;
+              }
+              return callback(null, url);
+          })//end of needle.get
+            
+      },//end callback 2
+      err=>{
+          return callbackMain(resourceData);
+
+      }
+  );//end of async.whilst
+
+
+
+}
+function getListHapiResourceByFilter(hapiToken,fhirResource,filterExpressionDic,callbackMain)
+{
+  //to comment
+  //return callbackMain([{id:1},{id:2}]);
+  let localNeedle = require('needle');
+    localNeedle.defaults(
+        {
+            open_timeout: 600000
+        });
+    let options={headers:{'Content-Type': 'application/json','Authorization':hapiToken}};
+    let localAsync = require('async');
+    var resourceData = [];
+    var url= URI(config.hapiServer.url).segment(fhirResource);
+    url.addQuery('_format', "json");
+    for(let dic of filterExpressionDic)
+    {
+      url.addQuery(dic.key, dic.value);
+    }
+    let currentNbreOfResource=0;
+    url = url.toString();
+    //console.log(`Url: ${url}`);
+    localAsync.whilst(
+      callback => {
+          return callback(null, url !== false);
+        },
+      callback => {
+          
+          localNeedle.get(url,options, function(err, resp) {
+              ////url = false;
+              if (err) {
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`${err.message}`});
+                return callback(true, false);
+              }
+              if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                              message:`Code d'erreur http: ${resp.statusCode}`});
+                  return callback(true, false);
+              }
+              let body = JSON.parse(resp.body);
+              if (!body.entry) {
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`Ressource invalid retourner par le serveur FHIR: ${resp.statusCode}`});
+                return callback(true, false);
+              }
+              if (body.total === 0 && body.entry && body.entry.length > 0) {
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                message:`Aucune resource retourne par le serveur HAPI: ${resp.statusCode}`});
+                return callback(true, false);
+              }
+              url=false;
+              if (body.entry && body.entry.length > 0) {
+                currentNbreOfResource+=body.entry.length;
+                /* logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${fhirResource} page:${currentNbreOfResource}`,
+                result:typeResult.success,message:`Extraction de  ${body.entry.length} ${fhirResource} de HAPI`}); */
+                  resourceData = resourceData.concat(body.entry);
+              }
+              const next =  body.link && body.link.find(link => link.relation === 'next');
+
+              if(next)
+              {
+                  url = next.url;;
+              }
+              return callback(null, url);
+          })//end of needle.get
+            
+      },//end callback 2
+      err=>{
+          return callbackMain(resourceData);
+
+      }
+  );//end of async.whilst
+
+
+
+}
+function getListHapiProductResource(hapiToken,callbackMain)
+{
+  let localNeedle = require('needle');
+    localNeedle.defaults(
+        {
+            open_timeout: 600000
+        });
+    let options={headers:{'Content-Type': 'application/json','Authorization':hapiToken}};
+    let localAsync = require('async');
+    var resourceData = [];
+    var url= URI(config.hapiServer.url).segment("Basic");
+    url.addQuery('code', "product");
     url.addQuery('_format', "json");
     url = url.toString();
     localAsync.whilst(
@@ -1444,6 +1676,31 @@ function getListHAPIResourcesByIdsChunk(hapiToken,fhirResource,listResourcesIds,
     callbackMain(listResources);
   });//end of localAsync.each
 }
+function getListDHISResourceByParamsChunk(dhis2Token,dhisResource,listResourcesParams,batchSizeResourceFromDHIS,callbackMain){
+  //let listResourceParamsChunked=chunckOfResources(listResourcesParams,batchSizeResourceFromDHIS);
+  let localAsync = require('async');
+  let listCategoryComboOptions=[]
+  localAsync.eachSeries(listResourcesParams, function(resourceParamsChuncked, callback) {
+    
+    let filterExpression=[
+      {
+        key:'filter',
+        value:`name:eq:${resourceParamsChuncked.toString()}`
+      }
+    ];
+    getListDHIS2ResourceByFilter(dhis2Token,dhisCategoryComboOptions,filterExpression,(resCategoryCombinationOptions)=>{
+      /*console.log(resCategoryCombinationOptions);
+      console.log(`############################"`)*/
+      listCategoryComboOptions=listCategoryComboOptions.concat(resCategoryCombinationOptions)
+      callback();
+    })
+  },function(error){
+    /*console.log(listCategoryComboOptions);
+    console.log(`############################"`)*/
+    callbackMain(listCategoryComboOptions) 
+  });
+}
+
 function saveBundle2Fhir(fhirToken,fhirResource,bundle,callback){
     let localNeedle = require('needle');
     localNeedle.defaults(
@@ -1495,7 +1752,7 @@ function saveMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
       {
           logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${url}`,result:typeResult.failed,
                       message:`${err.Error}`});
-          nextResource(err);
+          return nextResource(err);
 
       }
       dicOperationResults.push({
@@ -1598,6 +1855,51 @@ function updateMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
     let url= URI(config.dhis2Server.url).segment(dhisResource).segment(metadata.id);
     url=url.toString();
     localNeedle.put(url,JSON.stringify(metadata),options,function(err,resp){
+      if(err)
+      {
+          logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisResource}`,result:typeResult.failed,
+                      message:`${err.Error}`});
+          nextResource(err);
+          
+      }
+      dicOperationResults.push({
+        httpStatus:resp.body.httpStatus,
+        metadata:metadata
+      });
+      if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
+        logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisResource}`,result:typeResult.failed,
+                          message:`Code d'erreur http: ${resp.statusCode}`});
+      }
+      nextResource();
+      
+    });//end localNeedle
+  },(err)=>{
+    if(err)
+    {
+      /* logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${dhisResource}`,result:typeResult.failed,
+      message:`${err.message}`}); */
+    }
+    callback(dicOperationResults);
+    
+  });//end localAsync
+  
+
+}
+function partialUpdateMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
+  let localNeedle = require('needle');
+  let localAsync = require('async');
+  let dicOperationResults=[];
+  localNeedle.defaults(
+      {
+          open_timeout: 600000
+      });
+  
+  //url = url.toString();
+  let options={headers:{'Content-Type': 'application/json','Authorization':dhis2Token}};
+  localAsync.eachSeries(listMetadata, function(metadata, nextResource) {
+    let url= URI(config.dhis2Server.url).segment(dhisResource).segment(metadata.id);
+    url=url.toString();
+    localNeedle.patch(url,JSON.stringify(metadata),options,function(err,resp){
       if(err)
       {
           logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisResource}`,result:typeResult.failed,

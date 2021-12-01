@@ -328,18 +328,22 @@ exports.buildProgamProductRessourceBundle =function buildProgamProductRessourceB
 			);
 		}
 		if(oProduct.primaryName){
+			let cleanedProductName= oProduct.primaryName.split(",").join(" ");
+			cleanedProductName= cleanedProductName.split("/").join(" ");
 			extensionElements.push(
 				{
 					url:"primaryName",
-					valueString:oProduct.primaryName
+					valueString:cleanedProductName
 				}
 			);
 		}
 		if(oProduct.fullName){
+			let cleanedProductName= oProduct.fullName.split(",").join(" ");
+			cleanedProductName= cleanedProductName.split("/").join(" ");
 			extensionElements.push(
 				{
 					url:"fullName",
-					valueString:oProduct.fullName
+					valueString:cleanedProductName
 				}
 			);
 		}
@@ -506,6 +510,25 @@ exports.buildCategoryOptionsMetadata=function buildCategoryOptionsMetadata(prefi
 		listCategoryOptions.push(oCategioryOption);
 	}
 	return listCategoryOptions;
+}
+exports.buildCategoryComboOptionsMetadata=function buildCategoryComboOptionsMetadata(listProduct,listGeneratedCatComboOptions){
+	let listCategoryComboOptions=[];
+	for(let catComboOptions of listGeneratedCatComboOptions)
+	{
+		let nameCatComboOptions=catComboOptions.displayName.split(" ").join("");
+		let relatedProduct=listProduct.find(oProduct=>oProduct.name.split(" ").join("")== nameCatComboOptions)
+		if(relatedProduct)
+		{
+			let oCategioryComboOption={
+				id:catComboOptions.id,
+				code:relatedProduct.id,
+				
+			}
+			listCategoryComboOptions.push(oCategioryComboOption);
+		}
+		
+	}
+	return listCategoryComboOptions;
 }
 exports.buildCategoryMetadata=function buildCategoryMetadata(programResource){
 	let oIdentifier=programResource.identifier.find(id=>id.type.text=="dhisId");

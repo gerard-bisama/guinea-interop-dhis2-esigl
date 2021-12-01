@@ -204,6 +204,46 @@
       "type": "http",
       "authType": "public",
       "status": "enabled"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PUT",
+        "OPTIONS",
+        "HEAD",
+        "TRACE",
+        "CONNECT",
+        "PATCH"
+      ],
+      "name": "4-[Principal] Mettre à jour les categoryOptionCombos avant la synchro FHIR-DHIS2",
+      "urlPattern": "^/updatecatcombodhis/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Synchroniser le programmes et les produits associes avec DHIS2",
+          "host": "localhost",
+          "port": "5021",
+          "primary": true,
+          "path": "/updatecatcombodhis",
+          "type": "http",
+          "secured": false,
+          "username": "",
+          "password": ""
+        }
+        
+      ],
+      "allow": [],
+      "type": "http",
+      "authType": "public",
+      "status": "enabled"
     }
     
   ],
@@ -357,6 +397,20 @@
       "description": "Url de base pour l'extension du programme",
       "type": "string",
       "template": []
+    },
+    {
+      "param": "program",
+      "displayName": "Parametres du mediateur du programme a synchroniser",
+      "description": "Parametres du mediateur du programme a synchroniser",
+      "type": "struct",
+      "template": [
+		{
+			"param": "code",
+			"displayName": "Code eSIGL du programme",
+			"description": "Code eSIGL du programme avec respect de la case. (P.ex: SIGL-INTEGRE-PNLP)",
+			"type": "string"
+		}
+      ]
     }
   ],
   "config": {
@@ -366,7 +420,7 @@
 		"password":"pwd"
 		},
 	"hapiServer":{
-    "url":"http://localhost:8080/fhir",
+    "url":"http://localhost/fhir",
     "username":"",
 		"password":""
 		},
@@ -384,6 +438,9 @@
   "batchSizeFacilityToSync":"200",
   "batchSizeFacilityFromHapi":"20",
   "extensionBaseUrlProductDetails":"https://www.hl7.org/fhir/StructureDefinition/ProductDetails",
-  "extensionBaseUrlProgramDetails":"https://www.hl7.org/fhir/StructureDefinition/ProgramDetails"
+  "extensionBaseUrlProgramDetails":"https://www.hl7.org/fhir/StructureDefinition/ProgramDetails",
+  "program":{
+    "code":"SIGL-INTEGRE-PNLP"
+  }
   }
 }
