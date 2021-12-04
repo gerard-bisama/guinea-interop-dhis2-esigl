@@ -1039,6 +1039,7 @@ exports.buildDataElementMetadata=function buildDataElementMetadata(programCode,p
 			valueType: "NUMBER",
 			aggregationType:"SUM",
 			domainType:"AGGREGATE",
+			zeroIsSignificant:true,
 			categoryCombo:{
 				id:categoryCombinationId
 			}
@@ -1126,7 +1127,8 @@ exports.buildObjectDetailsRequisitionList=function(listRequisitions,listProductW
 					var codeProduct=extension.valueReference.reference.split("/")[1];
 					let reqProduct=listProductWithDetails.find(oProduct=>oProduct.id==codeProduct);
 					let dhisIdentifier=reqProduct.identifier.find(id=>id.type.text=="dhisId");
-					requisitionDetails.product=dhisIdentifier.value;
+					//requisitionDetails.product=dhisIdentifier.value;
+					requisitionDetails.product=codeProduct;
 					break;
 				case "program":
 					requisitionDetails.program=programId;

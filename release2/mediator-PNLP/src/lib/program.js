@@ -462,7 +462,7 @@ function setupApp () {
             //console.log(resOpCreationDataElement);
             //console.log(JSON.stringify(resOpCreationDataElement[0]));
             if(resOpCreationDataElement && resOpCreationDataElement.length>0){
-              
+              let listDataElements2Update=[];
               operationOutcome=operationOutcome&&true;
               let invalidResOperation=resOpCreationDataElement.filter(element=>{
                 if(element.httpStatus != "Conflict" && element.httpStatus != "Created" )
@@ -470,12 +470,76 @@ function setupApp () {
                   return element;
                 }
               });
-              //console.log(`Invalide result ${invalidResOperation.length}`);
               logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/api/dataElements`,result:typeResult.success,
               message:`DHIS2: Creation des ${listDataElementsMetadata.length - invalidResOperation.length} elements des donnees du programme`});
-              logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/genprogmetadata`,result:typeResult.success,
-              message:`DHIS2: Creation des ${listDataElementsMetadata.length - invalidResOperation.length} elements des donnees du programme`});
-            
+             
+              let tempList= resOpCreationDataElement.filter(element=>{
+                if(element.httpStatus == "Conflict")
+                {
+                  return element;
+                }
+              });
+              for(let opResponse of tempList){
+                listDataElements2Update.push(opResponse.metadata);
+              } 
+              if(listDataElements2Update.length>0)
+              {
+                logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/api/dataElements`,result:typeResult.iniate,
+                message:`Lancement de la mise a jour des éléments des données `});
+              }
+
+              updateMetadataList2Dhis(dhis2Token,dhisDataElement,listDataElements2Update,(dhisUpdateOperation)=>{
+                logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/api/dataElements`,result:typeResult.success,
+                message:`${listDataElements2Update.length} dataElements  mise a jour`});
+                let urn = mediatorConfig.urn;
+                let status = '';
+                let response = {};
+                if(operationOutcome)
+                {
+                  status = 'Successful';
+                  response = {
+                    status: 200,
+                    headers: {
+                    'content-type': 'application/json'
+                    },
+                    body:JSON.stringify( {'Process':`L'operation de creation des elements des donnees dans DHIS2 effectuees avec success`}),
+                    timestamp: new Date().getTime()
+                  };
+                }
+                else{
+                  status = 'Failed';
+                  response = {
+                    status: 500,
+                    headers: {
+                    'content-type': 'application/json'
+                    },
+                    body:JSON.stringify( {'Process':`Echec de creation des elements des donnees dans DHIS2`}),
+                    timestamp: new Date().getTime()
+                  };
+                }
+                var orchestrationToReturn=[
+                {
+                  name: "genprogmetadata",
+                  request: {
+                    path :"/genprogmetadata",
+                    headers: {'Content-Type': 'application/json'},
+                    querystring: "",
+                    body:JSON.stringify( {'Process':`Operation de creation des elements des donnees dans DHIS2`}),
+                    method: "POST",
+                    timestamp: new Date().getTime()
+                  },
+                  response: response
+                }];
+                var returnObject = {
+                  "x-mediator-urn": urn,
+                  "status": status,
+                  "response": response,
+                  "orchestrations": orchestrationToReturn,
+                  "properties": ""
+                }
+                res.set('Content-Type', 'application/json+openhim');
+                res.status(response.status).send(returnObject);
+              });//end updateMetadataList2Dhis
             }
             else{
               operationOutcome=operationOutcome&&false;
@@ -483,55 +547,56 @@ function setupApp () {
               message:`DHIS2: Erreur lors de la creation des elements des donnees du programme`});
               logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/genprogmetadata`,result:typeResult.failed,
               message:`DHIS2: Erreur lors de la creation des elements des donnees du programme`});
-            }
-            let urn = mediatorConfig.urn;
-            let status = '';
-            let response = {};
-            if(operationOutcome)
-            {
-              status = 'Successful';
-              response = {
-                status: 200,
-                headers: {
-                'content-type': 'application/json'
+              let urn = mediatorConfig.urn;
+              let status = '';
+              let response = {};
+              if(operationOutcome)
+              {
+                status = 'Successful';
+                response = {
+                  status: 200,
+                  headers: {
+                  'content-type': 'application/json'
+                  },
+                  body:JSON.stringify( {'Process':`L'operation de creation des elements des donnees dans DHIS2 effectuees avec success`}),
+                  timestamp: new Date().getTime()
+                };
+              }
+              else{
+                status = 'Failed';
+                response = {
+                  status: 500,
+                  headers: {
+                  'content-type': 'application/json'
+                  },
+                  body:JSON.stringify( {'Process':`Echec de creation des elements des donnees dans DHIS2`}),
+                  timestamp: new Date().getTime()
+                };
+              }
+              var orchestrationToReturn=[
+              {
+                name: "genprogmetadata",
+                request: {
+                  path :"/genprogmetadata",
+                  headers: {'Content-Type': 'application/json'},
+                  querystring: "",
+                  body:JSON.stringify( {'Process':`Operation de creation des elements des donnees dans DHIS2`}),
+                  method: "POST",
+                  timestamp: new Date().getTime()
                 },
-                body:JSON.stringify( {'Process':`L'operation de creation des elements des donnees dans DHIS2 effectuees avec success`}),
-                timestamp: new Date().getTime()
-              };
+                response: response
+              }];
+              var returnObject = {
+                "x-mediator-urn": urn,
+                "status": status,
+                "response": response,
+                "orchestrations": orchestrationToReturn,
+                "properties": ""
+              }
+              res.set('Content-Type', 'application/json+openhim');
+              res.status(response.status).send(returnObject);
             }
-            else{
-              status = 'Failed';
-              response = {
-                status: 500,
-                headers: {
-                'content-type': 'application/json'
-                },
-                body:JSON.stringify( {'Process':`Echec de creation des elements des donnees dans DHIS2`}),
-                timestamp: new Date().getTime()
-              };
-            }
-            var orchestrationToReturn=[
-            {
-              name: "genprogmetadata",
-              request: {
-                path :"/genprogmetadata",
-                headers: {'Content-Type': 'application/json'},
-                querystring: "",
-                body:JSON.stringify( {'Process':`Operation de creation des elements des donnees dans DHIS2`}),
-                method: "POST",
-                timestamp: new Date().getTime()
-              },
-              response: response
-            }];
-            var returnObject = {
-              "x-mediator-urn": urn,
-              "status": status,
-              "response": response,
-              "orchestrations": orchestrationToReturn,
-              "properties": ""
-            }
-            res.set('Content-Type', 'application/json+openhim');
-            res.status(response.status).send(returnObject);
+            
           })//end saveMetadataList2Dhis(dhisDataElement)
       }
       else 
@@ -1480,7 +1545,7 @@ function setupApp () {
                   message:`Insertion des elements  de requisitions dans DHIS2`}); */
                   logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/api/saveAdxData2Dhis`,result:typeResult.iniate,
                   message:`Importation des ${listCustomRequisitionObjects.length} élements des requisitions dans DHIS2`});
-                  return res.send(adxRequisitionObjectLists);
+                  //return res.send(adxRequisitionObjectLists);
                   saveAdxData2Dhis(dhis2Token,adxRequisitionObjectLists,(adxSaveResults)=>{
                   if(adxSaveResults){
 
@@ -2307,6 +2372,52 @@ function saveAdxData2Dhis(dhis2Token,adxPayload,callback){
   
 
 }
+function updateMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
+  let localNeedle = require('needle');
+  let localAsync = require('async');
+  let dicOperationResults=[];
+  localNeedle.defaults(
+      {
+          open_timeout: 600000
+      });
+  
+  //url = url.toString();
+  let options={headers:{'Content-Type': 'application/json','Authorization':dhis2Token}};
+  localAsync.eachSeries(listMetadata, function(metadata, nextResource) {
+    let url= URI(config.dhis2Server.url).segment(dhisResource).segment(metadata.id);
+    url=url.toString();
+    localNeedle.put(url,JSON.stringify(metadata),options,function(err,resp){
+      if(err)
+      {
+          logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisResource}`,result:typeResult.failed,
+                      message:`${err.Error}`});
+          nextResource(err);
+          
+      }
+      dicOperationResults.push({
+        httpStatus:resp.body.httpStatus,
+        metadata:metadata
+      });
+      if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
+        logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${dhisResource}`,result:typeResult.failed,
+                          message:`Code d'erreur http: ${resp.statusCode}`});
+      }
+      nextResource();
+      
+    });//end localNeedle
+  },(err)=>{
+    if(err)
+    {
+      /* logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${dhisResource}`,result:typeResult.failed,
+      message:`${err.message}`}); */
+    }
+    callback(dicOperationResults);
+    
+  });//end localAsync
+  
+
+}
+
 function  getOpenhimResult(responseMessage, bodyMessage,statusValue,orchestrationName,HttpMethod)
 {
   let urn = mediatorConfig.urn;
