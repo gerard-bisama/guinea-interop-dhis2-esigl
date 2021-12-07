@@ -887,21 +887,42 @@ function setupApp () {
     
   });
   ////This endpoint is used to sync from the list of files
-  app.get('/syncrequisition2fhir',(req, res) => {
+  app.get('/syncrequisition2fhir/:regionid',(req, res) => {
     //const regionId=req.params.regionid;
-    const regionId=config.zoneGeographiqueId;
+    var regionId;
+    if(req.params.regionid)
+    {
+      regionId=req.params.regionid
+    }
+    else
+    {
+      regionId=config.zoneGeographiqueId;
+    }
+    
     let periodId=config.extractionPeriodId;
+    /*
     if (!config.zoneGeographiqueId)
     {
       logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
       message:`Le parametre zoneGeographiqueId est obligatoire`});
-    }
+    }*/
     if(!config.extractionPeriodId)
     {
         
-        logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
+        logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.iniate,
       message:`Le parametre periodId est obligatoire`});
         return res.send({});
+
+    }
+    if (!regionId)
+    {
+      logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.iniate,
+      message:`Le parametre zoneGeographiqueId est obligatoire`});
+      let responseMessage=`Erreur: Echec lors lors de la synchro des données dans DHIS2`;
+      let bodyMessage=`Le variable zonegeographiqueId non defini`;
+      let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"/syncrequisition2fhir","GET");
+      res.set('Content-Type', 'application/json+openhim');
+      return res.status(returnObject.response.status).send(returnObject);
 
     }
     var operationOutcome=true;
@@ -1409,12 +1430,32 @@ function setupApp () {
       message:`Le parametre syncperiod invalid. Utilisé le format YYYY-MM`});
       return res.send({});
     }
-
+    /*
     const regionId=config.zoneGeographiqueId;
     if (!config.zoneGeographiqueId)
     {
       logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
       message:`Le parametre zoneGeographiqueId est obligatoire`});
+    }*/
+    var regionId;
+    if(req.params.regionid)
+    {
+      regionId=req.params.regionid
+    }
+    else
+    {
+      regionId=config.zoneGeographiqueId;
+    }
+    if (!regionId)
+    {
+      logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
+      message:`Le parametre zoneGeographiqueId est obligatoire`});
+      let responseMessage=`Erreur: Echec lors lors de la synchro des données dans DHIS2`;
+      let bodyMessage=`Le variable zonegeographiqueId non defini`;
+      let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"/syncrequisition2dhis","GET");
+      res.set('Content-Type', 'application/json+openhim');
+      return res.status(returnObject.response.status).send(returnObject);
+
     }
     globalRes=res;
     logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
