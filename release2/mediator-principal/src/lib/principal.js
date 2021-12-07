@@ -1057,6 +1057,8 @@ logger = createLogger({
             message:`${listCatComboPayLoadToUpdate.length} formatted and ready to be update in DHIS2`});
             partialUpdateMetadataList2Dhis(dhis2Token,dhisCategoryComboOptions,listCatComboPayLoadToUpdate,
               (dhisUpdateOperation)=>{
+                logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/updatecatcombodhis",result:typeResult.success,
+                message:`${listCatComboPayLoadToUpdate.length} formatted and updated in in DHIS2`});
                 return res.send(dhisUpdateOperation);
               });
           })
