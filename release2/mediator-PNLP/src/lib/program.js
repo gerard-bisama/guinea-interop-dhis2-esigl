@@ -1421,7 +1421,7 @@ function setupApp () {
     
 
   });
-  app.get('/syncrequisition2dhis',(req, res) => {
+  app.get('/syncrequisition2dhis/:regionid',(req, res) => {
     const syncPeriod=config.synchronizationPeriod;
     
     if(syncPeriod.split("-").length!=2)
