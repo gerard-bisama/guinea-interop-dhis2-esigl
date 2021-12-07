@@ -710,9 +710,29 @@ logger = createLogger({
     
   });
 
-  app.get('/syncprogramproduct2dhis', (req, res) => {
+  app.get('/syncprogramproduct2dhis/:programcode', (req, res) => {
     globalRes=res;
     var operationOutcome=true;
+    var programCode;
+    if(req.params.programcode)
+    {
+      programCode=req.params.programcode
+    }
+    else
+    {
+      programCode=config.program.code;
+    }
+    if (!programCode)
+    {
+      logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncprogramproduct2dhis",result:typeResult.iniate,
+      message:`Le parametre programCode est obligatoire`});
+      let responseMessage=`Erreur: Echec lors lors de la synchro des données dans DHIS2`;
+      let bodyMessage=`Le variable programCode non defini`;
+      let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"/syncprogramproduct2dhis","GET");
+      res.set('Content-Type', 'application/json+openhim');
+      return res.status(returnObject.response.status).send(returnObject);
+
+    }
     logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncprogramproduct2dhis2",result:typeResult.iniate,
     message:`Lancement du processus de synchronisation des programmes-produits dans DHIS2`});
     const dhis2Token = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
@@ -720,12 +740,12 @@ logger = createLogger({
     logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/program`,result:typeResult.iniate,
     message:`HAPI: Extraction de la liste des programmes`});
     let filterExpresion=[];
-    if(config.program.code)
+    if(programCode)
     {
       filterExpresion=[
         {
           key:"_id",
-          value:config.program.code
+          value:programCode
         }
       ];
     }
@@ -988,9 +1008,29 @@ logger = createLogger({
 
     });//end getListHapiResource
   });
-  app.get('/updatecatcombodhis', (req, res) => {
+  app.get('/updatecatcombodhis/:programcode', (req, res) => {
     globalRes=res;
     var operationOutcome=true;
+    var programCode;
+    if(req.params.programcode)
+    {
+      programCode=req.params.programcode
+    }
+    else
+    {
+      programCode=config.program.code;
+    }
+    if (!programCode)
+    {
+      logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/updatecatcombodhis",result:typeResult.iniate,
+      message:`Le parametre programCode est obligatoire`});
+      let responseMessage=`Erreur: Echec lors lors de la synchro des données dans DHIS2`;
+      let bodyMessage=`Le variable programCode non defini`;
+      let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"/updatecatcombodhis","GET");
+      res.set('Content-Type', 'application/json+openhim');
+      return res.status(returnObject.response.status).send(returnObject);
+
+    }
     logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/updatecatcombodhis",result:typeResult.iniate,
     message:`Lancement du processus des mises à jour des categoryOptionCombos dans DHIS2`});
     const dhis2Token = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
@@ -1000,12 +1040,12 @@ logger = createLogger({
     let listProductName=[];
     let filterExpresion=[];
     let listProductDetails=[];
-    if(config.program.code)
+    if(programCode)
     {
       filterExpresion=[
         {
           key:"_id",
-          value:config.program.code
+          value:programCode
         }
       ];
     }
