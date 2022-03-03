@@ -3,10 +3,12 @@ The e-SIGL and DHIS-2 applications have been operating for several months in Gui
 
 ## Architecture
 The architecture requires the following components apart of DHIS2 and e-SIGL:
- **HAPI FHIR Server (hapi-fhir-jpaserver-local)**: This is used to store and validate extracted Data on product,program and requisition, converted to FHIR resources and to act as the FHIR Repository. Any FHIR client can request resources from this repository. 
+* *HAPI FHIR Server (hapi-fhir-jpaserver-local):* *
+This is used to store and validate extracted Data on product,program and requisition, converted to FHIR resources and to act as the FHIR Repository. Any FHIR client can request resources from this repository. 
 **OpenHIM Console and Core API Server**. The middleware component designed to ease interoperability between disparate information systems.
 **Push DHIS2 and eSIGL to FHIR HAPI Server**. Mediator used to pull resources from DHIS2 and eSIGL, transform them to Fhir standard and save it in the Hapi Server
 **Fhir Resources from HAPI to DHIS2**. Mediator used to pull resources from validated resources from the Hapi Server and push them in DHIS2
+
 ## Installation
 
 ### Hapi FHIR and OpenHIM
