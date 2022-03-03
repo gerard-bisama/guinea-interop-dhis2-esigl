@@ -511,6 +511,28 @@ exports.buildCategoryOptionsMetadata=function buildCategoryOptionsMetadata(prefi
 	}
 	return listCategoryOptions;
 }
+exports.buildNewCategoryComboOptionsMetadata=function buildCategoryComboOptionsMetadata(listProductDetails,listCatcomboName2Create,categoryComboId){
+	let listCategoryComboOptions=[];
+	for(let catComboProduct of listCatcomboName2Create)
+	{
+		let clearProductName=catComboProduct.split(" ").join("");
+		let relatedProduct=listProductDetails.find(oProduct=>oProduct.name.split(" ").join("")== clearProductName)
+		if(relatedProduct)
+		{
+			let  oIdentifier=relatedProduct.identifier.find(id=>id.type.text=="dhisId");
+			let CategioryComboOption={
+				code:relatedProduct.id,
+				name:relatedProduct.name,
+				shortName:relatedProduct.name.substr(0,50),
+				displayName:relatedProduct.name,
+				categoryCombo:{id:categoryComboId},
+				categoryOptions:[{id:oIdentifier.value}]
+			}
+			listCategoryComboOptions.push(CategioryComboOption);
+		}
+	}
+	return listCategoryComboOptions;
+}
 exports.buildCategoryComboOptionsMetadata=function buildCategoryComboOptionsMetadata(listProduct,listGeneratedCatComboOptions){
 	let listCategoryComboOptions=[];
 	for(let catComboOptions of listGeneratedCatComboOptions)

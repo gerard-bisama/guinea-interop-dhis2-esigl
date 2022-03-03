@@ -709,14 +709,15 @@ logger = createLogger({
 
     
   });
-
-  app.get('/syncprogramproduct2dhis/:programcode', (req, res) => {
+  //use query params ?programcode=SIGL-INTEGRE-PNLP
+  app.get('/syncprogramproduct2dhis', (req, res) => {
     globalRes=res;
     var operationOutcome=true;
     var programCode;
-    if(req.params.programcode)
+    //if(req.params.programcode)
+    if(req.query.programcode)
     {
-      programCode=req.params.programcode
+      programCode=req.query.programcode
     }
     else
     {
@@ -1008,13 +1009,14 @@ logger = createLogger({
 
     });//end getListHapiResource
   });
-  app.get('/updatecatcombodhis/:programcode', (req, res) => {
+  //use query params ?programcode=SIGL-INTEGRE-PNLP
+  app.get('/updatecatcombodhis', (req, res) => {
     globalRes=res;
     var operationOutcome=true;
     var programCode;
-    if(req.params.programcode)
+    if(req.query.programcode)
     {
-      programCode=req.params.programcode
+      programCode=req.query.programcode
     }
     else
     {
@@ -1074,7 +1076,8 @@ logger = createLogger({
             listProductDetails.push(
               {
                 id:productEntry.id,
-                name:productDetail.valueString
+                name:productDetail.valueString,
+                identifier:productEntry.identifier
               }
             )
             
@@ -1087,21 +1090,112 @@ logger = createLogger({
       },(err)=>{
         logger.log({level:levelType.info,operationType:typeOperation.getData,action:"/updatecatcombodhis",result:typeResult.iniate,
         message:`Search for catCamboOptions`});
-        getListDHISResourceByParamsChunk(dhis2Token,dhisCategoryComboOptions,listProductName,20,
-          (listDhisCategoryComboOptions)=>{
-            logger.log({level:levelType.info,operationType:typeOperation.getData,action:"/updatecatcombodhis",result:typeResult.success,
-            message:`${listDhisCategoryComboOptions.length} catCamboOptions retreived`});
-            let listCatComboPayLoadToUpdate=customLibrairy.buildCategoryComboOptionsMetadata(listProductDetails,listDhisCategoryComboOptions);
-            //return res.send(listCatComboPayLoadToUpdate);
-            logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/updatecatcombodhis",result:typeResult.iniate,
-            message:`${listCatComboPayLoadToUpdate.length} formatted and ready to be update in DHIS2`});
-            partialUpdateMetadataList2Dhis(dhis2Token,dhisCategoryComboOptions,listCatComboPayLoadToUpdate,
-              (dhisUpdateOperation)=>{
-                logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/updatecatcombodhis",result:typeResult.success,
-                message:`${listCatComboPayLoadToUpdate.length} formatted and updated in in DHIS2`});
-                return res.send(dhisUpdateOperation);
-              });
+        let filterExpressionDic=
+          [
+            {
+              key:'filter',
+              value:`code:eq:${programCode}`
+            },
+            {
+              key:'fields',
+              value:"id"
+            }
+          ];
+          console.log(`Extraction des produits correspondants de DHIS2`);
+          getListDHIS2ResourceByFilter(dhis2Token,dhisCategoryCombo,filterExpressionDic,(resourceDhisCatcombos)=>{
+            if(resourceDhisCatcombos.length>0)
+            {
+              let catComboId=resourceDhisCatcombos[0].id;
+              //getListDHISResourceByParamsChunk(dhis2Token,dhisCategoryComboOptions,listProductName,20,
+              getListDHISResourceByParamsChunkWithNoIdentified(dhis2Token,dhisCategoryComboOptions,listProductName,20,
+                (listDhisCategoryComboOptions)=>{
+                  //return res.send(listDhisCategoryComboOptions);
+                  //first create the new CateoryComboOptions
+                  let listCatcomboName2Create=listDhisCategoryComboOptions[1];
+                  let listCatComboPayLoadToCreate=customLibrairy.buildNewCategoryComboOptionsMetadata(listProductDetails,
+                    listCatcomboName2Create,catComboId);
+                  let listCatComboPayLoadToUpdate=customLibrairy.buildCategoryComboOptionsMetadata(listProductDetails,listDhisCategoryComboOptions[0]);
+                  //return res.send([listCatComboPayLoadToUpdate,listCatComboPayLoadToCreate]);
+
+                  logger.log({level:levelType.info,operationType:typeOperation.getData,action:"/updatecatcombodhis",result:typeResult.success,
+                  message:`${listCatComboPayLoadToCreate.length} catCamboOptions non retrouvées et identifiées pour création`});
+
+                  logger.log({level:levelType.info,operationType:typeOperation.getData,action:"/updatecatcombodhis",result:typeResult.success,
+                  message:`${listCatComboPayLoadToUpdate.length} catCamboOptions retrouvées et identifiées pour mise à jour`});
+                  //let listCatComboPayLoadToUpdate=customLibrairy.buildCategoryComboOptionsMetadata(listProductDetails,listDhisCategoryComboOptions);
+                  logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/updatecatcombodhis",result:typeResult.iniate,
+                  message:`${listCatComboPayLoadToCreate.length} formaté et prêt à etre crée dans  DHIS2`});
+                  saveMetadataList2Dhis(dhis2Token,dhisCategoryComboOptions,listCatComboPayLoadToCreate,
+                    (dhisCreateOperation)=>{
+                      //return res.send(dhisCreateOperation);
+                      let httpStatusCreated=[];
+                      let httpStatusConficted=[];
+                      let nbCatComboOptionsCreated=0;
+                      
+                      httpStatusCreated=dhisCreateOperation.find(statusOperation=>(statusOperation.httpStatus=="OK"||statusOperation.httpStatus=="Created") );
+                      httpStatusConficted=dhisCreateOperation.find(statusOperation=>statusOperation.httpStatus=="Conflict" );
+                      
+                      if(httpStatusCreated && httpStatusCreated.length>0)
+                      {
+                        logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/updatecatcombodhis",result:typeResult.success,
+                        message:`${httpStatusCreated.length} CatComboOptions créés dans DHIS2`});
+                        nbCatComboOptionsCreated=httpStatusCreated.length;
+                      }
+                      if(httpStatusConficted && httpStatusConficted.length>0)
+                      {
+                        logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/updatecatcombodhis",result:typeResult.success,
+                        message:`${httpStatusCreated.length} CatComboOptions conflits identifiés dans DHIS2`});
+                      }
+                      logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/updatecatcombodhis",result:typeResult.iniate,
+                      message:`${listCatComboPayLoadToUpdate.length} formaté et prêt à etre maj dans  DHIS2`});
+                      partialUpdateMetadataList2Dhis(dhis2Token,dhisCategoryComboOptions,listCatComboPayLoadToUpdate,
+                        (dhisUpdateOperation)=>{
+                          //return res.send(dhisUpdateOperation);
+                          let returnObject=null;
+                          if(dhisUpdateOperation.length>0)
+                          {
+                            logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/updatecatcombodhis",result:typeResult.success,
+                             message:`${dhisUpdateOperation.length} CatComboOptions formatted and updated in in DHIS2`});
+                             let responseMessage=`${dhisUpdateOperation.length} formatted and updated in in DHIS2 | ${nbCatComboOptionsCreated} created in DHIS2`;
+                             let bodyMessage=`Lancement du processus de maj des CatComboCombination dans DHIS2`;
+                             returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"updatecatcombodhis","PUT");
+                            
+                          }
+                          else{
+                            let responseMessage=`0 CatComboOptions formatted and updated in in DHIS2| ${nbCatComboOptionsCreated} created in DHIS2`;
+                             let bodyMessage=`Lancement du processus de maj des CatComboCombination dans DHIS2`;
+                             returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"updatecatcombodhis","PUT");
+                            
+                          }
+                          res.set('Content-Type', 'application/json+openhim');
+                          return res.status(returnObject.response.status).send(returnObject);
+                        });
+                    })
+
+
+
+                    /*
+                  logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/updatecatcombodhis",result:typeResult.iniate,
+                  message:`${listCatComboPayLoadToUpdate.length} formatted and ready to be update in DHIS2`});
+                  partialUpdateMetadataList2Dhis(dhis2Token,dhisCategoryComboOptions,listCatComboPayLoadToUpdate,
+                    (dhisUpdateOperation)=>{
+                      logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/updatecatcombodhis",result:typeResult.success,
+                      message:`${listCatComboPayLoadToUpdate.length} formatted and updated in in DHIS2`});
+                      return res.send(dhisUpdateOperation);
+                    });*/
+                })
+            }
+            else{
+              return res.send({resOperation:"Could not found the Catcombo of the provided program"});
+            }
+
+            
           })
+
+
+
+
+       
       })//end of async
     });// end of getListHapiResourceByFilter
     
@@ -1251,6 +1345,7 @@ function getListDHIS2ResourceByFilter(dhis2Token,dhisResource,filterExpressionDi
           localNeedle.get(url,options, function(err, resp) {
               //url = false;
               if (err) {
+                
                 logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
                       message:`${err.message}`});
                 return callback(true, false);
@@ -1292,6 +1387,82 @@ function getListDHIS2ResourceByFilter(dhis2Token,dhisResource,filterExpressionDi
       },//end callback 2
       err=>{
           return callbackMain(resourceData);
+
+      }
+  );//end of async.whilst
+}
+function getListDHIS2ResourceByFilterWithNoIdentified(dhis2Token,dhisResource,filterExpressionDic,searchItem,callbackMain){
+  let localNeedle = require('needle');
+  localNeedle.defaults(
+      {
+          open_timeout: 600000
+      });
+  let localAsync = require('async');
+  var resourceData = [];
+  var resourceNotFound=[];
+  var url= URI(config.dhis2Server.url).segment(dhisResource+".json");
+  for(let dic of filterExpressionDic)
+  {
+    url.addQuery(dic.key, dic.value);
+  }
+  url = url.toString(url);
+  
+  /*console.log(url)
+  console.log(`-------------------------------`)*/
+  localAsync.whilst(
+      callback => {
+          return callback(null, url !== false);
+        },
+      callback => {
+          
+          var options={headers:{'Authorization':dhis2Token}};
+          localNeedle.get(url,options, function(err, resp) {
+              //url = false;
+              if (err) {
+                
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`${err.message}`});
+                return callback(true, false);
+              }
+              if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`Code d'erreur http: ${resp.statusCode}`});
+                  return callback(true, false);
+              }
+              var body = resp.body;
+              //var body = JSON.parse(resp.body);
+              if (!body[dhisResource]) {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`Invalid ${dhisResource} retournees par DHIS2`});
+                  return callback(true, false);
+              }
+              if (body.pager.total === 0) {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`Pas de ressources retournees par DHIS2 - page: ${body.pager.page}`});
+                      //resourceNotFound=resourceNotFound.concat(searchItem);
+                      resourceNotFound.push(searchItem);
+                  return callback(true, false);
+              }
+              url = false;
+              if (body[dhisResource] && body[dhisResource].length > 0) {
+        /* logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${dhisResource} => page:${body.pager.page}/${body.pager.pageCount}`,
+        result:typeResult.success,message:`Extraction de  ${body[dhisResource].length} ${dhisResource} de DHIS2`}); */
+                  resourceData = resourceData.concat(body[dhisResource]);
+                  //force return only one loop data
+                  //return callback(true, false);
+              }
+              const next = body.pager.nextPage;
+
+              if(next)
+              {
+                  url = next;
+              }
+              return callback(null, url);
+          })//end of needle.get
+            
+      },//end callback 2
+      err=>{
+          return callbackMain([resourceData,resourceNotFound]);
 
       }
   );//end of async.whilst
@@ -1742,7 +1913,40 @@ function getListDHISResourceByParamsChunk(dhis2Token,dhisResource,listResourcesP
     callbackMain(listCategoryComboOptions) 
   });
 }
-
+function getListDHISResourceByParamsChunkWithNoIdentified(dhis2Token,dhisResource,listResourcesParams,batchSizeResourceFromDHIS,callbackMain){
+  //let listResourceParamsChunked=chunckOfResources(listResourcesParams,batchSizeResourceFromDHIS);
+  let localAsync = require('async');
+  let listCategoryComboOptions=[]
+  let listCategoryComboOptionsNotfound=[];
+  localAsync.eachSeries(listResourcesParams, function(resourceParamsChuncked, callback) {
+    
+    let filterExpression=[
+      {
+        key:'filter',
+        value:`name:eq:${resourceParamsChuncked.toString()}`
+      }
+    ];
+    getListDHIS2ResourceByFilterWithNoIdentified(dhis2Token,dhisCategoryComboOptions,filterExpression,resourceParamsChuncked,(resCategoryCombinationOptions)=>{
+      /*console.log(resCategoryCombinationOptions);
+      console.log(`############################"`)*/
+      //console.log(resCategoryCombinationOptions);
+      if(resCategoryCombinationOptions[0].length>0)
+      {
+        listCategoryComboOptions=listCategoryComboOptions.concat(resCategoryCombinationOptions[0]);
+      }
+      
+      if(resCategoryCombinationOptions[1].length>0)
+      {
+        listCategoryComboOptionsNotfound=listCategoryComboOptionsNotfound.concat(resCategoryCombinationOptions[1])
+      }
+      callback();
+    })
+  },function(error){
+    /*console.log(listCategoryComboOptions);
+    console.log(`############################"`)*/
+        callbackMain([listCategoryComboOptions,listCategoryComboOptionsNotfound]) 
+  });
+}
 function saveBundle2Fhir(fhirToken,fhirResource,bundle,callback){
     let localNeedle = require('needle');
     localNeedle.defaults(
