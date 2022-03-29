@@ -358,14 +358,21 @@
       "description": "Id de la period à traiter, obtnu dans la table eLMIS processing_periods",
       "type": "string",
       "template": []
+    },
+    {
+      "param": "skipNiveauPS",
+      "displayName": "Ignorer la niveau PS pour la syncro des requisition dans Hapi",
+      "description": "Ignorer la niveau PS pour la syncro des requisition dans Hapi. true pour ignorer, false pour accepter",
+      "type": "string",
+      "template": []
     }
   ],
   "config": {
-    "logstashDirectory":"/home/server-dev/logstash-7.6",
+    "logstashDirectory":"/home/dir/logstash-7.6",
     "dhis2Server":{
-		"url":"https://localhost/api",
+		"url":"http://localhost",
 		"username":"user",
-		"password":"pawd"
+		"password":"pwd"
 		},
 	"hapiServer":{
     "url":"http://localhost/fhir",
@@ -389,9 +396,11 @@
     "name":"pnlp0",
     "code":"SIGL-INTEGRE-PNLP"
   },
-  "synchronizationPeriod":"2020-01",
+  "synchronizationPeriod":"2021-12",
   "maxNbRequisitions2PullPerLoop":"20",
-  "zoneGeographiqueId":"fxtOlL8b8mb",
-  "extractionPeriodId":"98"
+  "zoneGeographiqueId":"D1rT7FToSE4",
+  "extractionPeriodId":"105",
+  "skipNiveauPS":"true"
+
   }
 }

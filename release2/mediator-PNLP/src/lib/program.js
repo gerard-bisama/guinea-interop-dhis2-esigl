@@ -105,15 +105,48 @@ mediatorConfigTemp.config.program.code=process.env.MEDIATOR_PROGRAM_CODE?process
 mediatorConfigTemp.config.maxNbRequisitions2PullPerLoop=process.env.MEDIATOR_MAXREQUISITION2PULLPERPERIOD?process.env.MEDIATOR_MAXREQUISITION2PULLPERPERIOD:mediatorConfigTemp.config.maxNbRequisitions2PullPerLoop;
 
 */
-for (let i=0;i< mediatorConfigTemp.defaultChannelConfig.length;i++)
+if(process.env.MEDIATOR_URN)
 {
-  mediatorConfigTemp.defaultChannelConfig[i].routes[0].host=process.env.MEDIATOR_HOST;
+  mediatorConfigTemp.urn=process.env.MEDIATOR_URN;
+}
+if(process.env.MEDIATOR_HOST)
+{
+  for (let i=0;i< mediatorConfigTemp.defaultChannelConfig.length;i++)
+  {
+    mediatorConfigTemp.defaultChannelConfig[i].routes[0].host=process.env.MEDIATOR_HOST;
+  }
 }
 
+if(process.env.MEDIATOR_CHANNELIDENTIFIER)
+{
+  for (let i=0;i< mediatorConfigTemp.defaultChannelConfig.length;i++)
+  {
+    let startIndex=mediatorConfigTemp.defaultChannelConfig[i].name.match(/\[/);
+    let endIndex= mediatorConfigTemp.defaultChannelConfig[i].name.match(/\]/);
+    if(startIndex == null || endIndex==null)
+    continue;
+    let sliceName=mediatorConfigTemp.defaultChannelConfig[i].name.slice(startIndex.index+1,endIndex.index);
+    let newChannelName=mediatorConfigTemp.defaultChannelConfig[i].name.replace(sliceName,process.env.MEDIATOR_CHANNELIDENTIFIER);
+    mediatorConfigTemp.defaultChannelConfig[i].name=newChannelName;
+  }
+}
 
+if( process.env.MEDIATOR_CONFIG_PROGRAMNAME)
+{
+  mediatorConfigTemp.config.program.name= process.env.MEDIATOR_CONFIG_PROGRAMNAME;
+}
+if(process.env.MEDIATOR_CONFIG_PROGRAMCODE)
+{
+  mediatorConfigTemp.config.program.code= process.env.MEDIATOR_CONFIG_PROGRAMCODE;
+}
+
+console.log(mediatorConfigTemp);
 const mediatorConfig = mediatorConfigTemp;
 const metadataConfig=require('../config/dhismetadatadef');
-var mediatorName="mediateur_"+mediatorConfig.config.program.name;
+const { ifError } = require('assert');
+const { S_IFREG } = require('constants');
+//var mediatorName="mediateur_"+mediatorConfig.config.program.name;
+var mediatorName="";
 
 //var port = process.env.NODE_ENV === 'test' ? 7001 : mediatorConfig.endpoints[0].port;
 var port=process.env.MEDIATOR_PORT?process.env.MEDIATOR_PORT:mediatorConfig.endpoints[0].port;
@@ -143,6 +176,7 @@ function setupApp () {
   let processMonth= parseInt(config.synchronizationPeriod.split("-")[1]);
   let processYear= parseInt(config.synchronizationPeriod.split("-")[0]);
   */
+  mediatorName="mediateur_"+config.program.name;
   let processMonth=currentZFormatDate.month();
   let processYear=currentZFormatDate.year();
   var indexName=`${config.program.name}_activities_${processMonth}-${processYear}`;
@@ -887,26 +921,37 @@ function setupApp () {
     
   });
   ////This endpoint is used to sync from the list of files
-  app.get('/syncrequisition2fhir/:regionid',(req, res) => {
+  //app.get('/syncrequisition2fhir/:regionid',(req, res) => {
+    //query params should be ?regionid=xxx&periodid=xx
+    app.get('/syncrequisition2fhir',(req, res) => {
     //const regionId=req.params.regionid;
     var regionId;
-    if(req.params.regionid)
+    if(req.query.regionid)
     {
-      regionId=req.params.regionid
+      regionId=req.query.regionid
     }
     else
     {
       regionId=config.zoneGeographiqueId;
     }
     
-    let periodId=config.extractionPeriodId;
+    //let periodId=config.extractionPeriodId;
+    let periodId;
+    if(req.query.periodid)
+    {
+      periodId= req.query.periodid
+    }
+    else
+    {
+      periodId=config.extractionPeriodId;
+    }
     /*
     if (!config.zoneGeographiqueId)
     {
       logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
       message:`Le parametre zoneGeographiqueId est obligatoire`});
     }*/
-    if(!config.extractionPeriodId)
+    if(!periodId)
     {
         
         logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.iniate,
@@ -994,11 +1039,15 @@ function setupApp () {
                     message:`Niveau 3: ${listFosaMapped.length} structures mappées à traiter`});
                     //get the list of location of the level of poste de santé and services
                     listkeyValueParmsList=[];
-                    for(let oLocation of listeFormationSanitaires)
+                    if(Boolean(config.skipNiveauPS)==false)
                     {
-                        //console.log(oLocation);
-                        listkeyValueParmsList.push([{key:'partof',value:oLocation.id}]);
+                      for(let oLocation of listeFormationSanitaires)
+                      {
+                          //console.log(oLocation);
+                          listkeyValueParmsList.push([{key:'partof',value:oLocation.id}]);
+                      }
                     }
+                    
                     getListHapiResourceFilteredByParamsFromIteration(hapiToken,fhirResource,listkeyValueParmsList,
                         function(listePosteSante)
                     {
@@ -1421,8 +1470,17 @@ function setupApp () {
     
 
   });
-  app.get('/syncrequisition2dhis/:regionid',(req, res) => {
-    const syncPeriod=config.synchronizationPeriod;
+  //query params should be ?regionid=xxx&synchronizationperiod=yyyy-mm
+  app.get('/syncrequisition2dhis',(req, res) => {
+    //let syncPeriod=config.synchronizationPeriod;
+    let syncPeriod;
+    if(req.query.synchronizationperiod)
+    {
+      syncPeriod=req.query.synchronizationperiod;
+    }
+    else{
+      syncPeriod= config.synchronizationPeriod;
+    }
     
     if(syncPeriod.split("-").length!=2)
     {
@@ -1438,9 +1496,9 @@ function setupApp () {
       message:`Le parametre zoneGeographiqueId est obligatoire`});
     }*/
     var regionId;
-    if(req.params.regionid)
+    if(req.query.regionid)
     {
-      regionId=req.params.regionid
+      regionId=req.query.regionid
     }
     else
     {
@@ -1586,10 +1644,11 @@ function setupApp () {
                   message:`Insertion des elements  de requisitions dans DHIS2`}); */
                   logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/api/saveAdxData2Dhis`,result:typeResult.iniate,
                   message:`Importation des ${listCustomRequisitionObjects.length} élements des requisitions dans DHIS2`});
+                  console.log(`Payload size=${listCustomRequisitionObjects.length}`)
                   //return res.send(adxRequisitionObjectLists);
                   saveAdxData2Dhis(dhis2Token,adxRequisitionObjectLists,(adxSaveResults)=>{
                   if(adxSaveResults){
-
+                    //return res.send(adxSaveResults);
                     let importChildStatus=adxSaveResults.children.find(children=>children.name=="status");
                     let importChildCount= adxSaveResults.children.find(children=>children.name=="importCount");
                     if(importChildStatus.value=="SUCCESS")
@@ -2551,7 +2610,21 @@ function start (callback) {
         logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"Reception des configurations intiales",
         result:typeResult.ongoing,message:`Reception des configurations intiales`}); 
         //console.log(`Reception des configurations intiales`);
-        config = newConfig
+        config = newConfig;
+        //update the loger to take the new mediator name
+        mediatorName="mediateur_"+config.program.name;
+        indexName=`${mediatorName}_activities_${processMonth}-${processYear}`;
+        logFileName=path.join(filePath,`/logs/${indexName}.log`);
+        logger = createLogger({
+          format: combine(
+            label({ label: mediatorName }),
+            timestamp(),
+            myFormat
+          ),
+          transports: [new transports.Console(),
+              new transports.File({ filename: logFileName })
+          ]
+        });
         if (err) {
           logger.log({level:levelType.error,operationType:typeOperation.normalProcess,action:`Echec d'obtention des configurations initiales`,result:typeResult.failed,
                         message:`Echec d'obtention des configurations initiales`}); 
@@ -2571,9 +2644,22 @@ function start (callback) {
         result:typeResult.success,message:`Obtention des configurations avec succes`}); 
                 //console.log(`Obtention des configurations avec succes`);
                 //winston.info('Received updated config:')
-                //console.log(JSON.stringify(newConfig))
+                console.log(JSON.stringify(newConfig))
                 // set new config for mediator
                 config = newConfig
+                mediatorName="mediateur_"+config.program.name;
+                indexName=`${mediatorName}_activities_${processMonth}-${processYear}`;
+                logFileName=path.join(filePath,`/logs/${indexName}.log`);
+                logger = createLogger({
+                  format: combine(
+                    label({ label: mediatorName }),
+                    timestamp(),
+                    myFormat
+                  ),
+                  transports: [new transports.Console(),
+                      new transports.File({ filename: logFileName })
+                  ]
+                });
 
                 // we can act on the new config received from the OpenHIM here
                 //winston.info(config)
