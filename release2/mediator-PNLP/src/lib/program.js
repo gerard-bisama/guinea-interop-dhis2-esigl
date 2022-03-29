@@ -140,7 +140,7 @@ if(process.env.MEDIATOR_CONFIG_PROGRAMCODE)
   mediatorConfigTemp.config.program.code= process.env.MEDIATOR_CONFIG_PROGRAMCODE;
 }
 
-console.log(mediatorConfigTemp);
+//console.log(mediatorConfigTemp);
 const mediatorConfig = mediatorConfigTemp;
 const metadataConfig=require('../config/dhismetadatadef');
 const { ifError } = require('assert');
@@ -1526,7 +1526,8 @@ function setupApp () {
     let filterExpresion=[
       {
         key:"_count",
-        value:config.maxNbRequisitions2PullPerLoop
+        //value:config.maxNbRequisitions2PullPerLoop
+        value:"1"
       },
       {
         key:"code",
@@ -1645,7 +1646,7 @@ function setupApp () {
                   logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/api/saveAdxData2Dhis`,result:typeResult.iniate,
                   message:`Importation des ${listCustomRequisitionObjects.length} élements des requisitions dans DHIS2`});
                   console.log(`Payload size=${listCustomRequisitionObjects.length}`)
-                  //return res.send(adxRequisitionObjectLists);
+                  return res.send(adxRequisitionObjectLists);
                   saveAdxData2Dhis(dhis2Token,adxRequisitionObjectLists,(adxSaveResults)=>{
                   if(adxSaveResults){
                     //return res.send(adxSaveResults);
@@ -1793,6 +1794,7 @@ function getListDHIS2ResourceByFilter(dhis2Token,dhisResource,filterExpression,c
   var url= URI(config.dhis2Server.url).segment(dhisResource+".json");
   url.addQuery('filter', filterExpression);
   url = url.toString();
+  console.log(`${url}`);
   localAsync.whilst(
       callback => {
           return callback(null, url !== false);
@@ -1814,6 +1816,7 @@ function getListDHIS2ResourceByFilter(dhis2Token,dhisResource,filterExpression,c
               }
               var body = resp.body;
               //var body = JSON.parse(resp.body);
+              console.log(body[dhisResource]);
               if (!body[dhisResource]) {
         logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
                       message:`Invalid ${dhisResource} retournees par DHIS2`});
@@ -2239,7 +2242,8 @@ function getListHapiResourceByFilterCurl(hapiToken,fhirResource,filterExpression
              return callback(true, false);
           } 
           */
-          return callback(null, url);
+          //return callback(null, url);
+          return callback(true, false);
 
         });//end exec
             
