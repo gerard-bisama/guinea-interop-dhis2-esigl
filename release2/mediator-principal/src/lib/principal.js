@@ -518,6 +518,7 @@ logger = createLogger({
 
     });//end of customLibrairy.readeSIGLDataCSVFile
   });
+  // 
   app.get('/syncprogramproduct2fhir', (req, res) => {
     logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncprogramproduct2fhir",result:typeResult.iniate,
     message:`Lancement du processus d'extraction des programs-produits eSIGL=>DHIS2`});
