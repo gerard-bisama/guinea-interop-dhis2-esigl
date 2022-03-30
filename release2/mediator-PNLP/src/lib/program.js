@@ -1646,7 +1646,7 @@ function setupApp () {
                   logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/api/saveAdxData2Dhis`,result:typeResult.iniate,
                   message:`Importation des ${listCustomRequisitionObjects.length} élements des requisitions dans DHIS2`});
                   console.log(`Payload size=${listCustomRequisitionObjects.length}`)
-                  return res.send(adxRequisitionObjectLists);
+                  //return res.send(adxRequisitionObjectLists);
                   saveAdxData2Dhis(dhis2Token,adxRequisitionObjectLists,(adxSaveResults)=>{
                   if(adxSaveResults){
                     //return res.send(adxSaveResults);
