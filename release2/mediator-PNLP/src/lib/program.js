@@ -1526,8 +1526,8 @@ function setupApp () {
     let filterExpresion=[
       {
         key:"_count",
-        //value:config.maxNbRequisitions2PullPerLoop
-        value:"1"
+        value:config.maxNbRequisitions2PullPerLoop
+        //value:"1"
       },
       {
         key:"code",
@@ -2242,8 +2242,8 @@ function getListHapiResourceByFilterCurl(hapiToken,fhirResource,filterExpression
              return callback(true, false);
           } 
           */
-          //return callback(null, url);
-          return callback(true, false);
+          return callback(null, url);
+          //return callback(true, false);
 
         });//end exec
             
