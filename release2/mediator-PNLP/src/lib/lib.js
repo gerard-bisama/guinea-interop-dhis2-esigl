@@ -1314,7 +1314,7 @@ exports.buildADXPayloadFromRequisitionsList=function(requisitionObjectsList,meta
 	let compteur=0;
 	for(let requisitionObject of requisitionObjectsList){
 		compteur++;
-		if(compteur==2) break;
+		//if(compteur==2) break;
 		let validPeriodReported=requisitionObject.startDate;
 		
 		let groupObject= {group:[{_attr:{orgUnit:requisitionObject.location,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
