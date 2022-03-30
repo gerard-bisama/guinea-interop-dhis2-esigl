@@ -109,6 +109,10 @@ if(process.env.MEDIATOR_URN)
 {
   mediatorConfigTemp.urn=process.env.MEDIATOR_URN;
 }
+if(process.env.MEDIATOR_NAME)
+{
+  mediatorConfigTemp.name=process.env.MEDIATOR_NAME;
+}
 if(process.env.MEDIATOR_HOST)
 {
   for (let i=0;i< mediatorConfigTemp.defaultChannelConfig.length;i++)
