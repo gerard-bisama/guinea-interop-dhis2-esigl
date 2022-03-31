@@ -949,6 +949,9 @@ function setupApp () {
     {
       periodId=config.extractionPeriodId;
     }
+    console.log(`Period ID=${req.query.periodid} Region Id=${req.query.regionid}`);
+    console.log(`Extracted : Period ID=${periodId} Region Id=${regionId}`);
+    return res.send({});
     /*
     if (!config.zoneGeographiqueId)
     {
