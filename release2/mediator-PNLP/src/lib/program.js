@@ -1091,13 +1091,23 @@ function setupApp () {
                             keyValueParmsList.push({key:`periodId`,value:periodId});
                             keyValueParmsList.push({key:`page`,value:0});
                             keyValueParmsList.push({key:`pageSize`,value:100});
-                            
+                            //config.program.code
                             getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,dhis2FacilityId,
+                            //getListApprovedRequisitionsByFacility4(eSIGLToken,keyValueParmsList,dhis2FacilityId,config.program.code,
                                 function(listRequisitions)
                             {
-                                listAllrequisitions=listAllrequisitions.concat(listRequisitions);
+                                let filteredRequisitions=listRequisitions.filter(element=>{
+                                  if(element.programCode == config.program.code)
+                                  {
+                                    return element;
+                                  }
+                                });
+                                //listAllrequisitions=listAllrequisitions.concat(listRequisitions);
+                                listAllrequisitions=listAllrequisitions.concat(filteredRequisitions);
+
                                 return callback();
                             })
+
 
                         },function(error){
                             if(error)
@@ -1222,10 +1232,19 @@ function setupApp () {
                     keyValueParmsList.push({key:`pageSize`,value:100});
                     
                     getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,dhis2FacilityId,
+                    //getListApprovedRequisitionsByFacility4(eSIGLToken,keyValueParmsList,dhis2FacilityId,config.program.code,
                         function(listRequisitions)
                     {
                         //console.log(`Returns ${listRequisitions.length} requisitons`)
-                        listAllrequisitions=listAllrequisitions.concat(listRequisitions);
+                        let filteredRequisitions=listRequisitions.filter(element=>{
+                          if(element.programCode == config.program.code)
+                          {
+                            return element;
+                          }
+                        });
+                        //listAllrequisitions=listAllrequisitions.concat(listRequisitions);
+                        listAllrequisitions=listAllrequisitions.concat(filteredRequisitions);
+                        //listAllrequisitions=listAllrequisitions.concat(listRequisitions);
                         return callback();
                     })
   
@@ -1353,11 +1372,21 @@ function setupApp () {
                   keyValueParmsList.push({key:`page`,value:0});
                   keyValueParmsList.push({key:`pageSize`,value:100});
                   
+                  //(eSIGLToken,keyValueParmsList,dhis2FacilityId,
                   getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,dhis2FacilityId,
+                  //getListApprovedRequisitionsByFacility4(SIGLToken,keyValueParmsList,dhis2FacilityId,config.program.code,
                       function(listRequisitions)
                   {
                       //console.log(`Returns ${listRequisitions.length} requisitons`)
-                      listAllrequisitions=listAllrequisitions.concat(listRequisitions);
+                      let filteredRequisitions=listRequisitions.filter(element=>{
+                        if(element.programCode == config.program.code)
+                        {
+                          return element;
+                        }
+                      });
+                      //listAllrequisitions=listAllrequisitions.concat(listRequisitions);
+                      listAllrequisitions=listAllrequisitions.concat(filteredRequisitions);
+                      //listAllrequisitions=listAllrequisitions.concat(listRequisitions);
                       return callback();
                   })
 
@@ -1523,6 +1552,8 @@ function setupApp () {
       return res.status(returnObject.response.status).send(returnObject);
 
     }
+    let requestVar=` Request: ${regionId}-${syncPeriod}`;
+    //return res.send(requestVar);
     globalRes=res;
     logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
     message:`Lancement du processus de synchronisation des requisitions dans DHIS2`});
@@ -2393,6 +2424,139 @@ function getListApprovedRequisitionsByFacility3(eSIGLToken,keyValueParmsList,dhi
                     message:`${resourceData.length} requisitions retreived /${body.data.totalRecords} expected`})
                   
                    
+                }
+                const next =  resourceData.length < body.data.totalRecords?true:false;
+  
+                if(next)
+                {
+                    let urlSplitComponents=initUrl.split("&");
+                    let rebuiltUrl="";
+                    let indexLoop=0;
+                    for(let urlcomponent of urlSplitComponents)
+                    {
+                        
+                        if(urlcomponent.includes("page="))
+                        {
+                            //get and change the page index
+                            let index=parseInt( urlcomponent.split("=")[1]);
+                            index++;
+                            rebuiltUrl+=`&page=${index}`;
+                            
+                        }
+                        else{
+                            if(indexLoop==0)
+                            {
+                                rebuiltUrl+=urlcomponent;
+                            }
+                            else
+                            {
+                                rebuiltUrl+=`&${urlcomponent}`;
+                            }
+                        }
+                        indexLoop++
+                    }
+                    url = rebuiltUrl;
+                    console.log(`eSIGL next loop ${url}`)
+                }
+                return callback(null, url);
+            })//end of needle.get
+              
+        },//end callback 2
+        err=>{
+            
+            logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/getListApprovedRequisitionsByFacility3`,result:typeResult.success,
+                    message:`Total ${resourceData.length} Requisitions fetch completed for facility ${initFacilityId}`})
+            let listApprovedRequisitionTemp=resourceData.filter(element =>{
+                if(element.requisitionStatus=="APPROVED" && element.programCode==config.program.code)
+                {
+                    return element;
+                }
+            })
+            let listApprovedRequisition=[];
+            for(let requisition of listApprovedRequisitionTemp)
+            {
+              let requisitionWithDhisId=requisition;
+              requisitionWithDhisId.facilityId=dhis2FacilityId;
+              listApprovedRequisition.push(requisitionWithDhisId);
+            }
+            logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/getListApprovedRequisitionsByFacility3`,result:typeResult.success,
+                  message:`${config.program.code}: ${listApprovedRequisition.length} approuved requisitions/${resourceData.length} total`})
+            return callbackMain(listApprovedRequisition);
+  
+        }
+    );//end of async.whilst
+  
+  
+  
+  }
+//This function exclude filter requisition by programCode to avoid to pull accidentaly requisition from other program
+//This usualy happen when the mediator is copied to create a new one
+function getListApprovedRequisitionsByFacility4(eSIGLToken,keyValueParmsList,dhis2FacilityId,programCode,callbackMain)
+  {
+    let localNeedle = require('needle');
+      localNeedle.defaults(
+          {
+              open_timeout: 600000
+          });
+      let options={headers:{'Content-Type': 'application/json','Authorization':eSIGLToken}};
+      let localAsync = require('async');
+      var resourceData = [];
+      var url= URI(config.esiglServer.url).segment(config.esiglServer.resourcespath).segment(esigleResource.requitionsByFacility);
+      //build the params query
+      let initFacilityId="";
+      for(let oDic of keyValueParmsList)
+      {
+        url.addQuery(`${oDic.key}`,`${oDic.value}`);
+        if(oDic.key=="facilityId")
+        {
+            initFacilityId=oDic.value;
+        }
+      }
+      url.addQuery('_format', "json");
+      url = url.toString();
+      console.log(`${url}`);
+      localAsync.whilst(
+        callback => {
+            return callback(null, url !== false);
+          },
+        callback => {
+            
+            localNeedle.get(url,options, function(err, resp) {
+                let initUrl=url;
+                if (err) {
+                  logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                        message:`${err.err.Error}`});
+                  return callback(true, false);
+                }
+                if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                        message:`Code d'erreur http: ${resp.statusCode}`});
+                    return callback(true, false);
+                }
+                let body=resp.body;
+                if (!body.data) {
+                  logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                        message:`Ressource invalid retourner par le serveur FHIR: ${resp.statusCode}`});
+                  return callback(true, false);
+                }
+                if (body.data.totalRecords === 0 && body.data.rows.length > 0) {
+                  logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                  message:`Aucune resource retourne par le serveur HAPI: ${resp.statusCode}`})
+                  return callback(true, false);
+                }
+                url = false;
+                if (body.data && body.data.rows.length > 0) {
+                    let filteredElement=body.data.rows.filter(element=>{
+                      if(element.programCode == programCode)
+                      {
+                        return element;
+                      }
+                    });
+                    resourceData = resourceData.concat(filteredElement);
+
+                    logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${initUrl}`,result:typeResult.success,
+                      message:`${filteredElement.length} requisitions retreived /${body.data.totalRecords} total returned`});
+                    
                 }
                 const next =  resourceData.length < body.data.totalRecords?true:false;
   
