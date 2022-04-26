@@ -327,80 +327,165 @@ logger = createLogger({
       })//end of localNeedle.get(url orchestration)
 
   });
-
+  //?Can sync only one orgunit using @params ?orgunitid=dhisorgunitid
 	app.get('/syncorgunit2fhir', (req, res) => {
         
         globalRes=res;
-        logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncorgunit2fhir",result:typeResult.iniate,
-        message:`Lancement de la synchro des orgunits DHIS2=>HAPI`});
-        console.log("*****************DHIS2 credentials********************");
+        var orgUnitId;
+        //if(req.params.programcode)
+        if(req.query.orgunitid)
+        {
+          orgUnitId=req.query.orgunitid
+          logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncorgunit2fhir",result:typeResult.iniate,
+           message:`Lancement de la synchro du orgunit ${orgUnitId} DHIS2=>HAPI`});
+        }
+        else
+        {
+          logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncorgunit2fhir",result:typeResult.iniate,
+           message:`Lancement de la synchro des orgunits DHIS2=>HAPI`});
+        }
+        //console.log("*****************DHIS2 credentials********************");
         //console.log(`${config.dhis2Server.username}+${config.dhis2Server.password}`);
         const dhis2Token = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
         const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;
 
         logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/api/${orgUnitResource}.json`,result:typeResult.iniate,
         message:`DHIS2: Extraction des structures de DHIS2`});
-        getListDHIS2OrgUnit(dhis2Token,function(listOrgUnits)
+        if(orgUnitId)
         {
-            //return res.send(listOrgUnits);
-            if(listOrgUnits.length>0)
+          let filterExpresion=[];
+          filterExpresion=[
             {
-                let bundle=customLibrairy.buildLocationHierarchy(listOrgUnits);
-                logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${orgUnitResource}.json`,result:typeResult.success,
-        message:`${listOrgUnits.length} structures extraits de DHIS2`});
-                //return res.send(bundle);
-                logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/fhir/Location",result:typeResult.iniate,
-                        message:`Lancement de la synchronisation des structures dans HAPI`});
-                saveBundle2Fhir(hapiToken,'Location',bundle,function(hapiServerResponse)
-                {
-                  //console.log(hapiServerResponse.status);
-                  //let urn = mediatorConfig.urn
-                  let returnObject=null;
-                  if(hapiServerResponse.status==200)
+              key:"filter",
+              value:`id:eq:${orgUnitId}`
+            }
+          ];
+          getListDHIS2OrgUnitByFilter(dhis2Token,filterExpresion,function(listOrgUnits)
+          {
+              //return res.send(listOrgUnits);
+              if(listOrgUnits.length>0)
+              {
+                  let bundle=customLibrairy.buildLocationHierarchy(listOrgUnits);
+                  logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${orgUnitResource}.json`,result:typeResult.success,
+                  message:`${listOrgUnits.length} structures extraits de DHIS2`});
+                  //return res.send(bundle);
+                  logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/fhir/Location",result:typeResult.iniate,
+                          message:`Lancement de la synchronisation des structures dans HAPI`});
+                  saveBundle2Fhir(hapiToken,'Location',bundle,function(hapiServerResponse)
                   {
-
-                      logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/fhir/Location",result:typeResult.success,
-                      message:`${hapiServerResponse.message}`});
-                      logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/syncorgunit2fhir",result:typeResult.success,
-                      message:`${hapiServerResponse.message}`});
-                      
-                      let responseMessage=`${bundle.entry.length} Location ont ete charger avec success dans HAPI FHIR`;
+                    //console.log(hapiServerResponse.status);
+                    //let urn = mediatorConfig.urn
+                    let returnObject=null;
+                    if(hapiServerResponse.status==200)
+                    {
+  
+                        logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/fhir/Location",result:typeResult.success,
+                        message:`${hapiServerResponse.message}`});
+                        logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/syncorgunit2fhir",result:typeResult.success,
+                        message:`${hapiServerResponse.message}`});
+                        
+                        let responseMessage=`${bundle.entry.length} Location ont ete charger avec success dans HAPI FHIR`;
+                        let bodyMessage=`${bundle.entry.length} Location a charger dans HAPI FHIR`;
+                        returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"saveBundle2Fhir","POST");
+                        
+                        
+                    }
+                    else
+                    {
+                      logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/fhir/Location",result:typeResult.failed,
+                      message:`Erreur: ${hapiServerResponse.message}`});
+                      logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/syncorgunit2fhir",result:typeResult.failed,
+                      message:`Erreur: ${hapiServerResponse.message}`});
+                      let responseMessage=`Erreur: ${hapiServerResponse.message}`;
                       let bodyMessage=`${bundle.entry.length} Location a charger dans HAPI FHIR`;
-                      returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"saveBundle2Fhir","POST");
-                      
-                      
-                  }
-                  else
+                      returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"saveBundle2Fhir","POST");
+                    }
+                    res.set('Content-Type', 'application/json+openhim');
+                    return res.status(returnObject.response.status).send(returnObject);
+                  });//end saveBundle2Fhir
+              }
+              else
+              {
+                logger.log({level:levelType.warning,operationType:typeOperation.normalProcess,action:"/syncorgunit2fhir",result:typeResult.failed,
+                message:`0 orgunit retourné`});
+                let status = 'Failed';
+                let response = {};
+                let returnObject=null;
+                let responseMessage=`Erreur: 0 orgunit retourné`;
+                let bodyMessage=`Extraction de la liste des structures de DHIS2`;
+                returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"getListDHIS2OrgUnit","GET");
+                res.set('Content-Type', 'application/json+openhim');
+                return res.status(returnObject.response.status).send(returnObject);
+  
+              }
+          });//end of getListDHIS2OrgUnit
+        }
+        else
+        {
+          getListDHIS2OrgUnit(dhis2Token,function(listOrgUnits)
+          {
+              //return res.send(listOrgUnits);
+              if(listOrgUnits.length>0)
+              {
+                  let bundle=customLibrairy.buildLocationHierarchy(listOrgUnits);
+                  logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/${orgUnitResource}.json`,result:typeResult.success,
+                  message:`${listOrgUnits.length} structures extraits de DHIS2`});
+                  //return res.send(bundle);
+                  logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/fhir/Location",result:typeResult.iniate,
+                          message:`Lancement de la synchronisation des structures dans HAPI`});
+                  saveBundle2Fhir(hapiToken,'Location',bundle,function(hapiServerResponse)
                   {
-                    logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/fhir/Location",result:typeResult.failed,
-                    message:`Erreur: ${hapiServerResponse.message}`});
-                    logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/syncorgunit2fhir",result:typeResult.failed,
-                    message:`Erreur: ${hapiServerResponse.message}`});
-                    let responseMessage=`Erreur: ${hapiServerResponse.message}`;
-                    let bodyMessage=`${bundle.entry.length} Location a charger dans HAPI FHIR`;
-                    returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"saveBundle2Fhir","POST");
-                  }
-                  res.set('Content-Type', 'application/json+openhim');
-                  return res.status(returnObject.response.status).send(returnObject);
-                });//end saveBundle2Fhir
-            }
-            else
-            {
-              logger.log({level:levelType.warning,operationType:typeOperation.normalProcess,action:"/syncorgunit2fhir",result:typeResult.failed,
-              message:`0 orgunit retourné`});
-              let status = 'Failed';
-              let response = {};
-              let returnObject=null;
-              let responseMessage=`Erreur: 0 orgunit retourné`;
-              let bodyMessage=`Extraction de la liste des structures de DHIS2`;
-              returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"getListDHIS2OrgUnit","GET");
-              res.set('Content-Type', 'application/json+openhim');
-              return res.status(returnObject.response.status).send(returnObject);
-
-            }
-        });//end of getListDHIS2OrgUnit
-
+                    //console.log(hapiServerResponse.status);
+                    //let urn = mediatorConfig.urn
+                    let returnObject=null;
+                    if(hapiServerResponse.status==200)
+                    {
+  
+                        logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/fhir/Location",result:typeResult.success,
+                        message:`${hapiServerResponse.message}`});
+                        logger.log({level:levelType.info,operationType:typeOperation.postData,action:"/syncorgunit2fhir",result:typeResult.success,
+                        message:`${hapiServerResponse.message}`});
+                        
+                        let responseMessage=`${bundle.entry.length} Location ont ete charger avec success dans HAPI FHIR`;
+                        let bodyMessage=`${bundle.entry.length} Location a charger dans HAPI FHIR`;
+                        returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"saveBundle2Fhir","POST");
+                        
+                        
+                    }
+                    else
+                    {
+                      logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/fhir/Location",result:typeResult.failed,
+                      message:`Erreur: ${hapiServerResponse.message}`});
+                      logger.log({level:levelType.error,operationType:typeOperation.postData,action:"/syncorgunit2fhir",result:typeResult.failed,
+                      message:`Erreur: ${hapiServerResponse.message}`});
+                      let responseMessage=`Erreur: ${hapiServerResponse.message}`;
+                      let bodyMessage=`${bundle.entry.length} Location a charger dans HAPI FHIR`;
+                      returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"saveBundle2Fhir","POST");
+                    }
+                    res.set('Content-Type', 'application/json+openhim');
+                    return res.status(returnObject.response.status).send(returnObject);
+                  });//end saveBundle2Fhir
+              }
+              else
+              {
+                logger.log({level:levelType.warning,operationType:typeOperation.normalProcess,action:"/syncorgunit2fhir",result:typeResult.failed,
+                message:`0 orgunit retourné`});
+                let status = 'Failed';
+                let response = {};
+                let returnObject=null;
+                let responseMessage=`Erreur: 0 orgunit retourné`;
+                let bodyMessage=`Extraction de la liste des structures de DHIS2`;
+                returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"getListDHIS2OrgUnit","GET");
+                res.set('Content-Type', 'application/json+openhim');
+                return res.status(returnObject.response.status).send(returnObject);
+  
+              }
+          });//end of getListDHIS2OrgUnit
+  
+        }
+        
   });//end get(/syncorgunit2fhir)
+
   app.get('/mapfacility2fhir', (req, res) => {
     globalRes=res;
     var listeSIGLStrutures=[];
@@ -424,6 +509,7 @@ logger = createLogger({
         }
         logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/Location`,result:typeResult.iniate,
         message:`Resolution des correspondances avec les structures DHIS2 dans HAPI`});
+        //return res.send(listStructures);
         //getListHAPILocationByIds(hapiToken,listLocationIds,function(listLocationToMap){
          getListHAPILocationByIdChunk(hapiToken,listLocationIds,config.batchSizeFacilityFromHapi,function(listLocationToMap){
             //return res.send(`Size=${listLocationToMap.length}`);
@@ -1250,7 +1336,7 @@ function saveEntryToElastic(url,esToken,logEntries,callbackMain)
     });//end of aysnc.each
     
 }
-function getListDHIS2OrgUnit(dhis2Token,callbackMain){
+function getListDHIS2OrgUnitByFilter(dhis2Token,filterExpressionDic,callbackMain){
     let localNeedle = require('needle');
     localNeedle.defaults(
         {
@@ -1259,6 +1345,10 @@ function getListDHIS2OrgUnit(dhis2Token,callbackMain){
     let localAsync = require('async');
     var resourceData = [];
     var url= URI(config.dhis2Server.url).segment(orgUnitResource+".json");
+    for(let dic of filterExpressionDic)
+    {
+      url.addQuery(dic.key, dic.value);
+    }
     url.addQuery('order', "level:asc");
     url.addQuery('pageSize',config.batchSizeFacilityToSync);
     url.addQuery('fields',"href,id,code,level,parent,displayName");
@@ -1318,6 +1408,75 @@ function getListDHIS2OrgUnit(dhis2Token,callbackMain){
 
         }
     );//end of async.whilst
+}
+function getListDHIS2OrgUnit(dhis2Token,callbackMain){
+  let localNeedle = require('needle');
+  localNeedle.defaults(
+      {
+          open_timeout: 600000
+      });
+  let localAsync = require('async');
+  var resourceData = [];
+  var url= URI(config.dhis2Server.url).segment(orgUnitResource+".json");
+  url.addQuery('order', "level:asc");
+  url.addQuery('pageSize',config.batchSizeFacilityToSync);
+  url.addQuery('fields',"href,id,code,level,parent,displayName");
+  url = url.toString();
+  localAsync.whilst(
+      callback => {
+          return callback(null, url !== false);
+        },
+      callback => {
+          
+          var options={headers:{'Authorization':dhis2Token}};
+          localNeedle.get(url,options, function(err, resp) {
+              //url = false;
+              if (err) {
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                message:`${err.Error}`});
+                return callback(true, false);
+              }
+              if (resp.statusCode && (resp.statusCode < 200 || resp.statusCode > 399)) {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`Code d'erreur http: ${resp.statusCode}`});
+                  return callback(true, false);
+              }
+              var body = resp.body;
+              //var body = JSON.parse(resp.body);
+              if (!body.organisationUnits) {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`Ressources invalid retournees par DHIS2`});
+                  return callback(true, false);
+              }
+              if (body.pager.total === 0) {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/${url}`,result:typeResult.failed,
+                      message:`Pas de ressources retournees par DHIS - page: ${body.pager.page}`});
+                  return callback(true, false);
+              }
+              url=false;
+              if (body.organisationUnits && body.organisationUnits.length > 0) {
+        /* logger.log({level:levelType.info,operationType:typeOperation.getData,action:`getListDHIS2OrgUnit page:${body.pager.page}/${body.pager.pageCount}`,
+        result:typeResult.success,message:`Extraction de  ${body.organisationUnits.length} orgunits de DHIS2`}); */
+                  console.log(`${body.pager.page}/${body.pager.pageCount}`);
+                  resourceData = resourceData.concat(body.organisationUnits);
+                  //force return only one loop data
+                  //return callback(true, false);
+              }
+              const next = body.pager.nextPage;
+              //const next =null;
+              if(next)
+              {
+                  url = next;
+              }
+              return callback(null, url);
+          })//end of needle.get
+            
+      },//end callback 2
+      err=>{
+          return callbackMain(resourceData);
+
+      }
+  );//end of async.whilst
 }
 function getListDHIS2ResourceByFilter(dhis2Token,dhisResource,filterExpressionDic,callbackMain){
   let localNeedle = require('needle');
@@ -2254,7 +2413,7 @@ function start (callback) {
       ]
     });
   //let winstonLocal=require();
-  console.log(apiConf);
+  //console.log(apiConf);
   if (apiConf.api.trustSelfSigned) { process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0' }
 
   if (apiConf.register) {
