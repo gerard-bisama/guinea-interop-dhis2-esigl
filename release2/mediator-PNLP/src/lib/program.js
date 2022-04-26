@@ -436,6 +436,14 @@ function setupApp () {
       {
         key:"code",
         value:"requisition"
+      },
+      {
+        key:"subject",
+        value:"Location/D1rT7FToSE4"
+      },
+      {
+        key:"created",
+        value:"2022-01-01"
       }
     ];
     console.log(`Start of deletion of hapi resources. First search the resource`);
@@ -1677,7 +1685,8 @@ function setupApp () {
                 }
                 let listCustomRequisitionObjects = customLibrairy.buildObjectDetailsRequisitionList(listRequisitions,
                   listProgramProducts,progDhisId);
-                  //return res.send(listCustomRequisitionObjects);
+                //return res.send(listCustomRequisitionObjects);
+                //listCustomRequisitionObjects=listCustomRequisitionObjects.slice(0,100);
                 let adxRequisitionObjectLists=customLibrairy.buildADXPayloadFromRequisitionsList(listCustomRequisitionObjects,
                   metadataConfig.dataElements,config.program);
                   /* logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/saveAdxData2Dhis`,result:typeResult.iniate,
