@@ -1926,7 +1926,6 @@ function setupApp () {
                                 listReportedFacilities)
                             }
                             
-                          
                             //Build new object that returns the nbre of positive adjustment by facilities
                             let listFacilitiesWithPosAdjustment=[];
                             let listFacilitiesWithNegAdjustment=[];

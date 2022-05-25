@@ -1403,6 +1403,10 @@ exports.buildADXPayloadFromDataElementsList=function(dataElementObjectsList,meta
 		{
 			idNbreProduitSDUSup0=programConfig.name+configDataElement.id;
 		}
+		if(configDataElement.id=="100014")
+		{
+			idNbreProduitSDUEq0=programConfig.name+configDataElement.id;
+		}
 		if(configDataElement.id=="100015")
 		{
 			idNbreFosaRapportageParProduit=programConfig.name+configDataElement.id;
