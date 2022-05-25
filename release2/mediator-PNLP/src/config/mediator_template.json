@@ -166,6 +166,86 @@
       "type": "http",
       "authType": "public",
       "status": "enabled"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PUT",
+        "OPTIONS",
+        "HEAD",
+        "TRACE",
+        "CONNECT",
+        "PATCH"
+      ],
+      "name": "4-[PNLP] Generer les metadonnées du dashboard",
+      "urlPattern": "^/genprogmetadatadashboard/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Generer les metadonnées du dashboard",
+          "host": "localhost",
+          "port": "5022",
+          "primary": true,
+          "path": "/genprogmetadatadashboard",
+          "type": "http",
+          "secured": false,
+          "username": "",
+          "password": ""
+        }
+        
+      ],
+      "allow": [],
+      "type": "http",
+      "authType": "public",
+      "status": "enabled"
+    },
+    {
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PUT",
+        "OPTIONS",
+        "HEAD",
+        "TRACE",
+        "CONNECT",
+        "PATCH"
+      ],
+      "name": "5-[PNLP] Generer les élements des données du dashboard",
+      "urlPattern": "^/generatedaeValues/$",
+      "alerts": [],
+      "txRerunAcl": [],
+      "txViewFullAcl": [],
+      "txViewAcl": [],
+      "properties": [],
+      "matchContentTypes": [],
+      "timeout":"600000",
+      "routes": [
+        {
+          "name": "Generer les élements des données du dashboard",
+          "host": "localhost",
+          "port": "5022",
+          "primary": true,
+          "path": "/generatedaeValues",
+          "type": "http",
+          "secured": false,
+          "username": "",
+          "password": ""
+        }
+        
+      ],
+      "allow": [],
+      "type": "http",
+      "authType": "public",
+      "status": "enabled"
     }
   ],
   "endpoints": [
@@ -368,21 +448,21 @@
     }
   ],
   "config": {
-    "logstashDirectory":"/home/dir/logstash-7.6",
+    "logstashDirectory":"/home/server-dev/logstash-7.6",
     "dhis2Server":{
-		"url":"http://localhost",
+		"url":"https://localhost",
 		"username":"user",
 		"password":"pwd"
 		},
 	"hapiServer":{
-    "url":"http://localhost/fhir",
+    "url":"http://loccalhost/fhir",
     "username":"",
 		"password":""
 		},
 	"esiglServer":{
 		"url":"https://localhost",
 		"username":"user",
-		"password":"pwd",
+		"password":"password",
 		"resourcespath":"/rest-api"
     },
   "elasticsearchServer":{
