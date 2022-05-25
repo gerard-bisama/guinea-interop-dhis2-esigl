@@ -147,7 +147,7 @@ if(process.env.MEDIATOR_CONFIG_PROGRAMCODE)
 //console.log(mediatorConfigTemp);
 const mediatorConfig = mediatorConfigTemp;
 const metadataConfig=require('../config/dhismetadatadef');
-const metadataIndicatorConfig=require('../config/dhismetadataIndicatorDef');
+//const metadataIndicatorConfig=require('../config/dhismetadataIndicatorDef');
 const { ifError } = require('assert');
 const { S_IFREG } = require('constants');
 const { json } = require('express');
