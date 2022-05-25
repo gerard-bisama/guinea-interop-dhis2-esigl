@@ -1031,17 +1031,34 @@ exports.buildDataElementMetadata=function buildDataElementMetadata(programCode,p
 	let extractedPgCode=(programCode.split("-"))[2];
 	for(let deDesc of listDataelementDescription)
 	{
-		let oDEMetadata={
-			id:programName+deDesc.id,
-			name:extractedPgCode+"_"+deDesc.name,
-			shortName:(extractedPgCode+"_"+deDesc.name).substr(0,50),
-			displayName:deDesc.displayName,
-			valueType: "NUMBER",
-			aggregationType:"SUM",
-			domainType:"AGGREGATE",
-			zeroIsSignificant:true,
-			categoryCombo:{
-				id:categoryCombinationId
+		let oDEMetadata={};
+		if(deDesc.disagragetedByProduct== "true")
+		{
+			oDEMetadata={
+				id:programName+deDesc.id,
+				name:extractedPgCode+"_"+deDesc.name,
+				shortName:(extractedPgCode+"_"+deDesc.name).substr(0,50),
+				displayName:deDesc.displayName,
+				valueType: "NUMBER",
+				aggregationType:"SUM",
+				domainType:"AGGREGATE",
+				zeroIsSignificant:true,
+				categoryCombo:{
+					id:categoryCombinationId
+				}
+			}
+		}
+		else if(deDesc.disagragetedByProduct== "false")
+		{
+			oDEMetadata={
+				id:programName+deDesc.id,
+				name:extractedPgCode+"_"+deDesc.name,
+				shortName:(extractedPgCode+"_"+deDesc.name).substr(0,50),
+				displayName:deDesc.displayName,
+				valueType: "NUMBER",
+				aggregationType:"SUM",
+				domainType:"AGGREGATE",
+				zeroIsSignificant:true
 			}
 		}
 		listDEMetadata.push(oDEMetadata);
@@ -1147,10 +1164,20 @@ exports.buildObjectDetailsRequisitionList=function(listRequisitions,listProductW
 					requisitionDetails.consumedQuantity=parseFloat(extension.valueDecimal);
 					break;
 				case "losses":
-					requisitionDetails.losses=parseFloat(extension.valueDecimal);
+					let floatValue=parseFloat(extension.valueDecimal);
+					//if the value is gt  0 is a positive adjustement or ls 0 is losses or neg adjustment
+					if(floatValue>0)
+					{
+						requisitionDetails.positiveAdjustment=parseFloat(extension.valueDecimal);
+					}
+					if(floatValue<0)
+					{
+						requisitionDetails.losses=parseFloat(extension.valueDecimal);
+					}
+					//requisitionDetails.losses=parseFloat(extension.valueDecimal);
 					break;
 				case "positiveAdjustment":
-					requisitionDetails.positiveAdjustment=parseFloat(extension.valueDecimal);
+					//requisitionDetails.positiveAdjustment=parseFloat(extension.valueDecimal);
 					break;
 				case "negativeAdjustment":
 					requisitionDetails.negativeAdjustment=parseFloat(extension.valueDecimal);
@@ -1344,5 +1371,164 @@ exports.buildADXPayloadFromRequisitionsList=function(requisitionObjectsList,meta
 	var resAdxPayLoad=xml(xmlObject);
 	return resAdxPayLoad;	
 }
+exports.buildADXPayloadFromDataElementsList=function(dataElementObjectsList,metaDataConfig,programConfig)
+{
+	var currentZFormatDate=moment().format('YYYY-MM-DDTHH:mm:ssZ');
+	var xmlObject=[{adx:[]}];
+	xmlObject[0].adx.push(
+		{_attr:{xmlns:'urn:ihe:qrph:adx:2015','xmlns:xsi':'http://www.w3.org/2001/XMLSchema-instance',
+			'xsi:schemaLocation':'urn:ihe:qrph:adx:2015 ../schema/adx_loose.xsd',exported:currentZFormatDate}}
+	);
+	let idNbreFosaRapportage="";
+	let idNbrAjustementPositif="";
+	let idNbrPertesAjustementNegatif="";
+	let idNbreProduitSDUSup0="";
+	let idNbreProduitSDUEq0="";
+	let idNbreFosaRapportageParProduit="";
+	for(let configDataElement  of metaDataConfig)
+	{
+		if(configDataElement.id=="100010")
+		{
+			idNbreFosaRapportage=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100011")
+		{
+			idNbrAjustementPositif=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100012")
+		{
+			idNbrPertesAjustementNegatif=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100013")
+		{
+			idNbreProduitSDUSup0=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100015")
+		{
+			idNbreFosaRapportageParProduit=programConfig.name+configDataElement.id;
+		}
+	}//end for metaDataConfig
+	//limited to 100 for testing
+	let compteur=0;
+	for(let oDataElement of dataElementObjectsList){
+		compteur++;
+		//if(compteur==2) break;
+		let validPeriodReported=oDataElement.periodReported;
+		if(oDataElement.type=="fosaReported")
+		{
+			if(oDataElement.categoryCombo==null)
+			{
+				let groupObject= {group:[{_attr:{orgUnit:oDataElement.idFacility,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:idNbreFosaRapportage,value:oDataElement.dataElement}}]}
+				]};
+				xmlObject[0].adx.push(groupObject);
+			}
+			else
+			{
+				let groupObject= {group:[{_attr:{orgUnit:oDataElement.idFacility,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:idNbreFosaRapportage,
+					[`${oDataElement.categoryCombo.id}`]:oDataElement.categoryCombo.combinationId,value:oDataElement.dataElement}}]}
+				]};
+				xmlObject[0].adx.push(groupObject);
+			}
+			
+		}
+		if(oDataElement.type=="fosaNegAjustement")
+		{
+			if(oDataElement.categoryCombo==null)
+			{
+				let groupObject= {group:[{_attr:{orgUnit:oDataElement.idFacility,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:idNbrPertesAjustementNegatif,value:oDataElement.dataElement}}]}
+				]};
+				xmlObject[0].adx.push(groupObject);
+			}
+			else
+			{
+				let groupObject= {group:[{_attr:{orgUnit:oDataElement.idFacility,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:idNbrPertesAjustementNegatif,
+					[`${oDataElement.categoryCombo.id}`]:oDataElement.categoryCombo.combinationId,value:oDataElement.dataElement}}]}
+				]};
+				xmlObject[0].adx.push(groupObject);
+			}
+			
+		}
+		if(oDataElement.type=="fosaPosAjustement")
+		{
+			if(oDataElement.categoryCombo==null)
+			{
+				let groupObject= {group:[{_attr:{orgUnit:oDataElement.idFacility,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:idNbrAjustementPositif,value:oDataElement.dataElement}}]}
+				]};
+				xmlObject[0].adx.push(groupObject);
+			}
+			else
+			{
+				let groupObject= {group:[{_attr:{orgUnit:oDataElement.idFacility,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:idNbrAjustementPositif,
+					[`${oDataElement.categoryCombo.id}`]:oDataElement.categoryCombo.combinationId,value:oDataElement.dataElement}}]}
+				]};
+				xmlObject[0].adx.push(groupObject);
+			}
+		}
+		if(oDataElement.type=="fosaSDUeq0")
+		{
+			if(oDataElement.categoryCombo==null)
+			{
+				let groupObject= {group:[{_attr:{orgUnit:oDataElement.idFacility,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:idNbreProduitSDUEq0,value:oDataElement.dataElement}}]}
+				]};
+				xmlObject[0].adx.push(groupObject);
+			}
+			else
+			{
+				let groupObject= {group:[{_attr:{orgUnit:oDataElement.idFacility,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:idNbreProduitSDUEq0,
+					[`${oDataElement.categoryCombo.id}`]:oDataElement.categoryCombo.combinationId,value:oDataElement.dataElement}}]}
+				]};
+				xmlObject[0].adx.push(groupObject);
+			}
+		}
+		if(oDataElement.type=="fosaSDUgt0")
+		{
+			if(oDataElement.categoryCombo==null)
+			{
+				let groupObject= {group:[{_attr:{orgUnit:oDataElement.idFacility,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:idNbreProduitSDUSup0,value:oDataElement.dataElement}}]}
+				]};
+				xmlObject[0].adx.push(groupObject);
+			}
+			else
+			{
+				let groupObject= {group:[{_attr:{orgUnit:oDataElement.idFacility,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:idNbreProduitSDUSup0,
+					[`${oDataElement.categoryCombo.id}`]:oDataElement.categoryCombo.combinationId,value:oDataElement.dataElement}}]}
+				]};
+				xmlObject[0].adx.push(groupObject);
+			}
+		}
+		if(oDataElement.type=="fosaReportedPerProduct")
+		{
+			if(oDataElement.categoryCombo==null)
+			{
+				let groupObject= {group:[{_attr:{orgUnit:oDataElement.idFacility,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:idNbreFosaRapportageParProduit,value:oDataElement.dataElement}}]}
+				]};
+				xmlObject[0].adx.push(groupObject);
+			}
+			else
+			{
+				let groupObject= {group:[{_attr:{orgUnit:oDataElement.idFacility,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:idNbreFosaRapportageParProduit,
+					[`${oDataElement.categoryCombo.id}`]:oDataElement.categoryCombo.combinationId,value:oDataElement.dataElement}}]}
+				]};
+				xmlObject[0].adx.push(groupObject);
+			}
+		}
+		
+	}//end for requisitionLists
+	var resAdxPayLoad=xml(xmlObject);
+	return resAdxPayLoad;	
+}
+
 
 

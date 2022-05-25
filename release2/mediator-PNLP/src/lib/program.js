@@ -147,8 +147,10 @@ if(process.env.MEDIATOR_CONFIG_PROGRAMCODE)
 //console.log(mediatorConfigTemp);
 const mediatorConfig = mediatorConfigTemp;
 const metadataConfig=require('../config/dhismetadatadef');
+const metadataIndicatorConfig=require('../config/dhismetadataIndicatorDef');
 const { ifError } = require('assert');
 const { S_IFREG } = require('constants');
+const { json } = require('express');
 //var mediatorName="mediateur_"+mediatorConfig.config.program.name;
 var mediatorName="";
 
@@ -503,7 +505,6 @@ function setupApp () {
           //return res.send(listDataElementsMetadata);
           logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/api/dataElements`,result:typeResult.iniate,
           message:`DHIS2: Creation des elements des donnees du programme`});
-              
           saveMetadataList2Dhis(dhis2Token,dhisDataElement,listDataElementsMetadata,(resOpCreationDataElement)=>{
             //console.log(resOpCreationDataElement);
             //console.log(JSON.stringify(resOpCreationDataElement[0]));
@@ -691,6 +692,166 @@ function setupApp () {
     
 
 
+  });
+  app.get('_/genprogmetadatadashboard', (req, res) => {
+    globalRes=res;
+    var operationOutcome=true;
+    const dhis2Token = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
+    logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/genprogmetadata",result:typeResult.iniate,
+    message:`Lancement du processus de creation des elements des donnees du programme dans DHIS2`});
+    let programCode=config.program.code;
+    let programName=config.program.name;
+    let listDatalement2Create=metadataIndicatorConfig.dataElements;
+    //
+    //Get catcombos id from programcode
+    
+    let listDataElementsMetadata=customLibrairy.buildDataElementMetadata(programCode,programName,listDatalement2Create,
+      "")
+      //console.log(listDataElementsMetadata);
+      //return res.send(listDataElementsMetadata);
+      logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/api/dataElements`,result:typeResult.iniate,
+      message:`DHIS2: Creation des elements des donnees du dashboard`});
+      //return res.send(listDataElementsMetadata) ; 
+      saveMetadataList2Dhis(dhis2Token,dhisDataElement,listDataElementsMetadata,(resOpCreationDataElement)=>{
+        //console.log(resOpCreationDataElement);
+        //console.log(JSON.stringify(resOpCreationDataElement[0]));
+        if(resOpCreationDataElement && resOpCreationDataElement.length>0){
+          let listDataElements2Update=[];
+          operationOutcome=operationOutcome&&true;
+          let invalidResOperation=resOpCreationDataElement.filter(element=>{
+            if(element.httpStatus != "Conflict" && element.httpStatus != "Created" )
+            {
+              return element;
+            }
+          });
+          logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/api/dataElements`,result:typeResult.success,
+          message:`DHIS2: Creation des ${listDataElementsMetadata.length - invalidResOperation.length} elements des donnees du programme`});
+         
+          let tempList= resOpCreationDataElement.filter(element=>{
+            if(element.httpStatus == "Conflict")
+            {
+              return element;
+            }
+          });
+          for(let opResponse of tempList){
+            listDataElements2Update.push(opResponse.metadata);
+          } 
+          if(listDataElements2Update.length>0)
+          {
+            logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/api/dataElements`,result:typeResult.iniate,
+            message:`Lancement de la mise a jour des éléments des données `});
+          }
+
+          updateMetadataList2Dhis(dhis2Token,dhisDataElement,listDataElements2Update,(dhisUpdateOperation)=>{
+            logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/api/dataElements`,result:typeResult.success,
+            message:`${listDataElements2Update.length} dataElements  mise a jour`});
+            let urn = mediatorConfig.urn;
+            let status = '';
+            let response = {};
+            if(operationOutcome)
+            {
+              status = 'Successful';
+              response = {
+                status: 200,
+                headers: {
+                'content-type': 'application/json'
+                },
+                body:JSON.stringify( {'Process':`L'operation de creation des elements des donnees dans DHIS2 effectuees avec success`}),
+                timestamp: new Date().getTime()
+              };
+            }
+            else{
+              status = 'Failed';
+              response = {
+                status: 500,
+                headers: {
+                'content-type': 'application/json'
+                },
+                body:JSON.stringify( {'Process':`Echec de creation des elements des donnees dans DHIS2`}),
+                timestamp: new Date().getTime()
+              };
+            }
+            var orchestrationToReturn=[
+            {
+              name: "genprogmetadata",
+              request: {
+                path :"/genprogmetadata",
+                headers: {'Content-Type': 'application/json'},
+                querystring: "",
+                body:JSON.stringify( {'Process':`Operation de creation des elements des donnees dans DHIS2`}),
+                method: "POST",
+                timestamp: new Date().getTime()
+              },
+              response: response
+            }];
+            var returnObject = {
+              "x-mediator-urn": urn,
+              "status": status,
+              "response": response,
+              "orchestrations": orchestrationToReturn,
+              "properties": ""
+            }
+            res.set('Content-Type', 'application/json+openhim');
+            res.status(response.status).send(returnObject);
+          });//end updateMetadataList2Dhis
+        }
+        else{
+          operationOutcome=operationOutcome&&false;
+          logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/api/dataElements`,result:typeResult.failed,
+          message:`DHIS2: Erreur lors de la creation des elements des donnees du programme`});
+          logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/genprogmetadata`,result:typeResult.failed,
+          message:`DHIS2: Erreur lors de la creation des elements des donnees du programme`});
+          let urn = mediatorConfig.urn;
+          let status = '';
+          let response = {};
+          if(operationOutcome)
+          {
+            status = 'Successful';
+            response = {
+              status: 200,
+              headers: {
+              'content-type': 'application/json'
+              },
+              body:JSON.stringify( {'Process':`L'operation de creation des elements des donnees dans DHIS2 effectuees avec success`}),
+              timestamp: new Date().getTime()
+            };
+          }
+          else{
+            status = 'Failed';
+            response = {
+              status: 500,
+              headers: {
+              'content-type': 'application/json'
+              },
+              body:JSON.stringify( {'Process':`Echec de creation des elements des donnees dans DHIS2`}),
+              timestamp: new Date().getTime()
+            };
+          }
+          var orchestrationToReturn=[
+          {
+            name: "genprogmetadata",
+            request: {
+              path :"/genprogmetadata",
+              headers: {'Content-Type': 'application/json'},
+              querystring: "",
+              body:JSON.stringify( {'Process':`Operation de creation des elements des donnees dans DHIS2`}),
+              method: "POST",
+              timestamp: new Date().getTime()
+            },
+            response: response
+          }];
+          var returnObject = {
+            "x-mediator-urn": urn,
+            "status": status,
+            "response": response,
+            "orchestrations": orchestrationToReturn,
+            "properties": ""
+          }
+          res.set('Content-Type', 'application/json+openhim');
+          res.status(response.status).send(returnObject);
+        }
+        
+      })//end saveMetadataList2Dhis(dhisDataElement)
   });
 
   //This endpoint is used to sync form one file
@@ -1145,6 +1306,8 @@ function setupApp () {
                             };
                             logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/fhir/requisition`,result:typeResult.iniate,
                             message:`HAPI: Insertion des requisitions dans HAPI`});
+                            //console.log(JSON.stringify(bundleRequisition));
+                            //return res.send(bundleRequisition);
                             saveBundle2Fhir(hapiToken,fhirRequisitionResource,bundleRequisition,(hapiRequisitionBundleResponse)=>{
                               if(hapiRequisitionBundleResponse.status==200)
                               {
@@ -1514,6 +1677,535 @@ function setupApp () {
     });//end of getListHapiResourceFilteredByParams
     
 
+  });
+  
+  //query params should be ?regionid=xxx&synchronizationperiod=yyyy-mm&codeop=x
+  //codeop=1 for number of fosa who reports, 2 numbers of Pos and Neg adjustment, 
+  //3 for number of fosa with SDU gt 0, and SDU eq 0
+  app.get('/generatedaeValues',(req, res) => {
+    //let syncPeriod=config.synchronizationPeriod;
+    let syncPeriod;
+    if(req.query.synchronizationperiod)
+    {
+      syncPeriod=req.query.synchronizationperiod;
+    }
+    else{
+      syncPeriod= config.synchronizationPeriod;
+    }
+    
+    if(syncPeriod.split("-").length!=2)
+    {
+      logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
+      message:`Le parametre syncperiod invalid. Utilisé le format YYYY-MM`});
+      return res.send({});
+    }
+    /*
+    const regionId=config.zoneGeographiqueId;
+    if (!config.zoneGeographiqueId)
+    {
+      logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
+      message:`Le parametre zoneGeographiqueId est obligatoire`});
+    }*/
+    var regionId;
+    if(req.query.regionid)
+    {
+      regionId=req.query.regionid
+    }
+    else
+    {
+      regionId=config.zoneGeographiqueId;
+    }
+    if (!regionId)
+    {
+      logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
+      message:`Le parametre zoneGeographiqueId est obligatoire`});
+      let responseMessage=`Erreur: Echec lors lors de la synchro des données dans DHIS2`;
+      let bodyMessage=`Le variable zonegeographiqueId non defini`;
+      let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"/syncrequisition2dhis","GET");
+      res.set('Content-Type', 'application/json+openhim');
+      return res.status(returnObject.response.status).send(returnObject);
+
+    }
+    let codeop=0;
+    if(req.query.codeop)
+    {
+      codeop=req.query.codeop;
+    }
+
+    //let requestVar=` Request: ${regionId}-${syncPeriod}`;
+    //return res.send(requestVar);
+    globalRes=res;
+    logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
+    message:`Lancement du processus de synchronisation des requisitions dans DHIS2`});
+    const dhis2Token = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
+    const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;
+    const currentPeriod = moment(syncPeriod,'YYYY-MM');
+    const startOfMonth= currentPeriod.startOf('month').format('YYYY-MM-DD');
+    const endOfMonth   = currentPeriod.endOf('month').format('YYYY-MM-DD');
+    let filterExpresion=[
+      {
+        key:"_count",
+        value:config.maxNbRequisitions2PullPerLoop
+        //value:"1"
+      },
+      {
+        key:"code",
+        value:"requisition"
+      },
+      {
+        key:"created",
+        value:">="+startOfMonth
+      },
+      {
+        key:"created",
+        value:"<="+endOfMonth
+      },
+      {
+        key:"author",
+        value:config.program.code
+      },
+      {
+        key:"subject",
+        value:regionId
+      }
+
+    ];
+    //let filterExpression2=`?code=requisition&created=>=${startOfMonth}&created=<`
+    logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/requisition`,result:typeResult.iniate,
+    message:`HAPI: Extraction des requisitions requisitions pour le programme ${config.program.code} pour la periode:${startOfMonth} ${endOfMonth}`});
+    getListHapiResourceByFilterCurl(hapiToken,fhirRequisitionResource,filterExpresion,(requisitionEntries)=>{
+      //return res.send(requisitionEntries);
+      if(requisitionEntries.length>0)
+      {
+        logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/requisition`,result:typeResult.success,
+        message:`HAPI: Extraction de ${requisitionEntries.length} requisitions pour le programme ${config.program.code} pour la periode:${startOfMonth} ${endOfMonth}`});
+        let listFacilitiesProcessed=[];
+        let listRequisitions=[];
+        let listRequisitionId2Process=[];
+        for(let oRequisition of requisitionEntries )
+        {
+          listRequisitions.push(oRequisition.resource);
+          let extensionElement=oRequisition.resource.extension[0].extension.find(ext=>ext.url=="location");
+          let facilityId=extensionElement.valueReference.reference.split("/")[1];
+          if(!listFacilitiesProcessed.includes(facilityId))
+          {
+            listFacilitiesProcessed.push(facilityId);
+          }
+          //Extraction of the requisition id
+          let reqId=oRequisition.resource.id.split("-")[0];
+          if(!listRequisitionId2Process.includes(reqId))
+          {
+            listRequisitionId2Process.push(reqId);
+          }
+        }
+        logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:`/syncrequisition2dhis`,result:typeResult.ongoing,
+        message:`HAPI: Structure IDs: ${listFacilitiesProcessed.sort().toString().split(",").join("|").substr(0,400)}... `});
+        logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:`/syncrequisition2dhis`,result:typeResult.ongoing,
+        message:`HAPI: Requisition IDs: ${listRequisitionId2Process.sort().toString().split(",").join("|").substr(0,400)}... `});
+        
+        logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/requisition`,result:typeResult.success,
+        message:`HAPI: Requisitions des ${listFacilitiesProcessed.length} structures a traiter  pour le programme ${config.program.code} pour la periode:${startOfMonth} ${endOfMonth}`});
+        
+        let filterProgram=[
+          {
+            key:"_id",
+            value:config.program.code
+          }];
+        //let filterExpression2=`?code=requisition&created=>=${startOfMonth}&created=<`
+        //return res.send("OK");
+        logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/programme`,result:typeResult.iniate,
+        message:`HAPI: Extraction des details du ${config.program.code} `});
+    
+        getListHapiResourceByFilter(hapiToken,fhirProgramResource,filterProgram,(programResource)=>{
+          //console.log(programResource);
+          //return res.send(programResource);
+          if(programResource.length>0)
+          {
+            var oProgIdentifier=programResource[0].resource.identifier.find(id=>id.type.text=="dhisId");
+            var progDhisId=oProgIdentifier.value;
+            logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/programme`,result:typeResult.success,
+            message:`Extraction des details du programme ${config.program.code}`});
+            //Now get list productId from resource
+            let listRefencesProduct=programResource[0].resource.extension[0].extension.filter(extensionElement=>{
+              if(extensionElement.url=="providedProducts")
+              {
+                return extensionElement;
+              }
+            });//end of extension.filter
+            let productIdsList=[];
+            for(let referenceProduct of listRefencesProduct){
+              productIdsList.push(referenceProduct.valueReference.reference.split("/")[1]);
+            }
+            let stringProductIdsList=productIdsList.toString().split(",").join("|");
+            let filterProduct=[
+              {
+                key:"_id:in",
+                value:`${productIdsList.toString()}`
+              }
+            ];
+            logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/product`,result:typeResult.iniate,
+            message:`HAPI: Extraction des details des produits`});
+            getListHapiResourceByFilter(hapiToken,fhirProductResource,filterProduct,(productsResource)=>{
+              if(productsResource.length>0)
+              {
+                logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/product`,result:typeResult.success,
+                message:`Extraction des  details des produits [${stringProductIdsList}] pour le programme ${config.program.code}`});
+                
+                let listProgramProducts=[];
+                for(let productResource of productsResource){
+                  listProgramProducts.push(productResource.resource);
+                }
+                let listCustomRequisitionObjects = customLibrairy.buildObjectDetailsRequisitionList(listRequisitions,
+                  listProgramProducts,progDhisId);
+                //Now get facilities information to generate the Facilities hierarchie for Fosa and sousPrefecture
+                let keyValueParmsListRegion=[];
+                keyValueParmsListRegion.push({key:'partof',value:regionId});
+                keyValueParmsListRegion.push({key:'_sort',value:'name'});
+                let fhirResource='Location';
+                getListHapiResourceFilteredByParams(hapiToken,fhirResource,keyValueParmsListRegion,function(listPrefectures)
+                {
+                  logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.success,
+                  message:`Niveau 1: ${listPrefectures.length} localisations retrouvés dans ${regionId}`});
+                  if(listPrefectures && listPrefectures.length>0)
+                  {
+
+                    let listkeyValueParmsList=[];
+                    for(let oLocation of listPrefectures)
+                    {
+                        listkeyValueParmsList.push([{key:'partof',value:oLocation.id}]);
+                    }
+                    getListHapiResourceFilteredByParamsFromIteration(hapiToken,fhirResource,listkeyValueParmsList,
+                      function(listSousPrefecture)
+                    {
+                      logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.success,
+                      message:`Niveau 2: ${listSousPrefecture.length} localisations retrouvés `});
+                      if(listSousPrefecture && listSousPrefecture.length>0)
+                      {
+                        let listkeyValueParmsList=[];
+                        for(let oLocation of listSousPrefecture)
+                        {
+                            listkeyValueParmsList.push([{key:'partof',value:oLocation.id}]);
+                        }
+                        getListHapiResourceFilteredByParamsFromIteration(hapiToken,fhirResource,listkeyValueParmsList,
+                          function(listeFormationSanitaires){
+                          if(listeFormationSanitaires && listeFormationSanitaires.length>0)
+                          {
+                            let listFosaMapped=listeFormationSanitaires.filter(element =>{
+                              if(element.identifier.find(id=>id.type.text=="siglid")){
+                                  return element;
+                              }
+                            });
+                            logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.success,
+                            message:`Niveau 2: ${listFosaMapped.length} localisations mappées retrouvés `});
+                            let listDetailFacilitiesProcessed=[];
+                            for(let facilityId of listFacilitiesProcessed)
+                            {
+                              listDetailFacilitiesProcessed=listDetailFacilitiesProcessed.concat(listFosaMapped.find(oFosa=>oFosa.id==facilityId));
+                            }
+                            let newListDataElement2Push=[];
+                            let listReportedFacilities=[];
+                            //Build dataElement for Nbr of fosa Reported
+                            if(codeop==1)
+                            {
+                              for(let oFacilityProcessed of listDetailFacilitiesProcessed)
+                              {
+                                let fosaReported= {
+                                  type:"fosaReported",
+                                  idFacility:oFacilityProcessed.id,
+                                  Name:oFacilityProcessed.name,
+                                  dataElement:1,
+                                  periodReported:startOfMonth,
+                                  categoryCombo: null
+                                };
+                                listReportedFacilities=listReportedFacilities.concat(fosaReported);
+                                
+                              }
+                              logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.success,
+                              message:`Generation indicateurs: ${listReportedFacilities.length} Fosa reported retrouvés `});
+                              newListDataElement2Push=newListDataElement2Push.concat(
+                                listReportedFacilities)
+                            }
+                            
+                          
+                            //Build new object that returns the nbre of positive adjustment by facilities
+                            let listFacilitiesWithPosAdjustment=[];
+                            let listFacilitiesWithNegAdjustment=[];
+                            let listFacilitiesWithSDUsup0=[];
+                            let listFacilitiesWithSDUeq0=[];
+                            let listReportedFacilitiesByProduct=[];
+                            if(codeop==2)
+                            {
+                              for(let oFacilityProcessed of listDetailFacilitiesProcessed)
+                              {
+                                let listRequisitionAssociated=listCustomRequisitionObjects.filter(
+                                oRequisition=>{
+                                  if(oRequisition.location==oFacilityProcessed.id)
+                                  {
+                                  return oRequisition;
+                                  }
+                                })
+                                let nbrePositifAdjustment=0;
+                                let nbreNegativeAdjustment=0;
+                                for(let oRequisition of  listRequisitionAssociated)
+                                {
+                                  if(oRequisition.positiveAdjustment>0)
+                                  {
+                                  
+                                  let fosaPosAjustement={
+                                    type:"fosaPosAjustement",
+                                    idFacility:oFacilityProcessed.id,
+                                    Name: oFacilityProcessed.name,
+                                    dataElement:1,
+                                    periodReported:startOfMonth,
+                                    categoryCombo:{
+                                    id:config.program.code,
+                                    combinationId:oRequisition.product
+                                    }
+                                  }
+                                  listFacilitiesWithPosAdjustment=listFacilitiesWithPosAdjustment.concat(
+                                    fosaPosAjustement);
+
+                                  }
+                                  if(oRequisition.losses<0)
+                                  {
+                                  let fosaNegAjustement={
+                                    type:"fosaNegAjustement",
+                                    idFacility:oFacilityProcessed.id,
+                                    Name: oFacilityProcessed.name,
+                                    dataElement:1,
+                                    periodReported:startOfMonth,
+                                    categoryCombo:{
+                                    id:config.program.code,
+                                    combinationId:oRequisition.product
+                                    }
+                                  }
+                                  listFacilitiesWithNegAdjustment=listFacilitiesWithNegAdjustment.concat(
+                                    fosaNegAjustement);
+                                  } 
+                                }//end for oRequisition
+
+                                
+                              }//end for oFacilityProcessed
+                              newListDataElement2Push=newListDataElement2Push.concat(
+                                listFacilitiesWithNegAdjustment);
+                              newListDataElement2Push=newListDataElement2Push.concat(
+                                  listFacilitiesWithPosAdjustment);
+                            }//End if opcode==2
+                            if(codeop==3)
+                            {
+                              for(let oFacilityProcessed of listDetailFacilitiesProcessed)
+                              {
+                                let listRequisitionAssociated=listCustomRequisitionObjects.filter(
+                                oRequisition=>{
+                                  if(oRequisition.location==oFacilityProcessed.id)
+                                  {
+                                  return oRequisition;
+                                  }
+                                })
+                                for(let oRequisition of  listRequisitionAssociated)
+                                {
+                                  if(oRequisition.stockOnHand>0)
+                                  {
+                                  let fosaSDUgt0={
+                                    type:"fosaSDUgt0",
+                                    idFacility:oFacilityProcessed.id,
+                                    Name: oFacilityProcessed.name,
+                                    dataElement:1,
+                                    periodReported:startOfMonth,
+                                    categoryCombo:{
+                                    id:config.program.code,
+                                    combinationId:oRequisition.product
+                                    }
+                                  }
+                                  listFacilitiesWithSDUsup0=listFacilitiesWithSDUsup0.concat(fosaSDUgt0);
+                                  }
+                                  if(oRequisition.stockOnHand==0 && oRequisition.stockOutDay>0)
+                                  {
+                                  let fosaSDUeq0={
+                                    type:"fosaSDUeq0",
+                                    idFacility:oFacilityProcessed.id,
+                                    Name: oFacilityProcessed.name,
+                                    dataElement:1,
+                                    periodReported:startOfMonth,
+                                    categoryCombo:{
+                                    id:config.program.code,
+                                    combinationId:oRequisition.product
+                                    }
+                                  }
+                                  listFacilitiesWithSDUeq0=listFacilitiesWithSDUeq0.concat(fosaSDUeq0);
+                                  }
+                                }//end for oRequisition
+                              }//end for oFacilityProcessed
+                              newListDataElement2Push=newListDataElement2Push.concat(
+                                listFacilitiesWithSDUsup0);
+                              newListDataElement2Push=newListDataElement2Push.concat(
+                                  listFacilitiesWithSDUeq0);
+                            }//End if opcode==3
+                            if(codeop==4)
+                            {
+                              for(let oFacilityProcessed of listDetailFacilitiesProcessed)
+                              {
+                                let listRequisitionAssociated=listCustomRequisitionObjects.filter(
+                                oRequisition=>{
+                                  if(oRequisition.location==oFacilityProcessed.id)
+                                  {
+                                  return oRequisition;
+                                  }
+                                })
+                                for(let oRequisition of  listRequisitionAssociated)
+                                {
+                                  if(oRequisition.stockOnHand>0|| (oRequisition.stockOnHand==0 && oRequisition.stockOutDay>0))
+                                  {
+                                  let fosaReportedByProduct={
+                                    type:"fosaReportedPerProduct",
+                                    idFacility:oFacilityProcessed.id,
+                                    Name: oFacilityProcessed.name,
+                                    dataElement:1,
+                                    periodReported:startOfMonth,
+                                    categoryCombo:{
+                                    id:config.program.code,
+                                    combinationId:oRequisition.product
+                                    }
+                                  }
+                                  listReportedFacilitiesByProduct=listReportedFacilitiesByProduct.concat(fosaReportedByProduct);
+                                  }
+                                }//end for oRequisition
+                              }//end for oFacilityProcessed
+                              newListDataElement2Push=newListDataElement2Push.concat(
+                                listReportedFacilitiesByProduct);
+                            }//End if opcode==4
+                            
+                            logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.success,
+                            message:`Generation indicateurs: ${listFacilitiesWithNegAdjustment.length} negative adjustment reported retrouvés `});
+                            
+                            logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.success,
+                            message:`Generation indicateurs: ${listFacilitiesWithPosAdjustment.length} positive adjustment reported retrouvés `});
+
+                            logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.success,
+                            message:`Generation indicateurs: ${listFacilitiesWithSDUsup0.length} SDU>0 retrouvés `});
+                            logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.success,
+                            message:`Generation indicateurs: ${listFacilitiesWithSDUeq0.length} SDU=0 retrouvés `});
+                            logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.success,
+                            message:`Generation indicateurs: ${listReportedFacilitiesByProduct.length} structure ayant rapportés par produit`});
+                            //return res.send(listFacilitiesWithSDUeq0);
+                            /*newListDataElement2Push=newListDataElement2Push.concat(
+                              listFacilitiesWithNegAdjustment);
+                            newListDataElement2Push=newListDataElement2Push.concat(
+                                listFacilitiesWithPosAdjustment);
+                            newListDataElement2Push=newListDataElement2Push.concat(
+                              listReportedFacilities);
+                            newListDataElement2Push=newListDataElement2Push.concat(
+                              listFacilitiesWithSDUsup0);
+                            newListDataElement2Push=newListDataElement2Push.concat(
+                              listFacilitiesWithSDUeq0);*/
+                            //return res.send(newListDataElement2Push);
+                              //Build dataElement ADX payload
+                            //return res.send(newListDataElement2Push);
+                            let adxDataElementObjectLists=customLibrairy.buildADXPayloadFromDataElementsList(newListDataElement2Push,
+                            metadataConfig.dataElements,config.program);
+                      
+                            //return res.send(adxDataElementObjectLists);
+                            saveAdxData2Dhis(dhis2Token,adxDataElementObjectLists,(adxSaveResults)=>{
+                            if(adxSaveResults){
+                            //return res.send(adxSaveResults);
+                            let importChildStatus=adxSaveResults.children.find(children=>children.name=="status");
+                            let importChildCount= adxSaveResults.children.find(children=>children.name=="importCount");
+                            if(importChildStatus.value=="SUCCESS")
+                            {
+                              logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/syncrequisition2dhis`,result:typeResult.success,
+                              message:`Sommaire importation dans DHIS2. Importer: ${importChildCount.attributes.imported}| Modifier: ${importChildCount.attributes.updated}| Ignorer: ${importChildCount.attributes.ignored} `});
+                            
+                            let responseMessage=`Sommaire importation dans DHIS2. Importer: ${importChildCount.attributes.imported}, Modifier: ${importChildCount.attributes.updated}, Ignorer: ${importChildCount.attributes.ignored} `;
+                            let bodyMessage=`Envoi des donnees des requisitions au serveur DHIS2`;
+                            let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"saveAdxData2Dhis","POST");
+                            res.set('Content-Type', 'application/json+openhim');
+                            return res.status(returnObject.response.status).send(returnObject);
+        
+                            }
+                            else{
+                              logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/api/saveAdxData2Dhis`,result:typeResult.failed,
+                              message:`Echec de l'importation des donnees. Code d'erreur ${importChildStatus.value}`});
+                              logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/syncrequisition2dhis`,result:typeResult.failed,
+                              message:`Echec de l'importation des donnees. Code d'erreur ${importChildStatus.value}`});
+                              let responseMessage=`Echec de l'importation des donnees`;
+                              let bodyMessage=`Envoi des donnees des requisitions au serveur DHIS2`;
+                              let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"saveAdxData2Dhis","POST");
+                              res.set('Content-Type', 'application/json+openhim');
+                              return res.status(returnObject.response.status).send(returnObject);
+                            }
+                          //return res.send(importChildCount);
+                        }
+                        else
+                        {
+                          logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/api/saveAdxData2Dhis`,result:typeResult.failed,
+                            message:`Aucune reponse du server DHIS2 lors de l'envoi de donnees des requisitions`});
+                          logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/syncrequisition2dhis`,result:typeResult.failed,
+                            message:`Aucune reponse du server DHIS2 lors de l'envoi de donnees des requisitions`});
+                          let responseMessage=`Attention: Aucune reponse du server DHIS2 lors de l'envoi de donnees des requisitions`;
+                          let bodyMessage=`Envoi des donnees des requisitions au serveur DHIS2`;
+                          let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"saveAdxData2Dhis","POST");
+                          res.set('Content-Type', 'application/json+openhim');
+                          return res.status(returnObject.response.status).send(returnObject);
+                        }
+      
+                        });
+                        }
+                        });
+
+
+                      }
+                    });
+                  }
+                });
+
+
+
+                
+                //return res.send(adxRequisitionObjectLists);
+              }
+              else{
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/fhir/product`,result:typeResult.failed,
+                message:`Erreur: Echec lors de l'extraction des produits [${stringProductIdsList}] par programme : ${config.program.code} `});
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/syncrequisition2dhis`,result:typeResult.failed,
+                message:`Erreur: Echec lors de l'extraction des produits [${stringProductIdsList}] par programme : ${config.program.code} `});
+                
+                let responseMessage=`Erreur: Echec lors de l'extraction des produits [${productIdsList.toString()}] par programme : ${config.program.code}`;
+                let bodyMessage=`Extraction des produits [${productIdsList.toString()}] par programme : ${config.program.code}`;
+                let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"getListHapiResourceByFilter","GET");
+                res.set('Content-Type', 'application/json+openhim');
+                res.status(returnObject.response.status).send(returnObject);
+              }
+            })//end getListHapiResourceByFilter(fhirProductResource)
+
+          }
+          else{
+            logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/fhir/programme`,result:typeResult.failed,
+            message:`Erreur: Echec lors de l'extraction  des details du programme : ${config.program.code}`});
+            logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/syncrequisition2dhis`,result:typeResult.failed,
+            message:`Erreur: Echec lors de l'extraction  des details du programme : ${config.program.code} `});
+            let responseMessage=`Erreur: Echec lors de l'extraction  des details du programme : ${config.program.code}`;
+            let bodyMessage=`Extraction des details du programme : ${config.program.code}`;
+            let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"getListHapiResourceByFilter","GET");
+            res.set('Content-Type', 'application/json+openhim');
+            return res.status(returnObject.response.status).send(returnObject);
+          }
+        })//end getListHapiResourceByFilter(filterProgram)
+      }
+      else
+      {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/fhir/requisition`,result:typeResult.failed,
+        message:`Erreur: Echec lors de l'extraction des requisitions pour programme : ${config.program.code} et pour la periode: ${startOfMonth}-${endOfMonth}`});
+        
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/syncrequisition2dhis`,result:typeResult.failed,
+        message:`Erreur: Echec lors de l'extraction des requisitions pour programme : ${config.program.code} et pour la periode: ${startOfMonth}-${endOfMonth}`});
+        let responseMessage=`Erreur: Echec lors de l'extraction des requisitions pour programme : ${config.program.code} et pour la periode: ${startOfMonth}-${endOfMonth}`;
+        let bodyMessage=`Extraction des requisitions pour programme : ${config.program.code} et pour la periode: ${startOfMonth}-${endOfMonth}`;
+        let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"getListHapiResourceByFilterCurl","GET");
+        res.set('Content-Type', 'application/json+openhim');
+        return res.status(returnObject.response.status).send(returnObject);
+      }
+
+    });//getListHapiResourceByFilterCurl(fhirRequisitionResource)
   });
   //query params should be ?regionid=xxx&synchronizationperiod=yyyy-mm
   app.get('/syncrequisition2dhis',(req, res) => {
@@ -1912,6 +2604,7 @@ function saveMetadataList2Dhis(dhis2Token,dhisResource,listMetadata,callback){
   let options={headers:{'Content-Type': 'application/json','Authorization':dhis2Token}};
   localAsync.eachSeries(listMetadata, function(metadata, nextResource) {
     localNeedle.post(url,JSON.stringify(metadata),options,function(err,resp){
+      //console.log(resp.body);
       if(err)
       {
           logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/${url}`,result:typeResult.failed,
