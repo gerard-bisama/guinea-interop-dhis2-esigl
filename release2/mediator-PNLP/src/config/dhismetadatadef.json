@@ -3,47 +3,92 @@
         {
             "id":"100001",
             "name": "Quantité Utilisée",
-			"displayName": "Quantité utilisée"
+			"displayName": "Quantité utilisée",
+            "disagragetedByProduct":"true"
         },
         {
             "id":"100002",
             "name": "Stock initial",
-			"displayName": "Stock initial"
+			"displayName": "Stock initial",
+            "disagragetedByProduct":"true"
         },
         {
             "id":"100003",
             "name": "Quantité Recue",
-			"displayName": "Quantité recue"
+			"displayName": "Quantité recue",
+            "disagragetedByProduct":"true"
         },
         {
             "id":"100004",
             "name": "SDU",
-			"displayName": "Stock disponible utilisable"
+			"displayName": "Stock disponible utilisable",
+            "disagragetedByProduct":"true"
         },
         {
             "id":"100005",
             "name": "Ajustement Positif",
-			"displayName": "Ajustement Positif"
+			"displayName": "Ajustement Positif",
+            "disagragetedByProduct":"true"
         },
         {
             "id":"100006",
             "name": "Ajustement Negatif",
-			"displayName": "Ajustement Negatif"
+			"displayName": "Ajustement Negatif",
+            "disagragetedByProduct":"true"
         },
         {
             "id":"100007",
             "name": "CMM",
-			"displayName": "Consommation Mensuelle Moyenne"
+			"displayName": "Consommation Mensuelle Moyenne",
+            "disagragetedByProduct":"true"
         },
         {
             "id":"100008",
             "name": "Nb Jours de rupture",
-			"displayName": "Nombre des jours de rupture"
+			"displayName": "Nombre des jours de rupture",
+            "disagragetedByProduct":"true"
         },
         {
             "id":"100009",
-            "name": "Pertes",
-			"displayName": "Pertes"
+            "name": "Pertes et ajustement Negatif",
+			"displayName": "Pertes et ajustement Negatif",
+            "disagragetedByProduct":"true"
+        },
+        {
+            "id":"100010",
+            "name": "Nombre Fosa rapportage",
+			"displayName": "Nombre Fosa rapportage",
+            "disagragetedByProduct":"false"
+        },
+        {
+            "id":"100011",
+            "name": "Nombre ajustement positif",
+			"displayName": "Nombre ajustement positif",
+            "disagragetedByProduct":"true"
+        },
+        {
+            "id":"100012",
+            "name": "Nombre pertes-ajustement negatif",
+			"displayName": "Nombre pertes-ajustement negatif",
+            "disagragetedByProduct":"true"
+        },
+        {
+            "id":"100013",
+            "name": "Nombre produit avec SDU superieur 0",
+			"displayName": "Nombre produit avec SDU superieur 0",
+            "disagragetedByProduct":"true"
+        },
+        {
+            "id":"100014",
+            "name": "Nombre produit avec SDU egal 0",
+			"displayName": "Nombre produit avec SDU egale 0",
+            "disagragetedByProduct":"true"
+        },
+        {
+            "id":"100015",
+            "name": "Nombre Fosa rapportage par produit",
+			"displayName": "Nombre Fosa rapportage par produit",
+            "disagragetedByProduct":"true"
         }
     ]
 }
