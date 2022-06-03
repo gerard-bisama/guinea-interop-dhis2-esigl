@@ -1900,15 +1900,22 @@ function setupApp () {
                             let listDetailFacilitiesProcessed=[];
                             for(let facilityId of listFacilitiesProcessed)
                             {
-                              listDetailFacilitiesProcessed=listDetailFacilitiesProcessed.concat(listFosaMapped.find(oFosa=>oFosa.id==facilityId));
+                              let foundItem=listFosaMapped.find(oFosa=>oFosa.id==facilityId);
+                              if(foundItem!=null)
+                              {
+                                listDetailFacilitiesProcessed=listDetailFacilitiesProcessed.concat(foundItem);
+                              }
+                              
                             }
                             let newListDataElement2Push=[];
                             let listReportedFacilities=[];
+                            //return res.send(listDetailFacilitiesProcessed);
                             //Build dataElement for Nbr of fosa Reported
                             if(codeop==1)
                             {
                               for(let oFacilityProcessed of listDetailFacilitiesProcessed)
                               {
+                                //console.log(`-----------${oFacilityProcessed.id}-----------------`);
                                 let fosaReported= {
                                   type:"fosaReported",
                                   idFacility:oFacilityProcessed.id,
