@@ -50,8 +50,8 @@
         },
         {
             "id":"100009",
-            "name": "Pertes et ajustement Negatif",
-			"displayName": "Pertes et ajustement Negatif",
+            "name": "Pertes",
+			"displayName": "Pertes",
             "disagragetedByProduct":"true"
         },
         {
@@ -68,8 +68,8 @@
         },
         {
             "id":"100012",
-            "name": "Nombre pertes-ajustement negatif",
-			"displayName": "Nombre pertes-ajustement negatif",
+            "name": "Nombre ajustement negatif",
+			"displayName": "Nombre ajustement negatif",
             "disagragetedByProduct":"true"
         },
         {
@@ -88,6 +88,12 @@
             "id":"100015",
             "name": "Nombre Fosa rapportage par produit",
 			"displayName": "Nombre Fosa rapportage par produit",
+            "disagragetedByProduct":"true"
+        },
+        {
+            "id":"100016",
+            "name": "Nombre pertes",
+			"displayName": "Nombre pertes",
             "disagragetedByProduct":"true"
         }
     ]

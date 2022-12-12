@@ -487,6 +487,7 @@ function setupApp () {
     let programCode=config.program.code;
     let programName=config.program.name;
     let listDatalement2Create=metadataConfig.dataElements;
+    let prefixDataDict="SIGL-";
     //
     //Get catcombos id from programcode
     let filterExpression=`code:eq:${config.program.code}`;
@@ -499,7 +500,7 @@ function setupApp () {
         logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/api/${dhisCategoryCombo}`,result:typeResult.success,
         message:`DHIS2: Extraction de l'ID de ${config.program.code}`});
         operationOutcome=operationOutcome&&true;
-        let listDataElementsMetadata=customLibrairy.buildDataElementMetadata(programCode,programName,listDatalement2Create,
+        let listDataElementsMetadata=customLibrairy.buildDataElementMetadata(prefixDataDict,programCode,programName,listDatalement2Create,
           resCategoryCombination[0].id)
           //console.log(listDataElementsMetadata);
           //return res.send(listDataElementsMetadata);
@@ -1936,6 +1937,7 @@ function setupApp () {
                             //Build new object that returns the nbre of positive adjustment by facilities
                             let listFacilitiesWithPosAdjustment=[];
                             let listFacilitiesWithNegAdjustment=[];
+                            let listFacilitiesWithLosses=[];
                             let listFacilitiesWithSDUsup0=[];
                             let listFacilitiesWithSDUeq0=[];
                             let listReportedFacilitiesByProduct=[];
@@ -1952,6 +1954,7 @@ function setupApp () {
                                 })
                                 let nbrePositifAdjustment=0;
                                 let nbreNegativeAdjustment=0;
+                                let nbreLosses=0;
                                 for(let oRequisition of  listRequisitionAssociated)
                                 {
                                   if(oRequisition.positiveAdjustment>0)
@@ -1972,7 +1975,7 @@ function setupApp () {
                                     fosaPosAjustement);
 
                                   }
-                                  if(oRequisition.losses<0)
+                                  if(oRequisition.negativeAdjustment>0)
                                   {
                                   let fosaNegAjustement={
                                     type:"fosaNegAjustement",
@@ -1988,10 +1991,28 @@ function setupApp () {
                                   listFacilitiesWithNegAdjustment=listFacilitiesWithNegAdjustment.concat(
                                     fosaNegAjustement);
                                   } 
+                                  if(oRequisition.losses<0)
+                                  {
+                                  let fosaLosses={
+                                    type:"fosaLosses",
+                                    idFacility:oFacilityProcessed.id,
+                                    Name: oFacilityProcessed.name,
+                                    dataElement:1,
+                                    periodReported:startOfMonth,
+                                    categoryCombo:{
+                                    id:config.program.code,
+                                    combinationId:oRequisition.product
+                                    }
+                                  }
+                                  listFacilitiesWithLosses=listFacilitiesWithLosses.concat(
+                                    fosaLosses);
+                                  } 
                                 }//end for oRequisition
 
                                 
                               }//end for oFacilityProcessed
+                              newListDataElement2Push=newListDataElement2Push.concat(
+                                listFacilitiesWithLosses);
                               newListDataElement2Push=newListDataElement2Push.concat(
                                 listFacilitiesWithNegAdjustment);
                               newListDataElement2Push=newListDataElement2Push.concat(
@@ -2083,14 +2104,20 @@ function setupApp () {
                             
                             logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.success,
                             message:`Generation indicateurs: ${listFacilitiesWithNegAdjustment.length} negative adjustment reported retrouvés `});
+
+                            logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.success,
+                            message:`Generation indicateurs: ${listFacilitiesWithLosses.length} losses reported retrouvés `});
                             
                             logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.success,
                             message:`Generation indicateurs: ${listFacilitiesWithPosAdjustment.length} positive adjustment reported retrouvés `});
 
                             logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.success,
                             message:`Generation indicateurs: ${listFacilitiesWithSDUsup0.length} SDU>0 retrouvés `});
+                            
+                          
                             logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.success,
                             message:`Generation indicateurs: ${listFacilitiesWithSDUeq0.length} SDU=0 retrouvés `});
+                            
                             logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.success,
                             message:`Generation indicateurs: ${listReportedFacilitiesByProduct.length} structure ayant rapportés par produit`});
                             //return res.send(listFacilitiesWithSDUeq0);

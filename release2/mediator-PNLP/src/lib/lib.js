@@ -962,13 +962,40 @@ exports.buildRequisitionResourceWithRegionRefEntryFromESIGL=function buildRequis
 				valueDecimal:parseFloat(oRequisition.stockOutDays)
 			}
 		);
-	}
+	}/*
 	if(oRequisition.totalLossesAndAdjustments!=null && isNaN(oRequisition.totalLossesAndAdjustments)==false)
 	{
 		extensionElements.push(
 			{
 				url:"losses",
 				valueDecimal:parseFloat(oRequisition.totalLossesAndAdjustments)
+			}
+		);
+	}*/
+	if(oRequisition.losses!=null && isNaN(oRequisition.losses)==false)
+	{
+		extensionElements.push(
+			{
+				url:"losses",
+				valueDecimal:parseFloat(oRequisition.losses)
+			}
+		);
+	}
+	if(oRequisition.positiveAdjustment!=null && isNaN(oRequisition.positiveAdjustment)==false)
+	{
+		extensionElements.push(
+			{
+				url:"positiveAdjustment",
+				valueDecimal:parseFloat(oRequisition.positiveAdjustment)
+			}
+		);
+	}
+	if(oRequisition.negativeAdjustment!=null && isNaN(oRequisition.negativeAdjustment)==false)
+	{
+		extensionElements.push(
+			{
+				url:"NegativeAdjustment",
+				valueDecimal:parseFloat(oRequisition.negativeAdjustment)
 			}
 		);
 	}
@@ -1025,7 +1052,7 @@ exports.buildCategoryOptionsMetadata=function buildCategoryOptionsMetadata(prefi
 	}
 	return listCategoryOptions;
 }
-exports.buildDataElementMetadata=function buildDataElementMetadata(programCode,programName,listDataelementDescription,categoryCombinationId){
+exports.buildDataElementMetadata=function buildDataElementMetadata(prefixDataDict,programCode,programName,listDataelementDescription,categoryCombinationId){
 	let listDEMetadata=[];
 	//let programName=(programCode.split("-"))[2];
 	let extractedPgCode=(programCode.split("-"))[2];
@@ -1036,7 +1063,7 @@ exports.buildDataElementMetadata=function buildDataElementMetadata(programCode,p
 		{
 			oDEMetadata={
 				id:programName+deDesc.id,
-				name:extractedPgCode+"_"+deDesc.name,
+				name:prefixDataDict+extractedPgCode+"_"+deDesc.name,
 				shortName:(extractedPgCode+"_"+deDesc.name).substr(0,50),
 				displayName:deDesc.displayName,
 				valueType: "NUMBER",
@@ -1164,8 +1191,9 @@ exports.buildObjectDetailsRequisitionList=function(listRequisitions,listProductW
 					requisitionDetails.consumedQuantity=parseFloat(extension.valueDecimal);
 					break;
 				case "losses":
-					let floatValue=parseFloat(extension.valueDecimal);
+					//let floatValue=parseFloat(extension.valueDecimal);
 					//if the value is gt  0 is a positive adjustement or ls 0 is losses or neg adjustment
+					/*
 					if(floatValue>0)
 					{
 						requisitionDetails.positiveAdjustment=parseFloat(extension.valueDecimal);
@@ -1173,13 +1201,13 @@ exports.buildObjectDetailsRequisitionList=function(listRequisitions,listProductW
 					if(floatValue<0)
 					{
 						requisitionDetails.losses=parseFloat(extension.valueDecimal);
-					}
-					//requisitionDetails.losses=parseFloat(extension.valueDecimal);
+					}*/
+					requisitionDetails.losses=parseFloat(extension.valueDecimal);
 					break;
 				case "positiveAdjustment":
-					//requisitionDetails.positiveAdjustment=parseFloat(extension.valueDecimal);
+					requisitionDetails.positiveAdjustment=parseFloat(extension.valueDecimal);
 					break;
-				case "negativeAdjustment":
+				case "NegativeAdjustment":
 					requisitionDetails.negativeAdjustment=parseFloat(extension.valueDecimal);
 					break;
 				case "stockOnHand":
@@ -1381,6 +1409,7 @@ exports.buildADXPayloadFromDataElementsList=function(dataElementObjectsList,meta
 	);
 	let idNbreFosaRapportage="";
 	let idNbrAjustementPositif="";
+	let idNbrPertes="";
 	let idNbrPertesAjustementNegatif="";
 	let idNbreProduitSDUSup0="";
 	let idNbreProduitSDUEq0="";
@@ -1410,6 +1439,10 @@ exports.buildADXPayloadFromDataElementsList=function(dataElementObjectsList,meta
 		if(configDataElement.id=="100015")
 		{
 			idNbreFosaRapportageParProduit=programConfig.name+configDataElement.id;
+		}
+		if(configDataElement.id=="100016")
+		{
+			idNbrPertes=programConfig.name+configDataElement.id;
 		}
 	}//end for metaDataConfig
 	//limited to 100 for testing
@@ -1450,6 +1483,25 @@ exports.buildADXPayloadFromDataElementsList=function(dataElementObjectsList,meta
 			{
 				let groupObject= {group:[{_attr:{orgUnit:oDataElement.idFacility,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
 				{dataValue:[{_attr:{dataElement:idNbrPertesAjustementNegatif,
+					[`${oDataElement.categoryCombo.id}`]:oDataElement.categoryCombo.combinationId,value:oDataElement.dataElement}}]}
+				]};
+				xmlObject[0].adx.push(groupObject);
+			}
+			
+		}
+		if(oDataElement.type=="fosaLosses")
+		{
+			if(oDataElement.categoryCombo==null)
+			{
+				let groupObject= {group:[{_attr:{orgUnit:oDataElement.idFacility,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:idNbrPertes,value:oDataElement.dataElement}}]}
+				]};
+				xmlObject[0].adx.push(groupObject);
+			}
+			else
+			{
+				let groupObject= {group:[{_attr:{orgUnit:oDataElement.idFacility,period:validPeriodReported+"/P1M",completeDate:currentZFormatDate}},
+				{dataValue:[{_attr:{dataElement:idNbrPertes,
 					[`${oDataElement.categoryCombo.id}`]:oDataElement.categoryCombo.combinationId,value:oDataElement.dataElement}}]}
 				]};
 				xmlObject[0].adx.push(groupObject);
