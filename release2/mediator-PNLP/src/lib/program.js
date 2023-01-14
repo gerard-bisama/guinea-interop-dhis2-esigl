@@ -1289,7 +1289,16 @@ function setupApp () {
                             message:`${listAllrequisitions.length} requisitions extraites `});
                             //Build requisition bundle item based on he structure definition
                             let listAllBundleItemRequisitions=[];
+                            //filter specific requisition
+                            /*let listSpecificRequisition=listAllrequisitions.filter(element=>{
+                              if(element.requisitionId == 129473)
+                              {
+                                return element;
+                              }
+                            });*/
+                            //
                             for(let oRequisition of listAllrequisitions)
+                            //for(let oRequisition of listSpecificRequisition)
                             {
                                 listAllBundleItemRequisitions.push(
                                     customLibrairy.buildRequisitionResourceWithRegionRefEntryFromESIGL(oRequisition,config.extensionBaseUrlRequisitionDetails,
@@ -1991,7 +2000,7 @@ function setupApp () {
                                   listFacilitiesWithNegAdjustment=listFacilitiesWithNegAdjustment.concat(
                                     fosaNegAjustement);
                                   } 
-                                  if(oRequisition.losses<0)
+                                  if(oRequisition.losses>0)
                                   {
                                   let fosaLosses={
                                     type:"fosaLosses",
