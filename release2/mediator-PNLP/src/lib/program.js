@@ -441,11 +441,11 @@ function setupApp () {
       },
       {
         key:"subject",
-        value:"Location/D1rT7FToSE4"
+        value:"Location/yTNEihLzQwC"
       },
       {
         key:"created",
-        value:"2022-01-01"
+        value:"2022-12-01"
       }
     ];
     console.log(`Start of deletion of hapi resources. First search the resource`);
@@ -1868,6 +1868,422 @@ function setupApp () {
                 }
                 let listCustomRequisitionObjects = customLibrairy.buildObjectDetailsRequisitionList(listRequisitions,
                   listProgramProducts,progDhisId);
+                //return res.send(listCustomRequisitionObjects);
+                //Now get facilities information to generate the Facilities hierarchie for Fosa and sousPrefecture
+                let listFacilitiesWithPosAdjustment=[];
+                let listFacilitiesWithNegAdjustment=[];
+                let listFacilitiesWithLosses=[];
+                let listFacilitiesWithSDUsup0=[];
+                let listFacilitiesWithSDUeq0=[];
+                let listReportedFacilitiesByProduct=[];
+                let newListDataElement2Push=[];
+                if(codeop==2)
+                {
+                  for(let idFacility of listFacilitiesProcessed){
+                    let listRequisitionAssociated=listCustomRequisitionObjects.filter(
+                      oRequisition=>{
+                        if(oRequisition.location==idFacility){
+                        return oRequisition;
+                        }
+                      });
+                    let nbrePositifAdjustment=0;
+                    let nbreNegativeAdjustment=0;
+                    let nbreLosses=0;
+                    for(let oRequisition of  listRequisitionAssociated){
+                      if(oRequisition.positiveAdjustment>0){
+                      
+                        let fosaPosAjustement={
+                          type:"fosaPosAjustement",
+                          idFacility:idFacility,
+                          dataElement:1,
+                          periodReported:startOfMonth,
+                          categoryCombo:{
+                          id:config.program.code,
+                          combinationId:oRequisition.product
+                          }
+                        }
+                        listFacilitiesWithPosAdjustment=listFacilitiesWithPosAdjustment.concat(
+                          fosaPosAjustement);
+                      }
+                      if(oRequisition.negativeAdjustment>0){
+                      
+                        let fosaNegAjustement={
+                          type:"fosaNegAjustement",
+                          idFacility:idFacility,
+                          dataElement:1,
+                          periodReported:startOfMonth,
+                          categoryCombo:{
+                          id:config.program.code,
+                          combinationId:oRequisition.product
+                          }
+                        }
+                        listFacilitiesWithNegAdjustment=listFacilitiesWithNegAdjustment.concat(
+                          fosaNegAjustement);
+                      }
+                      if(oRequisition.losses>0){
+                        let fosaLosses={
+                          type:"fosaLosses",
+                          idFacility:idFacility,
+                          dataElement:1,
+                          periodReported:startOfMonth,
+                          categoryCombo:{
+                          id:config.program.code,
+                          combinationId:oRequisition.product
+                          }
+                        }
+                        listFacilitiesWithLosses=listFacilitiesWithLosses.concat(
+                          fosaLosses);
+                      } 
+                    }//end for listRequisitionAssociated
+                  }//end for oFacilityProcessed
+                  newListDataElement2Push=newListDataElement2Push.concat(
+                    listFacilitiesWithLosses);
+                  newListDataElement2Push=newListDataElement2Push.concat(
+                    listFacilitiesWithNegAdjustment);
+                  newListDataElement2Push=newListDataElement2Push.concat(
+                      listFacilitiesWithPosAdjustment);
+                }//end if codeop=2
+                if(codeop==3)
+                {
+                  for(let idFacility of listFacilitiesProcessed){
+                    let listRequisitionAssociated=listCustomRequisitionObjects.filter(
+                      oRequisition=>{
+                        if(oRequisition.location==idFacility){
+                        return oRequisition;
+                        }
+                      });
+                      for(let oRequisition of  listRequisitionAssociated){
+                        if(oRequisition.stockOnHand>0)
+                        {
+                        let fosaSDUgt0={
+                          type:"fosaSDUgt0",
+                          idFacility:idFacility,
+                          dataElement:1,
+                          periodReported:startOfMonth,
+                          categoryCombo:{
+                          id:config.program.code,
+                          combinationId:oRequisition.product
+                          }}
+                        listFacilitiesWithSDUsup0=listFacilitiesWithSDUsup0.concat(fosaSDUgt0);
+                        }
+                        if(oRequisition.stockOnHand==0 && oRequisition.stockOutDay>0)
+                        {
+                          let fosaSDUeq0={
+                            type:"fosaSDUeq0",
+                            idFacility:idFacility,
+                            dataElement:1,
+                            periodReported:startOfMonth,
+                            categoryCombo:{
+                            id:config.program.code,
+                            combinationId:oRequisition.product
+                            }
+                          }
+                          listFacilitiesWithSDUeq0=listFacilitiesWithSDUeq0.concat(fosaSDUeq0);
+                        }
+                      }//end of for listRequisitionAssociated
+                    }//end for oFacilityProcessed
+                    newListDataElement2Push=newListDataElement2Push.concat(
+                      listFacilitiesWithSDUsup0);
+                    newListDataElement2Push=newListDataElement2Push.concat(
+                        listFacilitiesWithSDUeq0);
+                }//end if codeop=3
+                if(codeop==4)
+                {
+                  for(let idFacility of listFacilitiesProcessed){
+                    let listRequisitionAssociated=listCustomRequisitionObjects.filter(
+                      oRequisition=>{
+                        if(oRequisition.location==idFacility){
+                        return oRequisition;
+                        }
+                      });
+                      for(let oRequisition of  listRequisitionAssociated){
+                        if(oRequisition.stockOnHand>0|| (oRequisition.stockOnHand==0 && oRequisition.stockOutDay>0)){
+                            let fosaReportedByProduct={
+                            type:"fosaReportedPerProduct",
+                            idFacility:idFacility,
+                            dataElement:1,
+                            periodReported:startOfMonth,
+                            categoryCombo:{
+                            id:config.program.code,
+                            combinationId:oRequisition.product
+                            }}
+                            listReportedFacilitiesByProduct=listReportedFacilitiesByProduct.concat(fosaReportedByProduct);       
+                      
+                        }
+                      }
+                  }//endof for listFacilitiesProcessed
+                  newListDataElement2Push=newListDataElement2Push.concat(listReportedFacilitiesByProduct);
+                }//endif codeop=4
+                logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2fhir",result:typeResult.success,
+                   message:`Generation indicateurs: ${listReportedFacilitiesByProduct.length} structure ayant rapportés par produit`});
+                   let adxDataElementObjectLists=customLibrairy.buildADXPayloadFromDataElementsList(newListDataElement2Push,
+                    metadataConfig.dataElements,config.program);
+                //return res.send(adxDataElementObjectLists);
+                saveAdxData2Dhis(dhis2Token,adxDataElementObjectLists,(adxSaveResults)=>{
+                  if(adxSaveResults){
+                    let importChildStatus=adxSaveResults.children.find(children=>children.name=="status");
+                    let importChildCount= adxSaveResults.children.find(children=>children.name=="importCount");
+                    if(importChildStatus.value=="SUCCESS")
+                    {
+                      logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/syncrequisition2dhis`,result:typeResult.success,
+                      message:`Sommaire importation dans DHIS2. Importer: ${importChildCount.attributes.imported}| Modifier: ${importChildCount.attributes.updated}| Ignorer: ${importChildCount.attributes.ignored} `});
+                      
+                      let responseMessage=`Sommaire importation dans DHIS2. Importer: ${importChildCount.attributes.imported}, Modifier: ${importChildCount.attributes.updated}, Ignorer: ${importChildCount.attributes.ignored} `;
+                      let bodyMessage=`Envoi des donnees des requisitions au serveur DHIS2`;
+                      let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"saveAdxData2Dhis","POST");
+                      res.set('Content-Type', 'application/json+openhim');
+                      return res.status(returnObject.response.status).send(returnObject);
+                    }
+                    else{
+                      logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/api/saveAdxData2Dhis`,result:typeResult.failed,
+                      message:`Echec de l'importation des donnees. Code d'erreur ${importChildStatus.value}`});
+                      logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/syncrequisition2dhis`,result:typeResult.failed,
+                      message:`Echec de l'importation des donnees. Code d'erreur ${importChildStatus.value}`});
+                      let responseMessage=`Echec de l'importation des donnees`;
+                      let bodyMessage=`Envoi des donnees des requisitions au serveur DHIS2`;
+                      let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"saveAdxData2Dhis","POST");
+                      res.set('Content-Type', 'application/json+openhim');
+                      return res.status(returnObject.response.status).send(returnObject);
+                    }
+                            
+                  }
+                  else {
+                    logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/api/saveAdxData2Dhis`,result:typeResult.failed,
+                      message:`Aucune reponse du server DHIS2 lors de l'envoi de donnees des requisitions`});
+                    logger.log({level:levelType.error,operationType:typeOperation.postData,action:`/syncrequisition2dhis`,result:typeResult.failed,
+                      message:`Aucune reponse du server DHIS2 lors de l'envoi de donnees des requisitions`});
+                    let responseMessage=`Attention: Aucune reponse du server DHIS2 lors de l'envoi de donnees des requisitions`;
+                    let bodyMessage=`Envoi des donnees des requisitions au serveur DHIS2`;
+                    let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"saveAdxData2Dhis","POST");
+                    res.set('Content-Type', 'application/json+openhim');
+                    return res.status(returnObject.response.status).send(returnObject);
+                  }
+                });
+
+
+                
+                //return res.send(adxRequisitionObjectLists);
+              }
+              else{
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/fhir/product`,result:typeResult.failed,
+                message:`Erreur: Echec lors de l'extraction des produits [${stringProductIdsList}] par programme : ${config.program.code} `});
+                logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/syncrequisition2dhis`,result:typeResult.failed,
+                message:`Erreur: Echec lors de l'extraction des produits [${stringProductIdsList}] par programme : ${config.program.code} `});
+                
+                let responseMessage=`Erreur: Echec lors de l'extraction des produits [${productIdsList.toString()}] par programme : ${config.program.code}`;
+                let bodyMessage=`Extraction des produits [${productIdsList.toString()}] par programme : ${config.program.code}`;
+                let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"getListHapiResourceByFilter","GET");
+                res.set('Content-Type', 'application/json+openhim');
+                res.status(returnObject.response.status).send(returnObject);
+              }
+            })//end getListHapiResourceByFilter(fhirProductResource)
+
+          }
+          else{
+            logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/fhir/programme`,result:typeResult.failed,
+            message:`Erreur: Echec lors de l'extraction  des details du programme : ${config.program.code}`});
+            logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/syncrequisition2dhis`,result:typeResult.failed,
+            message:`Erreur: Echec lors de l'extraction  des details du programme : ${config.program.code} `});
+            let responseMessage=`Erreur: Echec lors de l'extraction  des details du programme : ${config.program.code}`;
+            let bodyMessage=`Extraction des details du programme : ${config.program.code}`;
+            let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"getListHapiResourceByFilter","GET");
+            res.set('Content-Type', 'application/json+openhim');
+            return res.status(returnObject.response.status).send(returnObject);
+          }
+        })//end getListHapiResourceByFilter(filterProgram)
+      }
+      else
+      {
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/fhir/requisition`,result:typeResult.failed,
+        message:`Erreur: Echec lors de l'extraction des requisitions pour programme : ${config.program.code} et pour la periode: ${startOfMonth}-${endOfMonth}`});
+        
+        logger.log({level:levelType.error,operationType:typeOperation.getData,action:`/syncrequisition2dhis`,result:typeResult.failed,
+        message:`Erreur: Echec lors de l'extraction des requisitions pour programme : ${config.program.code} et pour la periode: ${startOfMonth}-${endOfMonth}`});
+        let responseMessage=`Erreur: Echec lors de l'extraction des requisitions pour programme : ${config.program.code} et pour la periode: ${startOfMonth}-${endOfMonth}`;
+        let bodyMessage=`Extraction des requisitions pour programme : ${config.program.code} et pour la periode: ${startOfMonth}-${endOfMonth}`;
+        let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"getListHapiResourceByFilterCurl","GET");
+        res.set('Content-Type', 'application/json+openhim');
+        return res.status(returnObject.response.status).send(returnObject);
+      }
+
+    });//getListHapiResourceByFilterCurl(fhirRequisitionResource)
+  });
+  app.get('_/generatedaeValues',(req, res) => {
+    //let syncPeriod=config.synchronizationPeriod;
+    let syncPeriod;
+    if(req.query.synchronizationperiod)
+    {
+      syncPeriod=req.query.synchronizationperiod;
+    }
+    else{
+      syncPeriod= config.synchronizationPeriod;
+    }
+    
+    if(syncPeriod.split("-").length!=2)
+    {
+      logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
+      message:`Le parametre syncperiod invalid. Utilisé le format YYYY-MM`});
+      return res.send({});
+    }
+    /*
+    const regionId=config.zoneGeographiqueId;
+    if (!config.zoneGeographiqueId)
+    {
+      logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
+      message:`Le parametre zoneGeographiqueId est obligatoire`});
+    }*/
+    var regionId;
+    if(req.query.regionid)
+    {
+      regionId=req.query.regionid
+    }
+    else
+    {
+      regionId=config.zoneGeographiqueId;
+    }
+    if (!regionId)
+    {
+      logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
+      message:`Le parametre zoneGeographiqueId est obligatoire`});
+      let responseMessage=`Erreur: Echec lors lors de la synchro des données dans DHIS2`;
+      let bodyMessage=`Le variable zonegeographiqueId non defini`;
+      let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.failed,"/syncrequisition2dhis","GET");
+      res.set('Content-Type', 'application/json+openhim');
+      return res.status(returnObject.response.status).send(returnObject);
+
+    }
+    let codeop=0;
+    if(req.query.codeop)
+    {
+      codeop=req.query.codeop;
+    }
+
+    //let requestVar=` Request: ${regionId}-${syncPeriod}`;
+    //return res.send(requestVar);
+    globalRes=res;
+    logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:"/syncrequisition2dhis",result:typeResult.iniate,
+    message:`Lancement du processus de synchronisation des requisitions dans DHIS2`});
+    const dhis2Token = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
+    const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;
+    const currentPeriod = moment(syncPeriod,'YYYY-MM');
+    const startOfMonth= currentPeriod.startOf('month').format('YYYY-MM-DD');
+    const endOfMonth   = currentPeriod.endOf('month').format('YYYY-MM-DD');
+    let filterExpresion=[
+      {
+        key:"_count",
+        value:config.maxNbRequisitions2PullPerLoop
+        //value:"1"
+      },
+      {
+        key:"code",
+        value:"requisition"
+      },
+      {
+        key:"created",
+        value:">="+startOfMonth
+      },
+      {
+        key:"created",
+        value:"<="+endOfMonth
+      },
+      {
+        key:"author",
+        value:config.program.code
+      },
+      {
+        key:"subject",
+        value:regionId
+      }
+
+    ];
+    //let filterExpression2=`?code=requisition&created=>=${startOfMonth}&created=<`
+    logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/requisition`,result:typeResult.iniate,
+    message:`HAPI: Extraction des requisitions requisitions pour le programme ${config.program.code} pour la periode:${startOfMonth} ${endOfMonth}`});
+    getListHapiResourceByFilterCurl(hapiToken,fhirRequisitionResource,filterExpresion,(requisitionEntries)=>{
+      //return res.send(requisitionEntries);
+      if(requisitionEntries.length>0)
+      {
+        logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/requisition`,result:typeResult.success,
+        message:`HAPI: Extraction de ${requisitionEntries.length} requisitions pour le programme ${config.program.code} pour la periode:${startOfMonth} ${endOfMonth}`});
+        let listFacilitiesProcessed=[];
+        let listRequisitions=[];
+        let listRequisitionId2Process=[];
+        for(let oRequisition of requisitionEntries )
+        {
+          listRequisitions.push(oRequisition.resource);
+          let extensionElement=oRequisition.resource.extension[0].extension.find(ext=>ext.url=="location");
+          let facilityId=extensionElement.valueReference.reference.split("/")[1];
+          if(!listFacilitiesProcessed.includes(facilityId))
+          {
+            listFacilitiesProcessed.push(facilityId);
+          }
+          //Extraction of the requisition id
+          let reqId=oRequisition.resource.id.split("-")[0];
+          if(!listRequisitionId2Process.includes(reqId))
+          {
+            listRequisitionId2Process.push(reqId);
+          }
+        }
+        logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:`/syncrequisition2dhis`,result:typeResult.ongoing,
+        message:`HAPI: Structure IDs: ${listFacilitiesProcessed.sort().toString().split(",").join("|").substr(0,400)}... `});
+        logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:`/syncrequisition2dhis`,result:typeResult.ongoing,
+        message:`HAPI: Requisition IDs: ${listRequisitionId2Process.sort().toString().split(",").join("|").substr(0,400)}... `});
+        
+        logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/requisition`,result:typeResult.success,
+        message:`HAPI: Requisitions des ${listFacilitiesProcessed.length} structures a traiter  pour le programme ${config.program.code} pour la periode:${startOfMonth} ${endOfMonth}`});
+        
+        let filterProgram=[
+          {
+            key:"_id",
+            value:config.program.code
+          }];
+        //let filterExpression2=`?code=requisition&created=>=${startOfMonth}&created=<`
+        //return res.send("OK");
+        logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/programme`,result:typeResult.iniate,
+        message:`HAPI: Extraction des details du ${config.program.code} `});
+    
+        getListHapiResourceByFilter(hapiToken,fhirProgramResource,filterProgram,(programResource)=>{
+          //console.log(programResource);
+          //return res.send(programResource);
+          if(programResource.length>0)
+          {
+            var oProgIdentifier=programResource[0].resource.identifier.find(id=>id.type.text=="dhisId");
+            var progDhisId=oProgIdentifier.value;
+            logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/programme`,result:typeResult.success,
+            message:`Extraction des details du programme ${config.program.code}`});
+            //Now get list productId from resource
+            let listRefencesProduct=programResource[0].resource.extension[0].extension.filter(extensionElement=>{
+              if(extensionElement.url=="providedProducts")
+              {
+                return extensionElement;
+              }
+            });//end of extension.filter
+            let productIdsList=[];
+            for(let referenceProduct of listRefencesProduct){
+              productIdsList.push(referenceProduct.valueReference.reference.split("/")[1]);
+            }
+            let stringProductIdsList=productIdsList.toString().split(",").join("|");
+            let filterProduct=[
+              {
+                key:"_id:in",
+                value:`${productIdsList.toString()}`
+              }
+            ];
+            logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/product`,result:typeResult.iniate,
+            message:`HAPI: Extraction des details des produits`});
+            getListHapiResourceByFilter(hapiToken,fhirProductResource,filterProduct,(productsResource)=>{
+              if(productsResource.length>0)
+              {
+                logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/fhir/product`,result:typeResult.success,
+                message:`Extraction des  details des produits [${stringProductIdsList}] pour le programme ${config.program.code}`});
+                
+                let listProgramProducts=[];
+                for(let productResource of productsResource){
+                  listProgramProducts.push(productResource.resource);
+                }
+                let listCustomRequisitionObjects = customLibrairy.buildObjectDetailsRequisitionList(listRequisitions,
+                  listProgramProducts,progDhisId);
+                //return res.send(listCustomRequisitionObjects);
                 //Now get facilities information to generate the Facilities hierarchie for Fosa and sousPrefecture
                 let keyValueParmsListRegion=[];
                 keyValueParmsListRegion.push({key:'partof',value:regionId});
@@ -2056,6 +2472,22 @@ function setupApp () {
                                   }
                                   listFacilitiesWithSDUsup0=listFacilitiesWithSDUsup0.concat(fosaSDUgt0);
                                   }
+                                  else
+                                  {
+                                    let fosaSDUgt0={
+                                      type:"fosaSDUgt0",
+                                      idFacility:oFacilityProcessed.id,
+                                      Name: oFacilityProcessed.name,
+                                      dataElement:0,
+                                      periodReported:startOfMonth,
+                                      categoryCombo:{
+                                      id:config.program.code,
+                                      combinationId:oRequisition.product
+                                      }
+                                    }
+                                    listFacilitiesWithSDUsup0=listFacilitiesWithSDUsup0.concat(fosaSDUgt0);
+                                  }
+
                                   if(oRequisition.stockOnHand==0 && oRequisition.stockOutDay>0)
                                   {
                                   let fosaSDUeq0={
@@ -2070,6 +2502,21 @@ function setupApp () {
                                     }
                                   }
                                   listFacilitiesWithSDUeq0=listFacilitiesWithSDUeq0.concat(fosaSDUeq0);
+                                  }
+                                  else
+                                  {
+                                    let fosaSDUeq0={
+                                      type:"fosaSDUeq0",
+                                      idFacility:oFacilityProcessed.id,
+                                      Name: oFacilityProcessed.name,
+                                      dataElement:0,
+                                      periodReported:startOfMonth,
+                                      categoryCombo:{
+                                      id:config.program.code,
+                                      combinationId:oRequisition.product
+                                      }
+                                    }
+                                    listFacilitiesWithSDUeq0=listFacilitiesWithSDUeq0.concat(fosaSDUeq0);
                                   }
                                 }//end for oRequisition
                               }//end for oFacilityProcessed
