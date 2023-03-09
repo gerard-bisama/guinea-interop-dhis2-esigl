@@ -445,7 +445,7 @@ function setupApp () {
       },
       {
         key:"created",
-        value:"2022-12-01"
+        value:"2022-09-01"
       }
     ];
     console.log(`Start of deletion of hapi resources. First search the resource`);
@@ -1693,6 +1693,7 @@ function setupApp () {
   //query params should be ?regionid=xxx&synchronizationperiod=yyyy-mm&codeop=x
   //codeop=1 for number of fosa who reports, 2 numbers of Pos and Neg adjustment, 
   //3 for number of fosa with SDU gt 0, and SDU eq 0
+  //4 for facility reported fosa per products
   app.get('/generatedaeValues',(req, res) => {
     //let syncPeriod=config.synchronizationPeriod;
     let syncPeriod;
@@ -2281,6 +2282,7 @@ function setupApp () {
                 for(let productResource of productsResource){
                   listProgramProducts.push(productResource.resource);
                 }
+                //return res.send(listRequisitions);
                 let listCustomRequisitionObjects = customLibrairy.buildObjectDetailsRequisitionList(listRequisitions,
                   listProgramProducts,progDhisId);
                 //return res.send(listCustomRequisitionObjects);
@@ -2865,10 +2867,12 @@ function setupApp () {
                 for(let productResource of productsResource){
                   listProgramProducts.push(productResource.resource);
                 }
+                //return res.send(listRequisitions);
                 let listCustomRequisitionObjects = customLibrairy.buildObjectDetailsRequisitionList(listRequisitions,
                   listProgramProducts,progDhisId);
                 //return res.send(listCustomRequisitionObjects);
                 //listCustomRequisitionObjects=listCustomRequisitionObjects.slice(0,100);
+                //return res.send(listCustomRequisitionObjects);
                 let adxRequisitionObjectLists=customLibrairy.buildADXPayloadFromRequisitionsList(listCustomRequisitionObjects,
                   metadataConfig.dataElements,config.program);
                   /* logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/saveAdxData2Dhis`,result:typeResult.iniate,
@@ -2880,14 +2884,15 @@ function setupApp () {
                   saveAdxData2Dhis(dhis2Token,adxRequisitionObjectLists,(adxSaveResults)=>{
                   if(adxSaveResults){
                     //return res.send(adxSaveResults);
-                    let importChildStatus=adxSaveResults.children.find(children=>children.name=="status");
-                    let importChildCount= adxSaveResults.children.find(children=>children.name=="importCount");
-                    if(importChildStatus.value=="SUCCESS")
+                    //let importChildStatus=adxSaveResults.children.find(children=>children.name=="status");
+                    let importChildStatus=adxSaveResults.status;
+                    let importChildCount= adxSaveResults.importCount;
+                    if(importChildStatus=="SUCCESS")
                     {
                       logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/syncrequisition2dhis`,result:typeResult.success,
-                      message:`Sommaire importation dans DHIS2. Importer: ${importChildCount.attributes.imported}| Modifier: ${importChildCount.attributes.updated}| Ignorer: ${importChildCount.attributes.ignored} `});
+                      message:`Sommaire importation dans DHIS2. Importer: ${importChildCount.imported}| Modifier: ${importChildCount.updated}| Ignorer: ${importChildCount.ignored} `});
                     
-                    let responseMessage=`Sommaire importation dans DHIS2. Importer: ${importChildCount.attributes.imported}, Modifier: ${importChildCount.attributes.updated}, Ignorer: ${importChildCount.attributes.ignored} `;
+                    let responseMessage=`Sommaire importation dans DHIS2. Importer: ${importChildCount.imported}, Modifier: ${importChildCount.updated}, Ignorer: ${importChildCount.ignored} `;
                     let bodyMessage=`Envoi des donnees des requisitions au serveur DHIS2`;
                     let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"saveAdxData2Dhis","POST");
                     res.set('Content-Type', 'application/json+openhim');
