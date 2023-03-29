@@ -2022,14 +2022,26 @@ function setupApp () {
                 //return res.send(adxDataElementObjectLists);
                 saveAdxData2Dhis(dhis2Token,adxDataElementObjectLists,(adxSaveResults)=>{
                   if(adxSaveResults){
-                    let importChildStatus=adxSaveResults.children.find(children=>children.name=="status");
-                    let importChildCount= adxSaveResults.children.find(children=>children.name=="importCount");
-                    if(importChildStatus.value=="SUCCESS")
+                    let importChildStatus=null;
+                    let importChildCount=null;
+                    if(config.dhis2ResponseVersion=="2.37")
+                    {
+                      importChildStatus=adxSaveResults.status;
+                      importChildCount= adxSaveResults.importCount;
+                    }
+                    else
+                    {
+                      importChildStatus=adxSaveResults.children.find(children=>children.name=="status").value;
+                      importChildCount= adxSaveResults.children.find(children=>children.name=="importCount").attributes;
+                    
+                    }
+
+                    if(importChildStatus=="SUCCESS")
                     {
                       logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/syncrequisition2dhis`,result:typeResult.success,
-                      message:`Sommaire importation dans DHIS2. Importer: ${importChildCount.attributes.imported}| Modifier: ${importChildCount.attributes.updated}| Ignorer: ${importChildCount.attributes.ignored} `});
+                      message:`Sommaire importation dans DHIS2. Importer: ${importChildCount.imported}| Modifier: ${importChildCount.updated}| Ignorer: ${importChildCount.ignored} `});
                       
-                      let responseMessage=`Sommaire importation dans DHIS2. Importer: ${importChildCount.attributes.imported}, Modifier: ${importChildCount.attributes.updated}, Ignorer: ${importChildCount.attributes.ignored} `;
+                      let responseMessage=`Sommaire importation dans DHIS2. Importer: ${importChildCount.imported}, Modifier: ${importChildCount.updated}, Ignorer: ${importChildCount.ignored} `;
                       let bodyMessage=`Envoi des donnees des requisitions au serveur DHIS2`;
                       let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"saveAdxData2Dhis","POST");
                       res.set('Content-Type', 'application/json+openhim');
@@ -2037,9 +2049,9 @@ function setupApp () {
                     }
                     else{
                       logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/api/saveAdxData2Dhis`,result:typeResult.failed,
-                      message:`Echec de l'importation des donnees. Code d'erreur ${importChildStatus.value}`});
+                      message:`Echec de l'importation des donnees. Code d'erreur ${importChildStatus}`});
                       logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/syncrequisition2dhis`,result:typeResult.failed,
-                      message:`Echec de l'importation des donnees. Code d'erreur ${importChildStatus.value}`});
+                      message:`Echec de l'importation des donnees. Code d'erreur ${importChildStatus}`});
                       let responseMessage=`Echec de l'importation des donnees`;
                       let bodyMessage=`Envoi des donnees des requisitions au serveur DHIS2`;
                       let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"saveAdxData2Dhis","POST");
@@ -2885,14 +2897,25 @@ function setupApp () {
                   if(adxSaveResults){
                     //return res.send(adxSaveResults);
                     //let importChildStatus=adxSaveResults.children.find(children=>children.name=="status");
-                    let importChildStatus=adxSaveResults.status;
-                    let importChildCount= adxSaveResults.importCount;
+                    let importChildStatus=null;
+                    let importChildCount=null;
+                    if(config.dhis2ResponseVersion=="2.37")
+                    {
+                      importChildStatus=adxSaveResults.status;
+                      importChildCount= adxSaveResults.importCount;
+                    }
+                    else
+                    {
+                      importChildStatus=adxSaveResults.children.find(children=>children.name=="status").value;
+                      importChildCount= adxSaveResults.children.find(children=>children.name=="importCount").attributes;
+                    
+                    }
                     if(importChildStatus=="SUCCESS")
                     {
                       logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/syncrequisition2dhis`,result:typeResult.success,
-                      message:`Sommaire importation dans DHIS2. Importer: ${importChildCount.imported}| Modifier: ${importChildCount.updated}| Ignorer: ${importChildCount.ignored} `});
+                      message:`Sommaire importation dans DHIS2. Importer: ${importChildCount.imported}| Modifier: ${importChildCount.updated}| Ignorer: ${importChildCount.ignored}`});
                     
-                    let responseMessage=`Sommaire importation dans DHIS2. Importer: ${importChildCount.imported}, Modifier: ${importChildCount.updated}, Ignorer: ${importChildCount.ignored} `;
+                    let responseMessage=`Sommaire importation dans DHIS2. Importer: ${importChildCount.imported}, Modifier: ${importChildCount.updated}, Ignorer: ${importChildCount.ignored}`;
                     let bodyMessage=`Envoi des donnees des requisitions au serveur DHIS2`;
                     let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"saveAdxData2Dhis","POST");
                     res.set('Content-Type', 'application/json+openhim');
@@ -2901,9 +2924,9 @@ function setupApp () {
                     }
                     else{
                       logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/api/saveAdxData2Dhis`,result:typeResult.failed,
-                      message:`Echec de l'importation des donnees. Code d'erreur ${importChildStatus.value}`});
+                      message:`Echec de l'importation des donnees. Code d'erreur ${importChildStatus}`});
                       logger.log({level:levelType.info,operationType:typeOperation.postData,action:`/syncrequisition2dhis`,result:typeResult.failed,
-                      message:`Echec de l'importation des donnees. Code d'erreur ${importChildStatus.value}`});
+                      message:`Echec de l'importation des donnees. Code d'erreur ${importChildStatus}`});
                       let responseMessage=`Echec de l'importation des donnees`;
                       let bodyMessage=`Envoi des donnees des requisitions au serveur DHIS2`;
                       let returnObject=getOpenhimResult(responseMessage,bodyMessage,typeOpenhimResultStatus.successful,"saveAdxData2Dhis","POST");

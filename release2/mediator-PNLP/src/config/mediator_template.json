@@ -405,6 +405,13 @@
       "description": "Ignorer la niveau PS pour la syncro des requisition dans Hapi. true pour ignorer, false pour accepter",
       "type": "string",
       "template": []
+    },
+    {
+      "param": "dhis2ResponseVersion",
+      "displayName": "Version de DHIS2",
+      "description": "Version du DHIS2. Mettre le 2 premier nombre de version pour gerer les reponse au POST des metadonnees ADX. p.ex 2.34 ou 2.37",
+      "type": "string",
+      "template": []
     }
   ],
   "config": {
@@ -440,7 +447,8 @@
   "maxNbRequisitions2PullPerLoop":"20",
   "zoneGeographiqueId":"D1rT7FToSE4",
   "extractionPeriodId":"105",
-  "skipNiveauPS":"true"
+  "skipNiveauPS":"true",
+  "dhis2ResponseVersion":"2.37"
 
   }
 }

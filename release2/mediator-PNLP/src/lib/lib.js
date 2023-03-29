@@ -1144,6 +1144,8 @@ function getProductProgramElement(programProductElement,programId)
 exports.buildObjectDetailsRequisitionList=function(listRequisitions,listProductWithDetails,programId){
 	let listObjectDetailsRequisitions=[];
 	for(let oRequisition of listRequisitions){
+		/*console.log(`=============================`)
+		console.log(`RequisitionId processed: ${oRequisition.id}`)*/
 		let requisitionDetails={
 			reqId:oRequisition.id,
 			product:"",
