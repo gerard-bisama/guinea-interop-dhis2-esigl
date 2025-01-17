@@ -1,0 +1,19 @@
+{
+    "dataElements":[
+        {
+            "id":"100013",
+            "name": "Nombre Fosa rapportage",
+			"displayName": "Nombre Fosa rapportage"
+        },
+        {
+            "id":"100014",
+            "name": "Nombre ajustement positif",
+			"displayName": "Nombre ajustement positif"
+        },
+        {
+            "id":"100015",
+            "name": "Nombre pertes-ajustement negatif",
+			"displayName": "Nombre pertes-ajustement negatif"
+        }
+    ]
+}

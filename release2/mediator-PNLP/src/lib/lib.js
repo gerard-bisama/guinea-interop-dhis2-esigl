@@ -4,6 +4,7 @@ const csv=require('csvtojson');
 const moment = require('moment');
 const url=require('url');
 var xml = require('xml');
+const { Console } = require('console');
 var csvHeaderLog=['timestamp','level','label','operationType','action','result','message'];
 var csvHeaderData=['code','id','iddhis','etablissement','categories','prefecture','possession','Adresse','telephone','fax'];
 
@@ -1172,9 +1173,19 @@ exports.buildObjectDetailsRequisitionList=function(listRequisitions,listProductW
 					//Get detailed product to extract the id
 					var codeProduct=extension.valueReference.reference.split("/")[1];
 					let reqProduct=listProductWithDetails.find(oProduct=>oProduct.id==codeProduct);
-					let dhisIdentifier=reqProduct.identifier.find(id=>id.type.text=="dhisId");
-					//requisitionDetails.product=dhisIdentifier.value;
-					requisitionDetails.product=codeProduct;
+					//console.log(`!!!---- Looping into Product : ${codeProduct}`);
+					let dhisIdentifier;
+					if(reqProduct)
+					{
+						dhisIdentifier=reqProduct.identifier.find(id=>id.type.text=="dhisId");
+						requisitionDetails.product=codeProduct;
+					}
+					else
+					{
+						break;
+					}
+					//let dhisIdentifier=reqProduct.identifier.find(id=>id.type.text=="dhisId");
+					
 					break;
 				case "program":
 					requisitionDetails.program=programId;
@@ -1229,7 +1240,12 @@ exports.buildObjectDetailsRequisitionList=function(listRequisitions,listProductW
 					
 			}//end switch
 		}
-		listObjectDetailsRequisitions.push(requisitionDetails);
+		//skip the requisitionDetails without product
+		if(requisitionDetails.product!="")
+		{
+			listObjectDetailsRequisitions.push(requisitionDetails);
+		}
+		
 	}
 	return listObjectDetailsRequisitions;
 }
@@ -1586,6 +1602,22 @@ exports.buildADXPayloadFromDataElementsList=function(dataElementObjectsList,meta
 	}//end for requisitionLists
 	var resAdxPayLoad=xml(xmlObject);
 	return resAdxPayLoad;	
+}
+
+exports.saveFile =function saveFile(filename,fileFormat,content){
+	try {
+		let datee=new Date().toISOString();
+		datee=datee.replace(/:/i,'');
+		datee=datee.replace(/./i,'');
+		datee=datee.replace(/-/i,'');
+
+		const filenameToSave=`${filename}_${datee}.${fileFormat}`;
+		const data = fs.writeFileSync(filenameToSave,content);
+		console.log("Fichier des données sauvegardé dans: "+filenameToSave);
+	}
+	catch (err) {
+		console.error(err)
+	}
 }
 
 

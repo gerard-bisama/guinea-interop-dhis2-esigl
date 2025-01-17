@@ -2763,6 +2763,7 @@ function setupApp () {
     message:`Lancement du processus de synchronisation des requisitions dans DHIS2`});
     const dhis2Token = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
     const hapiToken = `Basic ${btoa(config.hapiServer.username+':'+config.hapiServer.password)}`;
+    const productToSkipForSyncInDHS2=config.productToSkipForSyncInDHS2;
     const currentPeriod = moment(syncPeriod,'YYYY-MM');
     const startOfMonth= currentPeriod.startOf('month').format('YYYY-MM-DD');
     const endOfMonth   = currentPeriod.endOf('month').format('YYYY-MM-DD');
@@ -2851,9 +2852,13 @@ function setupApp () {
             message:`Extraction des details du programme ${config.program.code}`});
             //Now get list productId from resource
             let listRefencesProduct=programResource[0].resource.extension[0].extension.filter(extensionElement=>{
-              if(extensionElement.url=="providedProducts")
+              if(extensionElement.url=="providedProducts" )
               {
-                return extensionElement;
+                if(!productToSkipForSyncInDHS2.includes(extensionElement.valueReference.reference.split("/")[1]))
+                {
+                  return extensionElement;
+                }
+                
               }
             });//end of extension.filter
             let productIdsList=[];
@@ -2879,9 +2884,10 @@ function setupApp () {
                 for(let productResource of productsResource){
                   listProgramProducts.push(productResource.resource);
                 }
-                //return res.send(listRequisitions);
+                //return res.send(listProgramProducts);
                 let listCustomRequisitionObjects = customLibrairy.buildObjectDetailsRequisitionList(listRequisitions,
                   listProgramProducts,progDhisId);
+                //customLibrairy.saveFile(`${filePath}/logs/requisitionList`,"json",JSON.stringify(listCustomRequisitionObjects));
                 //return res.send(listCustomRequisitionObjects);
                 //listCustomRequisitionObjects=listCustomRequisitionObjects.slice(0,100);
                 //return res.send(listCustomRequisitionObjects);
