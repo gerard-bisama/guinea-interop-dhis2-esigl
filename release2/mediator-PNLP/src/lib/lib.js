@@ -1180,10 +1180,6 @@ exports.buildObjectDetailsRequisitionList=function(listRequisitions,listProductW
 						dhisIdentifier=reqProduct.identifier.find(id=>id.type.text=="dhisId");
 						requisitionDetails.product=codeProduct;
 					}
-					else
-					{
-						break;
-					}
 					//let dhisIdentifier=reqProduct.identifier.find(id=>id.type.text=="dhisId");
 					
 					break;

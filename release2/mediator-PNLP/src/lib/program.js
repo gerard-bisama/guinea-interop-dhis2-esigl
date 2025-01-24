@@ -1697,6 +1697,7 @@ function setupApp () {
   app.get('/generatedaeValues',(req, res) => {
     //let syncPeriod=config.synchronizationPeriod;
     let syncPeriod;
+    
     if(req.query.synchronizationperiod)
     {
       syncPeriod=req.query.synchronizationperiod;
@@ -1754,6 +1755,7 @@ function setupApp () {
     const currentPeriod = moment(syncPeriod,'YYYY-MM');
     const startOfMonth= currentPeriod.startOf('month').format('YYYY-MM-DD');
     const endOfMonth   = currentPeriod.endOf('month').format('YYYY-MM-DD');
+    const productToSkipForSyncInDHS2=config.productToSkipForSyncInDHS2;
     let filterExpresion=[
       {
         key:"_count",
@@ -1796,19 +1798,24 @@ function setupApp () {
         let listRequisitionId2Process=[];
         for(let oRequisition of requisitionEntries )
         {
-          listRequisitions.push(oRequisition.resource);
-          let extensionElement=oRequisition.resource.extension[0].extension.find(ext=>ext.url=="location");
-          let facilityId=extensionElement.valueReference.reference.split("/")[1];
-          if(!listFacilitiesProcessed.includes(facilityId))
+          //exclude requisition with productToSkipForSyncInDHS2
+          let associatedproduct=oRequisition.resource.extension[0].extension.find(ext=>ext.url=="product");
+          if(!productToSkipForSyncInDHS2.includes(associatedproduct.valueReference.reference.split("/")[1]))
           {
-            listFacilitiesProcessed.push(facilityId);
-          }
-          //Extraction of the requisition id
-          let reqId=oRequisition.resource.id.split("-")[0];
-          if(!listRequisitionId2Process.includes(reqId))
-          {
-            listRequisitionId2Process.push(reqId);
-          }
+            listRequisitions.push(oRequisition.resource);
+            let extensionElement=oRequisition.resource.extension[0].extension.find(ext=>ext.url=="location");
+            let facilityId=extensionElement.valueReference.reference.split("/")[1];
+            if(!listFacilitiesProcessed.includes(facilityId))
+            {
+              listFacilitiesProcessed.push(facilityId);
+            }
+            //Extraction of the requisition id
+            let reqId=oRequisition.resource.id.split("-")[0];
+            if(!listRequisitionId2Process.includes(reqId))
+            {
+              listRequisitionId2Process.push(reqId);
+            }
+          }//end if productToSkipForSyncInDHS2.includes
         }
         logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:`/syncrequisition2dhis`,result:typeResult.ongoing,
         message:`HAPI: Structure IDs: ${listFacilitiesProcessed.sort().toString().split(",").join("|").substr(0,400)}... `});
@@ -2809,19 +2816,24 @@ function setupApp () {
         let listRequisitionId2Process=[];
         for(let oRequisition of requisitionEntries )
         {
-          listRequisitions.push(oRequisition.resource);
-          let extensionElement=oRequisition.resource.extension[0].extension.find(ext=>ext.url=="location");
-          let facilityId=extensionElement.valueReference.reference.split("/")[1];
-          if(!listFacilitiesProcessed.includes(facilityId))
+          //exclude requisition with productToSkipForSyncInDHS2
+          let associatedproduct=oRequisition.resource.extension[0].extension.find(ext=>ext.url=="product");
+          if(!productToSkipForSyncInDHS2.includes(associatedproduct.valueReference.reference.split("/")[1]))
           {
-            listFacilitiesProcessed.push(facilityId);
-          }
-          //Extraction of the requisition id
-          let reqId=oRequisition.resource.id.split("-")[0];
-          if(!listRequisitionId2Process.includes(reqId))
-          {
-            listRequisitionId2Process.push(reqId);
-          }
+            listRequisitions.push(oRequisition.resource);
+            let extensionElement=oRequisition.resource.extension[0].extension.find(ext=>ext.url=="location");
+            let facilityId=extensionElement.valueReference.reference.split("/")[1];
+            if(!listFacilitiesProcessed.includes(facilityId))
+            {
+              listFacilitiesProcessed.push(facilityId);
+            }
+            //Extraction of the requisition id
+            let reqId=oRequisition.resource.id.split("-")[0];
+            if(!listRequisitionId2Process.includes(reqId))
+            {
+              listRequisitionId2Process.push(reqId);
+            }
+          }//end if productToSkipForSyncInDHS2.includes
         }
         logger.log({level:levelType.info,operationType:typeOperation.normalProcess,action:`/syncrequisition2dhis`,result:typeResult.ongoing,
         message:`HAPI: Structure IDs: ${listFacilitiesProcessed.sort().toString().split(",").join("|").substr(0,400)}... `});
