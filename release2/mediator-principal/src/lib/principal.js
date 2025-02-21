@@ -235,6 +235,7 @@ logger = createLogger({
       }); 
     });
   });
+  //!!! not use for release 2. Attention since it rename the catoptions that correspond to the product
   app.get('/refactorproduct2dhis', (req, res) => {
     const eSIGLToken = `Basic ${btoa(config.esiglServer.username+':'+config.esiglServer.password)}`;
     const dhis2Token = `Basic ${btoa(config.dhis2Server.username+':'+config.dhis2Server.password)}`;
