@@ -112,27 +112,11 @@ To learn more about the skeleton of mediators and configuration file, visit the 
 * dhis2Server: url endpoint of DHIS2 and associated credentials. Since the associated  account should be able to create/update DHIS2 metadata related to category (CategoryOption,Category,CategoryCombo,categoryOptionCombo).
 * esiglServer:  url endpoint of eLMIS and associated credentials. The associated  account should be able to read facilities, products and programs informations.
 *  extensionBaseUrlProductDetails and extensionBaseUrlProgramDetails: information about profile related to programs and products. Don't change any thing.
-* batchSizeFacilityToSync: to specify the number of facilities extracted from DHIS2 by page to avoid timeout when querying orgUnitis from DHIS2. 
-* batchSizeFacilityFromHapi: to specify the number of resource to extract per page. Not only used for facilities but also for products.
-* program.code: used to specify which program to sync to DHIS2 or for which to update the CategoryOptionCombo, It is compulsory for these two operations.
+* program.name: (!!! deprecated) short name of the program with at least 5 characters. if the name is shorter then 5 chars, replace the missing one by zeros. This used when creating data elements associated to the programs. This feature was moved to the program mediator.
+* program.code: used as IDs of the specifics programs. This is used to specify which program to sync to DHIS2.
+* synchronizationPeriod: (!!! deprecated) Not used in release2.
+* maxNbRequisitions2PullPerLoop: (!!! deprecated) Not used in release2.
+* zoneGeographiqueId: (!!! deprecated) Not used in release2.
+* extractionPeriodId: (!!! deprecated) Not used in release2.
 
-### Configuration of env variable for the docker
-When running as docker container, the mediator will need to read some environment variable.
-Here is the content of the env.list file.
-
-```
-OPENHIM_APIURL=https://IP:8083
-OPENHIM_USERNAME=root@openhim.org
-OPENHIM_PASSWORD=pwd
-OPENHIM_TRUSTSELFSIGNED=true
-MEDIATOR_HOST=IP
-MEDIATOR_PORT=5021
-MEDIATOR_REGISTER=true
-MEDIATOR_HEARTBEAT=true
-```
-here are the parameter to set (lease the other as they are).
-* OPENHIM_APIURL: replace IP by the local IP of the computer were the openHIM core is installed
-* OPENHIM_PASSWORD: the password of the root@oepnhim.org
-* MEDIATOR_HOST: replace IP by the local IP of the computer where the mediator is running.
-* MEDIATOR_PORT: define the port of the mediator
-* MEDIATOR_REGISTER: false|true. false to run the mediator as a standalone component and true to register the mediator in openHIM. If true the mediator should appear in the Admin console of openHIM.
+## Deployment

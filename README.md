@@ -19,8 +19,7 @@ But for our last release the mediators has been optimized to be easily deployed 
 To install docker and docker compose
 ### Hapi FHIR 
 * [Hapi Fhir/JPA Server](https://github.com/hapifhir/hapi-fhir-jpaserver-starter)
-Hapi can be installed by checking it out and deployed using maven, or through tomcat with a war file.
-Or can be run as a docker multistage component.
+Hapi can be installed by checking it out and deployed using maven, or through tomcat with a war file. Or it can be run as a docker multistage component.
 We have choose to setup Hapi FHIR as a multistage container projet.
 To respond to the architecture and some project constraints (Hapi fail sometimes to connect to Postgres and the datase fails to be created at the startup if not exist), We choose to create separately hapi server container and postgres container, them we will connect them later.
 For our project we have used postgresql 9.6 and Hapi FHIR server V5.5.1
@@ -109,13 +108,13 @@ ports: The port should be leave to 8080 since when changing the port mapping, it
  ##### 3.Deploy the hapi container
  ```
 $ cd hapi-server-h2
-$ mvn clean install
 $ docker-compose up -d --build
 $ docker-compose up -d 
 ```
 Then you can check if fhir is working by displaying the capability statement: "http://localhost:8080/fhir/metadata"
  ##### 4.load the profile
- The profiles are defined to specialize general hapi resource based on the use case. Profiles have been created for the following data:
+ [FHIR](https://hl7.org/fhir/R4/modules.html) standard has been chosen for data exchange between eLMIS and DHIS2 since it provide at the same time the specification for data representation and data exchange. The [profiles](https://hl7.org/fhir/R4/profilelist.html) are defined to specialize general FHIR resources based on the use case. 
+ Profiles have been created for the following data:
  * Product: for detailed product information
  * Program: to group products by program or group
  * Requisition: to collect information about the use of product
@@ -180,12 +179,67 @@ There is 2 main types of mediators: principal mediators and the program's mediat
   * Extract requisitions data in eLMIS and save them in Hapi server.
   * Push requisitions data from HAPI to DHIS2 as ADX resources.
   * Generate the indicators (supply chain indicators) from HAPI and push them to DHIS2. This is done because of the complexity of calculating some indicators directly in DHIS2 using the requisition's data and hard coded formula .
+!!! Mediator should be runned on the same server where the openhim is deployed of these architecture is opted.
 
-### Running the 'principal' mediator
-The information about the structure of the mediator can be found  [here](docs/structure_principal.md)
+### Running the 'mediator-principal' mediator
+The mediator-princal as other program mediators can be run as standalone microservice or openHIM components.
+In term of system architecture, they can be run as a nodejs app or as a docker container.
+The option depends to the need of the project. But the best one is to run them as docker continair attached to the openHIM as it will provide robust architecture and an console to manage the mediators.
 
+The information about the structure of the mediator and the configuration of the mediator-principal can be found  [here](docs/structure_principal.md)
 
+#### running the 'mediator-principal' mediator as js app.
+After configuration of the mediator, run the mediator
+* Install the required dependencies
+```
+$ cd mediator-principal/src/
+$ npm install
+```
+* Then run the mediator
+```
+npm start
+```
+The mediator will start by default at the port 5021 if not changed.
 
+#### running the 'mediator-principal' mediator as docker app.
+1. Build the image or rebuild an image: 
+```
+$ cd mediator-principal
+$ docker image  build -t mediateur-principal:v1 . #!!note '.' at the end of the command
+```
+2. (Opt) Bind the /binded-volume with ../mediateur-principal/data in case you want to access the mapping file, if there is a mapping to do otherwise remove the -v params.
+```
+$ docker container run --env-file ./env.list --name mediateur-principal -p 5021:5021 -v /home/lmis-server/dev/binded-volume:/var/node/mediateur-principal/data mediateur-principal:v1
+```
+3. (Opt) Check if the binding works.
+```
+$ docker inspect mediateur-principal
+```
+You will find the following node:
+```
+"Mounts": [
+          {
+              "Type": "bind",
+              "Source": "/<localfolder>/binded-volume",
+              "Destination": "/var/node/mediateur-principal/data",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+          }
+      ]
+```
+4. See the logs to monitor activities of the mediator
+```
+$ container logs -f --tail 100 mediateur-principal
+```
+To restart the mediator the next time just run
+```
+docker start mediateur-principal
+```
+#### Register the mediator in openHIM console.
+When setting the parameter "register: true' either in config.json or env.list, the mediotor will send the request for registration to the openHIM.
+And you have to perform additional configuration on openHIM console.
+The detailed information on  the configuration of mediator in openHIM can be found [here](docs/register_mediaror_openhim.md)
 
 
 ### Start server
