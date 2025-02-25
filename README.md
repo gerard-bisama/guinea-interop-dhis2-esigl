@@ -186,7 +186,7 @@ The mediator-princal as other program mediators can be run as standalone microse
 In term of system architecture, they can be run as a nodejs app or as a docker container.
 The option depends to the need of the project. But the best one is to run them as docker continair attached to the openHIM as it will provide robust architecture and an console to manage the mediators.
 
-The information about the structure of the mediator and the configuration of the mediator-principal can be found  [here](release2/structure_principal.md)
+The information about the structure of the mediator and the configuration of the mediator-principal can be found  [here](release2/docs/structure_principal.md)
 
 #### running the 'mediator-principal' mediator as js app.
 After configuration of the mediator, run the mediator
@@ -239,7 +239,7 @@ docker start mediateur-principal
 #### Register the mediator in openHIM console.
 When setting the parameter "register: true' either in config.json or env.list, the mediotor will send the request for registration to the openHIM.
 And you have to perform additional configuration on openHIM console.
-The detailed information on  the configuration of mediator in openHIM can be found [here](docs/release2/register_mediaror_openhim.md)
+The detailed information on  the configuration of mediator in openHIM can be found [here](release2/docs/register_mediaror_openhim.md)
 
 
 ### Start server
