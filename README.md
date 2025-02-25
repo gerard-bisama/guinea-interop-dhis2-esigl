@@ -1,8 +1,11 @@
 # Interoperability system between e-SIGL and DHIS2 (Guinea case)
 The e-SIGL (eLMIS) and DHIS-2 applications have been operating for several months in Guinea. This plateform allows the data exchange between the 2 softwares.
 
+> [!IMPORTANT]
+> eLMIS is based on openLMIS V2. For others eLMIS code can be customized with few level of effor since there is not need to write the code from scratch.
+
 ## Architecture
-The architecture requires the following components apart of DHIS2 and e-SIGL:
+The architecture requires the following components running on Ubuntu 20 (Ubuntu 16 or 18 could work too) of DHIS2 and e-SIGL:
 * HAPI FHIR Server (hapi-fhir-jpaserver-local): 
 This is used to store and validate extracted Data on product,program and requisition, converted to FHIR resources and to act as the FHIR Repository. Any FHIR client can request resources from this repository using HTTP requests. 
 * OpenHIM Console and Core API Server:
@@ -11,18 +14,24 @@ This is used to store and validate extracted Data on product,program and requisi
 Microservices used used to pull resources from DHIS2 and eSIGL, transform them to Fhir standard and save it in the Hapi Server, then push then to DHIS2 in ADX formats. Then can be deployed as container or nodejs services. They are developed based on the openHIM requirement to be able to be managed using OpeHIM console
 * (Optional) docker and  Portainer: 
 Docker is an open platform for developing, shipping, and running applications. Docker provides the ability to package and run an application in a loosely isolated environment called a container.. Portainer hides the complexity of managing containers behind an easy-to-use UI. 
+> [!NOTE] 
+> The resources version of FHIR used for this project is R4. [Link](https://hl7.org/fhir/R4/resourcelist.html) for more information about R4 FHIR resources.
 
 ## Installation of components
+
 ### Install docker community Edition (Optional) 
 The docker CE is used to facilitate the deployment of some software components such as HAPI, OpenHIM and associated mediators. However,all these can be deployed on standard way. Docker is compulsory for Portainer.
-But for our last release the mediators has been optimized to be easily deployed and to run as containers. 
-To install docker and docker compose
+> [!NOTE] 
+> For our last release the mediators has been optimized to be easily deployed and to run as containers. 
+To install docker engine using via apt repository as described [here](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository)
+
 ### Hapi FHIR 
 * [Hapi Fhir/JPA Server](https://github.com/hapifhir/hapi-fhir-jpaserver-starter)
 Hapi can be installed by checking it out and deployed using maven, or through tomcat with a war file. Or it can be run as a docker multistage component.
 We have choose to setup Hapi FHIR as a multistage container projet.
 To respond to the architecture and some project constraints (Hapi fail sometimes to connect to Postgres and the datase fails to be created at the startup if not exist), We choose to create separately hapi server container and postgres container, them we will connect them later.
-For our project we have used postgresql 9.6 and Hapi FHIR server V5.5.1
+> [!NOTE] 
+> For our last release, we have used postgresql 9.6 and Hapi FHIR server V5.5.1
 #### Configure the postgres server container
  Edit a docker-compose.yml as described below to install postgresql 9.6 and run it on port 5432. The volume is used to store permanently database data. The prostgres database will store Hapi Fhir configurations (Profiles,Search Parameters) and resources (Products,Programs,Requisitions,etc...)
  ##### 1. Edit the docker-compose.yml file
@@ -141,17 +150,19 @@ If loaded successfully, you should getback the result with the name of resource 
 
 ### OpenHIM
 Follow the link below for the documentation on openHIM.
-* [OpenHIM-Core & OpenHIM Console](https://openhim.org/docs/getting-started/prerequisites). 
+* [OpenHIM-Core & OpenHIM Console](https://openhim.org/docs/getting-started/prerequisites).
+> [!IMPORTANT]
+> OpenHIM console through its web UI, is the only approach that allow to change the configuration of mediator without reinstalling the mediator. If a parameter need to be changed to process a specific use case, this the best option.
 
-##### 1. Pull the source from  https://github.com/jembi/openhim-common.git
+##### 1. Pull the source from  openHIM repository
 ```
 git clone https://github.com/jembi/openhim-common.git
 cd openhim-common
 ```
 ##### 2. Set the openHIM console port. 
-The openHIM console provide the UI for administrating mediators. Base on our need we will set the port to 80. The 
-default port is 9000.
-!!Pay attention about the port number. openHIM core uses some ports for its internal operation such as:for mediator registration. Avoid using these ports for other components
+The openHIM console provide the UI for administrating mediators. Base on our need we will set the port to 80. The default port is 9000.
+!!Pay attention about the port number. openHIM core uses some ports for its internal operation such as:for mediator registration. Avoid using these ports for other components.
+
 ```
 console:
     container_name: openhim-console
@@ -159,6 +170,7 @@ console:
     ports:
         - "80:80"
 ``` 
+Access the OpenHIM Console on http://localhost
 ##### 3. Deploy the openHIM 
 ```
 $ cd openhim-common
@@ -167,6 +179,7 @@ $ docker-compose up -d
 ```
 ## Managing the mediators
 The mediator are microservice or apps used to implement the exchange of resource between e-SIGL and DHIS2. In this architecture FHIR is used as an interface between e-SIGL and DHIS2. Differents mediators are implemented based on the use case to handle exchanges of data.
+The mediator developped are [orchestration mediator](https://openhim.org/docs/tutorial/mediators/orchestrator) based on openHIM framework.
 There is 2 main types of mediators: principal mediators and the program's mediators.
 * Principal mediator: is used for general operation commons to all mediators.It is used for the following operations
   * Extract the list of facilities (geographic and service delivery points) from DHIS2 (orgUnits) to store in HAPI (Location). The DHIS2 is considered as the master list.
@@ -199,7 +212,7 @@ $ npm install
 ```
 npm start
 ```
-The mediator will start by default at the port 5021 if not changed.
+The mediator will start by default at the port 5021 if not changed. If you have opted for openHIM console management, follow instruction on  [Register the mediator in openHIM console](#Register-the-mediator-in-openHIM-console-Opt)
 
 #### running the 'mediator-principal' mediator as docker app.
 1. Build the image or rebuild an image: 
@@ -236,10 +249,59 @@ To restart the mediator the next time just run
 ```
 docker start mediateur-principal
 ```
-#### Register the mediator in openHIM console.
+The mediator will start by default at the port 5021 if not changed. If you have opted for openHIM console management, follow instruction on  [Register the mediator in openHIM console](#Register-the-mediator-in-openHIM-console-Opt)
+
+#### Trigger the operations on the mediator-mediator
+The principal mediator used the channel to perform operations using url patterns.The url pattern are routes or endpoints that run the operations. 
+The mediator principal has the following channels:
+* 0-[Principal] Synchroniser les UO DHIS2->HAPI: The mediator gets organisation Units from DHIS2, transform them into Location resources and save them in FHIR. Url endpoint: _'syncorgunit2fhir'_ 
+* 1-[Principal] Mapper les structures eSIGL avec les UO de DHIS2: the mediator gets the id of the facilities from an excel mapping file and update existing Location resource with them. Url endpoint: _'mapfacility2fhir'_ 
+* 2-[Principal] Synchroniser le programmes et les produits associes avec HAPI: the mediator gets the list of products and associated programs from eLMIS, transform them to Product and Program based on the define profiles. Url endpoint: _'syncprogramproduct2fhir'_ 
+* 3-[Principal] Synchroniser le programmes et les produits associes avec DHIS2: the mediator create/update the associated metadata related to product and programs into DHIS2. Url endpoint: _'syncprogramproduct2dhis?programcode'_ 
+* 4-[Principal] Mettre à jour les categoryOptionCombos avant la synchro FHIR-DHIS2: the mediator updates information on the metadata created in DHIS2. Url endpoint: _'updatecatcombodhis?programcode'_ 
+
+> [!IMPORTANT]
+> The principal mediators operations should be runs at the initialization of the project, or if a new facility is added or a new product or program is added.
+
+Below are the step trigger operations on the mediator-principale.
+* Step 1: Extract list of all facilities from DHIS2, transfort them in Location resources and save them in the HAPI repository. Optionaly an orgUnit can be passed as a param _'orgunitid=id'_ to the endpoint and the operation will extract only chilfren of the provided facility. This can be usfull when the administrator knows where the new facilities have been added. As adding facilities are not transactional operation this can be run based of the need and manually
+```sh
+curl 'http://localhost:5021/syncorgunit2fhir' #to synch all orgUnits from DHIS2
+#or
+curl 'http://localhost:5021/syncorgunit2fhir?orgunitid=orgUnitId'
+```
+* step 2: Perform the mapping of facilities between eLMIS and DHIS2. The mapping required a manual matching between orgUnit ID and facility ID. Additionnal information such as category of facility, region and district are provided to facilitate the search and updating information.
+The mapping file header should looks like this: 
+```
+['code','id','iddhis','etablissement','categories','region','prefecture']
+```
+The facilite map should be placed in 'pwd()/data' of the mediator and trigger the channel with
+```sh
+curl 'http://localhost:5021/mapfacility2fhir'
+```
+* step 3: Extract the list of all products and programs from eLMIS, transfort them in Product and Program resources resources and save them in the HAPI repository.
+```sh
+curl 'http://localhost:5021/syncprogramproduct2fhir'
+```
+* step 3: Extract the list of all products and programs from eLMIS and from specific program, transfort them in Product and Program metadata push them to DHIS2.the parameter _'programcode'_ is compulsory to syncronize only data from specific program to avoid overload of DHIS2 by syncing the unused data. if not provided the progralcode is the mediator.json or openHIM will be used.
+```sh
+curl 'http://localhost:5021/syncprogramproduct2dhis?programcode=xxxxx'
+```
+* step 4: Once the products and programs are created as category, catoption, DHIS2 generates the categoryOptionCombos. Sometime with newer version the categoryOptionCombos does not have the field code with is used in ADX later to push data.
+```sh
+curl 'http://localhost:5021/updatecatcombodhis' #take the program code in mediator configuration
+#or
+curl 'http://localhost:5021/updatecatcombodhis?programcode=xxxxxx'
+```
+
+### Register the mediator in openHIM console (Opt).
 When setting the parameter "register: true' either in config.json or env.list, the mediotor will send the request for registration to the openHIM.
 And you have to perform additional configuration on openHIM console.
 The detailed information on  the configuration of mediator in openHIM can be found [here](release2/docs/register_mediaror_openhim.md)
+
+
+
+
 
 
 ### Start server

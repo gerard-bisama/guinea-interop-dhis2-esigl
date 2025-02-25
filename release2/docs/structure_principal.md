@@ -62,8 +62,14 @@ here are the parameter to set (lease the other as they are)
 * password: the password of the root openhim user as set during the installation of the openHIM
 * register: false|true. false to run the mediator as a standalone component and true to register the mediator in openHIM. If true the mediator should appear in the Admin console of openHIM.
 
-### Configuration of mediator processes
-The mediator needs to interact with eLMIS and DHIS2 to extract data, reformat then based on the needs and then exchange them. The HAPI FHIR server is used as a central repository for sharing the data extracted and processed from both system's as resources that can be used by an other system which make the solution able to be scalled up on new usecase.
+### Configuration of mediator 
+The mediator needs to interact with eLMIS and DHIS2 to extract data, transform them on a standard format based on the needs and then exchange them. The HAPI FHIR server is used as a central repository for sharing the data extracted and processed from both system's as resources that can be used by an other system which make the solution able to be scalled up on new usecase. The mediator play this role by implementing the business logics related to Extraction, Transformation and Loading (ETL) of data.
+To edit the mediator
+ ```
+$ cd mediator-principal/src/config
+$ nano mediator.json
+```
+
 Leave other node as they are and configure the value in the 'config' node.
 To learn more about the skeleton of mediators and configuration file, visit the [OpenHIM dev guide](https://openhim.org/docs/dev-guide/developing-mediators).
 
