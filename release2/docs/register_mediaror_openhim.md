@@ -10,9 +10,10 @@ Login in openHIM Console on _'http://localhost:port'_ and navigate to the _'Medi
 
 ## Step 2. Edit mediator configuration 
 The mediator configurations variables can be edited based on the need. Click on the gear button to set up the parameters based on your need.
+![like this](images/mediator_configuration.jpg)
 > [!IMPORTANT]
 > OpenHIM console through its web UI, is the only approach that allow to change the configuration of mediator without reinstalling the mediator.
-![like this](images/mediator_configuration.jpg)
+
 
 ## Step 3. Setup channels
 A channel defines a path that a request will take through the OpenHIM to run a process. The process related to ETL works are triggered through a call to channels. [Link](https://openhim.org/docs/configuration/channels) to learn  about openHIM channel.

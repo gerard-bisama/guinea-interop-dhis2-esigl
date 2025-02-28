@@ -1,4 +1,4 @@
-# Interoperability system between e-SIGL and DHIS2 (Guinea case)
+# Interoperability system between e-SIGL and DHIS2 (Guinea use case)
 The e-SIGL (eLMIS) and DHIS-2 applications have been operating for several months in Guinea. This plateform allows the data exchange between the 2 softwares.
 
 > [!IMPORTANT]
@@ -100,10 +100,10 @@ $ git clone https://github.com/hapifhir/hapi-fhir-jpaserver-starter.git hapi-ser
       spring.datasource.driverClassName: org.postgresql.Driver
       tester.home.server_address: 'http://localhost:8080/fhir'
   ```
-network_mode: "host" #This to allow the hapi-fhir-server container to connect to the external postgres container
-build: . # we can remove build and use a docker hub image 'image: "hapiproject/hapi:v5.5.1"'
-spring.datasource.url:  The localhost  can be changed by the IP address of the local server.
-ports: The port should be leave to 8080 since when changing the port mapping, it create the problem of hapi-server not hable to read the conformance metadata.
+**_network_mode_**: "host" #This to allow the hapi-fhir-server container to connect to the external postgres container
+**_build_**: . # we can remove build and use a docker hub image 'image: "hapiproject/hapi:v5.5.1"'
+**_spring.datasource.url_**:  The localhost  can be changed by the IP address of the local server.
+**_ports_**: The port should be leave to 8080 since when changing the port mapping, it create the problem of hapi-server not hable to read the conformance metadata.
 
  ##### 3. Remove the access to global free hapi fhir server
  Comment these line in the src/main/resources/application.yml file.
@@ -121,7 +121,7 @@ $ docker-compose up -d --build
 $ docker-compose up -d 
 ```
 Then you can check if fhir is working by displaying the capability statement: "http://localhost:8080/fhir/metadata"
- ##### 4.load the profile
+ ##### 4.Load the profile
  [FHIR](https://hl7.org/fhir/R4/modules.html) standard has been chosen for data exchange between eLMIS and DHIS2 since it provide at the same time the specification for data representation and data exchange. The [profiles](https://hl7.org/fhir/R4/profilelist.html) are defined to specialize general FHIR resources based on the use case. 
  Profiles have been created for the following data:
  * Product: for detailed product information
@@ -192,7 +192,9 @@ There is 2 main types of mediators: principal mediators and the program's mediat
   * Extract requisitions data in eLMIS and save them in Hapi server.
   * Push requisitions data from HAPI to DHIS2 as ADX resources.
   * Generate the indicators (supply chain indicators) from HAPI and push them to DHIS2. This is done because of the complexity of calculating some indicators directly in DHIS2 using the requisition's data and hard coded formula .
-!!! Mediator should be runned on the same server where the openhim is deployed of these architecture is opted.
+
+> [!IMPORTANT]
+> Mediator should be runned on the same server where the openhim is deployed of these architecture is opted.
 
 ### Running the 'mediator-principal' mediator
 The mediator-princal as other program mediators can be run as standalone microservice or openHIM components.
@@ -251,7 +253,7 @@ docker start mediateur-principal
 ```
 The mediator will start by default at the port 5021 if not changed. If you have opted for openHIM console management, follow instruction on  [Register the mediator in openHIM console](#Register-the-mediator-in-openHIM-console-Opt)
 
-#### Trigger the operations on the mediator-mediator
+#### Trigger the operations on the mediateur-principal
 The principal mediator used the channel to perform operations using url patterns.The url pattern are routes or endpoints that run the operations. 
 The mediator principal has the following channels:
 * 0-[Principal] Synchroniser les UO DHIS2->HAPI: The mediator gets organisation Units from DHIS2, transform them into Location resources and save them in FHIR. Url endpoint: _'syncorgunit2fhir'_ 
@@ -293,14 +295,31 @@ curl 'http://localhost:5021/updatecatcombodhis' #take the program code in mediat
 #or
 curl 'http://localhost:5021/updatecatcombodhis?programcode=xxxxxx'
 ```
+#### Automate the operation of the mediateur-principal
+Operations can be automated using crontab. Appart of the operation related to the mapping of facilities which require manual data handle to perform operations. All operations related to the synchronization of program and products can be configure on monthly basis since products and programs are not transactional data.
+To configure the automatic sync of products and programs 'xxxxx' every month in crontab:
+```sh
+crontab -e
+#then enter the following entries
+0 0 1 * * curl 'http://localhost:5021/syncprogramproduct2fhir'
+3 0 1 * *  curl 'http://localhost:5021/syncprogramproduct2dhis?programcode=xxxxx'
+5 0 1 * *  curl 'http://localhost:5021/updatecatcombodhis?programcode=xxxxxx'
+```
+Once the sync is completed, the metadata should look like [this](release2/docs/dhis_productmetadata.md)
+### Running the program mediators
+The program-mediator can be run as standalone microservice or openHIM components.
+In term of system architecture, they can be run as a nodejs app or as a docker container.
+The option depends to the need of the project. But the best one is to run them as docker continair attached to the openHIM as it will provide robust architecture and an console to manage the mediators.
+For performance purpuse due to the recurrent timeline when extraction data from eLMIS API or DHIS2 API, it is advisable to create a metiator per program. P.ex: if we want to synchronize data of PNLP (Malaria), PNLAT (TB/HIV), PEV (EPI) programs we will create 3 mediators. We can just copy the _'mediator-PNLP'_ and rename it to _'mediator-PNLAT'_  and _'mediator-PEV'_ 
+
+The information about the structure of the mediator and the configuration of the mediator-principal can be found  [here](release2/docs/structure_progmediator.md)
+
+Once the sync is completed, the metadata should look like [this](release2/docs/dhis_requisitions.md)
 
 ### Register the mediator in openHIM console (Opt).
 When setting the parameter "register: true' either in config.json or env.list, the mediotor will send the request for registration to the openHIM.
 And you have to perform additional configuration on openHIM console.
 The detailed information on  the configuration of mediator in openHIM can be found [here](release2/docs/register_mediaror_openhim.md)
-
-
-
 
 
 
