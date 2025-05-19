@@ -7,7 +7,7 @@ Principal mediator: is used for general operation commons to all mediators.It is
 
 ## Configuration
 The file structure of the mediator-principal is represented below. The last release of the source code is located the 'release2' folder. After cloning the repository from git hub go in the release2 folder.
-```
+```sh
 git clone https://github.com/gerard-bisama/guinea-interop-dhis2-esigl.git
 cd guinea-interop-dhis2-esigl/release2
 ```
@@ -24,6 +24,7 @@ release2
       |_ config.json
       |_ mediator.json  
     |_ data
+      |_ logs
     |_ lib
     |_ package.json
 
@@ -45,7 +46,7 @@ $ nano config.json
 ```
 Here is the contains
 
-```
+```JSON
 {
   "api": {
     "username": "root@openhim.org",
@@ -65,7 +66,7 @@ here are the parameter to set (lease the other as they are)
 ### Configuration of mediator 
 The mediator needs to interact with eLMIS and DHIS2 to extract data, transform them on a standard format based on the needs and then exchange them. The HAPI FHIR server is used as a central repository for sharing the data extracted and processed from both system's as resources that can be used by an other system which make the solution able to be scalled up on new usecase. The mediator play this role by implementing the business logics related to Extraction, Transformation and Loading (ETL) of data.
 To edit the mediator
- ```
+ ```sh
 $ cd mediator-principal/src/config
 $ nano mediator.json
 ```
@@ -73,7 +74,7 @@ $ nano mediator.json
 Leave other node as they are and configure the value in the 'config' node.
 To learn more about the skeleton of mediators and configuration file, visit the [OpenHIM dev guide](https://openhim.org/docs/dev-guide/developing-mediators).
 
-```
+```JSON
 {
   "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60medpg01",
   "version": "0.3.1",
