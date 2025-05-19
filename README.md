@@ -322,44 +322,6 @@ And you have to perform additional configuration on openHIM console.
 The detailed information on  the configuration of mediator in openHIM can be found [here](release2/docs/register_mediaror_openhim.md)
 
 
-
-### Start server
-Three main componants must be started to have an operational openhim server.
-* Start the openhim-core
-```
-sudo service mongod start
-openhim-core
-```
-
-* Start the Hapi FHIR Server
-```
-cd hapi-fhir-jpaserver-starter
-mvn jetty:run -Djetty.http.port=8083 > ~/hapifhir.log &
-```
-
-* Start the openhim console
-Openhim console is deployed as web application on apache. Ones need just to ensure that apache is running.
-
-### Mediators
-```
-git clone https://github.com/gerard-bisama/guinea-interop-dhis2-esigl.git
-cd guinea-interop-dhis2-esigl
-```
-To run the Push DHIS2 and eSIGL to FHIR HAPI Server mediator
-```
-cd esigl-dhis-interop
-npm install
-npm start
-```
-To run the Fhir Resources from HAPI to DHIS2 mediator
-```
-cd fhir-dhis-sync
-npm install
-npm start
-```
-### Configurations
-Configure the mediators as described to the operational user manual. The user manual is available in the docs directory.
-
 Taratataaa!!!!
 
 
