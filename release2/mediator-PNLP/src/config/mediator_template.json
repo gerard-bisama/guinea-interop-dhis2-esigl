@@ -410,7 +410,7 @@
       "param": "productToSkipForSyncInDHS2",
       "displayName": "Liste des produits à ne pas synchroniser avec DHIS2",
       "description": "Liste des produits à ne pas synchroniser avec DHIS2",
-      "type": "struct",
+      "type": "string",
       "template":  []
     },
     {
@@ -455,7 +455,7 @@
   "zoneGeographiqueId":"odY5MzWb1jc",
   "extractionPeriodId":"144",
   "skipNiveauPS":"true",
-  "productToSkipForSyncInDHS2":["TMP0122","TMP0123","TMP0120","TMP0121","TMP0124"],
+  "productToSkipForSyncInDHS2":"TMP0122,TMP0123,TMP0120,TMP0121,TMP0124",
   "dhis2ResponseVersion":"2.37"
 
   }
