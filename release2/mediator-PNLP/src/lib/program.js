@@ -1825,7 +1825,7 @@ function setupApp() {
     const currentPeriod = moment(syncPeriod, 'YYYY-MM');
     const startOfMonth = currentPeriod.startOf('month').format('YYYY-MM-DD');
     const endOfMonth = currentPeriod.endOf('month').format('YYYY-MM-DD');
-    const productToSkipForSyncInDHS2 = config.productToSkipForSyncInDHS2;
+    const productToSkipForSyncInDHS2 = config.productToSkipForSyncInDHS2.split(",");
     let filterExpresion = [
       {
         key: "_count",
@@ -2887,7 +2887,7 @@ function setupApp() {
     });
     const dhis2Token = `Basic ${btoa(config.dhis2Server.username + ':' + config.dhis2Server.password)}`;
     const hapiToken = `Basic ${btoa(config.hapiServer.username + ':' + config.hapiServer.password)}`;
-    const productToSkipForSyncInDHS2 = config.productToSkipForSyncInDHS2;
+    const productToSkipForSyncInDHS2 = config.productToSkipForSyncInDHS2.split(",");
     const currentPeriod = moment(syncPeriod, 'YYYY-MM');
     const startOfMonth = currentPeriod.startOf('month').format('YYYY-MM-DD');
     const endOfMonth = currentPeriod.endOf('month').format('YYYY-MM-DD');
