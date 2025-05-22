@@ -263,7 +263,7 @@ The mediator principal has the following channels:
 * 4-[Principal] Mettre à jour les categoryOptionCombos avant la synchro FHIR-DHIS2: the mediator updates information on the metadata created in DHIS2. Url endpoint: _'updatecatcombodhis?programcode'_ 
 
 > [!IMPORTANT]
-> The principal mediators operations should be runs at the initialization of the project, or if a new facility is added or a new product or program is added.
+> The principal mediators operations should be runs at the initialization of the project, or if a new facility is added or a new product or program is added. !!! The sync _'syncorgunit2fhir'_ should be run carefully since it reinit the localtion list and clear the mapping. 
 
 Below are the step trigger operations on the mediator-principale.
 * Step 1: Extract list of all facilities from DHIS2, transfort them in Location resources and save them in the HAPI repository. Optionaly an orgUnit can be passed as a param _'orgunitid=id'_ to the endpoint and the operation will extract only chilfren of the provided facility. This can be usfull when the administrator knows where the new facilities have been added. As adding facilities are not transactional operation this can be run based of the need and manually
