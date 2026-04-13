@@ -2108,6 +2108,7 @@ function setupApp() {
                 //return res.send(adxDataElementObjectLists);
                 saveAdxData2Dhis(dhis2Token, adxDataElementObjectLists, (adxSaveResults) => {
                   if (adxSaveResults) {
+                    return res.send(adxSaveResults);
                     let importChildStatus = null;
                     let importChildCount = null;
                     if (config.dhis2ResponseVersion == "2.37") {
@@ -3041,7 +3042,7 @@ function setupApp() {
                 //return res.send(adxRequisitionObjectLists);
                 saveAdxData2Dhis(dhis2Token, adxRequisitionObjectLists, (adxSaveResults) => {
                   if (adxSaveResults) {
-                    //return res.send(adxSaveResults);
+                    return res.send(adxSaveResults);
                     //let importChildStatus=adxSaveResults.children.find(children=>children.name=="status");
                     let importChildStatus = null;
                     let importChildCount = null;

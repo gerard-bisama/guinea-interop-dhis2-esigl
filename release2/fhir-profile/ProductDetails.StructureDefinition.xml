@@ -5,7 +5,7 @@
     <versionId value="3" />
     <lastUpdated value="2020-05-14T17:48:58.261+01:00" />
   </meta>
-  <url value="https://www.hl7.org/fhir/StructureDefinition/ProductDetails" />
+  <url value="https://esigl.santegovgn.org/fhir/StructureDefinition/ProductDetails" />
   <name value="ProductDetails" />
   <status value="draft" />
   <fhirVersion value="4.0.0" />
@@ -81,7 +81,7 @@
     </element>
     <element id="Extension.url">
       <path value="Extension.url" />
-      <fixedUri value="https://www.hl7.org/fhir/StructureDefinition/ProductDetails" />
+      <fixedUri value="https://esigl.santegovgn.org/fhir/StructureDefinition/ProductDetails" />
     </element>
     <element id="Extension.value[x]">
       <path value="Extension.value[x]" />

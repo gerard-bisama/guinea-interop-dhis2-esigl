@@ -491,6 +491,218 @@ exports.buildProgamProductRessourceBundle =function buildProgamProductRessourceB
 	//console.log(bundlePrograms);
 	return [bundleProducts,bundlePrograms];
 }
+exports.buildProgamProductRessourceBundle =function buildProgamProductRessourceBundle(programsList,productsList,
+	programProductsList,urlSIGLDomain,extensionBaseUrlProductDetails,extensionBaseUrlProgramDetails,codeSystemIdentifiersType,
+	codeSystemEntitiesType){
+	let bundleProducts={};
+	let bundlePrograms={};
+	var createdDate=moment().format('YYYY-MM-DD');
+	var listOfEntries=[];
+	let extensionElements=[];
+	
+	let productCode={coding:[{system:codeSystemEntitiesType,code:"product",display:"product"}],text:"product"};
+	
+	for(var i=0;i<productsList.length;i++)
+	{
+		extensionElements=[];
+		var oProduct=productsList[i];
+		//var identifierCodingSystem=urlSIGLDomain+"/identifier-type";
+		var identifierCodingSystem=codeSystemIdentifiersType
+		var oIdentifier=[];
+		if(oProduct.id)
+		{
+			oIdentifier.push({
+				use:"official",
+				type:{coding:[{system:identifierCodingSystem,code:"procuctId",display:"procuctId"}],text:"procuctId"},
+				value:oProduct.id
+
+			});
+			//To generate id for dhis category combination
+			let dhisId='produits'+oProduct.id;
+			oIdentifier.push({
+				use:"official",
+				type:{coding:[{system:identifierCodingSystem,code:"dhisId",display:"dhisId"}],text:"dhisId"},
+				value:dhisId
+			});
+
+		}
+		
+		if(oProduct.code)
+		{
+			oIdentifier.push(
+			{
+				use:"official",
+				type:{coding:[{system:identifierCodingSystem,code:"productCode",display:"productCode"}],text:"productCode"},
+				value:oProduct.code
+
+			}
+			);
+		}
+		if(oProduct.primaryName){
+			let cleanedProductName= oProduct.primaryName.split(",").join(" ");
+			cleanedProductName= cleanedProductName.split("/").join(" ");
+			extensionElements.push(
+				{
+					url:"primaryName",
+					valueString:cleanedProductName
+				}
+			);
+		}
+		if(oProduct.fullName){
+			let cleanedProductName= oProduct.fullName.split(",").join(" ");
+			cleanedProductName= cleanedProductName.split("/").join(" ");
+			extensionElements.push(
+				{
+					url:"fullName",
+					valueString:cleanedProductName
+				}
+			);
+		}
+		if(oProduct.dispensingUnit){
+			extensionElements.push(
+				{
+					url:"dispensingUnit",
+					valueString:oProduct.dispensingUnit
+				}
+			);
+		}
+		extensionElements.push(
+			{
+				url:"sigleElementType",
+				valueString:"product"
+			}
+		);
+		var productResource={
+			resourceType:"Basic",
+			id:oProduct.code,
+			identifier:oIdentifier,
+			code:productCode,
+			created:createdDate,
+			extension:[
+				{
+					url:extensionBaseUrlProductDetails,
+					extension:extensionElements
+				}
+			]
+		}
+		listOfEntries.push({
+            resource:productResource,
+            request: {
+                method: 'PUT',
+                url: productResource.resourceType + '/' + productResource.id,
+              }
+			});
+	}//end of for
+	//console.log("---------Products----------");
+	//console.log(listOfEntries);
+	if(listOfEntries.length>=1)
+	{
+		bundleProducts={
+			resourceType : "Bundle",
+			type: "batch",
+			entry:listOfEntries
+		};
+	}
+	//console.log(bundleProducts);
+	listOfEntries=[];
+	extensionElements=[];
+	for(var i=0;i<programsList.length;i++)
+	{
+		extensionElements=[];
+		var oProgram=programsList[i];
+		//var identifierCodingSystem=urlSIGLDomain+"/identifier-type";
+		var identifierCodingSystem=codeSystemIdentifiersType;
+		var oIdentifier=[];
+		if(oProgram.id)
+		{
+			oIdentifier.push({
+				use:"official",
+				type:{coding:[{system:identifierCodingSystem,code:"programId",display:"programId"}],text:"programId"},
+				value:oProgram.id
+
+			});
+			let dhisId="";
+			if((""+oProgram.id).length>1)
+			{
+				dhisId="program20"+oProgram.id;
+			}
+			else{
+				dhisId="program200"+oProgram.id;
+			}
+			oIdentifier.push({
+				use:"official",
+				type:{coding:[{system:identifierCodingSystem,code:"dhisId",display:"dhisId"}],text:"dhisId"},
+				value:dhisId
+
+			});
+		}
+		
+		if(oProgram.code)
+		{
+			oIdentifier.push(
+			{
+				use:"official",
+				type:{coding:[{system:identifierCodingSystem,code:"programCode",display:"programCode"}],text:"programCode"},
+				value:oProgram.code
+
+			}
+			);
+		}
+		//get the related program-products
+		//let programProductElements= programProductsList.filter(programProductElement=>programProductElement.program.id=oProgram.id);
+		let programProductElements= programProductsList.filter(element=>{
+			if(element.program.id == oProgram.id)
+			{
+				return element;
+			}
+		});
+		/* console.log("----- found programs-------");
+		console.log(programProductElements); */
+
+		if(programProductElements && programProductElements.length>0)
+		{
+			
+			for(let progprodElement of programProductElements){
+				let productReference=productsList.find(oProduct=>oProduct.id==progprodElement.product.id);
+				extensionElements.push(
+					{
+						url:"providedProducts",
+						valueReference:{reference:"Basic/"+productReference.code}
+					}
+				);
+			}
+		}
+		var programmeResource={
+			resourceType:"Organization",
+			id:oProgram.code,
+			identifier:oIdentifier,
+			name:oProgram.name,
+			extension:[
+				{
+					url:extensionBaseUrlProgramDetails,
+					extension:extensionElements
+				}
+			]
+		}
+		listOfEntries.push({
+            resource:programmeResource,
+            request: {
+                method: 'PUT',
+                url: programmeResource.resourceType + '/' + programmeResource.id,
+              }
+			});
+	}//end of for
+	if(listOfEntries.length>=1)
+	{
+		bundlePrograms={
+			resourceType : "Bundle",
+			type: "batch",
+			entry:listOfEntries
+		};
+	}
+	//console.log(bundlePrograms);
+	return [bundleProducts,bundlePrograms];
+}
 exports.buildCategoryOptionsMetadata=function buildCategoryOptionsMetadata(prefix,listProducts){
 	let listCategoryOptions=[];
 	for(let product of listProducts)
@@ -533,7 +745,7 @@ exports.buildNewCategoryComboOptionsMetadata=function buildCategoryComboOptionsM
 	}
 	return listCategoryComboOptions;
 }
-exports.buildCategoryComboOptionsMetadata=function buildCategoryComboOptionsMetadata(listProduct,listGeneratedCatComboOptions){
+exports.buildCategoryComboOptionsMetadata=function buildCategoryComboOptionsMetadata(listProduct,listGeneratedCatComboOptions,categoryComboId){
 	let listCategoryComboOptions=[];
 	for(let catComboOptions of listGeneratedCatComboOptions)
 	{
@@ -541,10 +753,15 @@ exports.buildCategoryComboOptionsMetadata=function buildCategoryComboOptionsMeta
 		let relatedProduct=listProduct.find(oProduct=>oProduct.name.split(" ").join("")== nameCatComboOptions)
 		if(relatedProduct)
 		{
+			let  oIdentifier=relatedProduct.identifier.find(id=>id.type.text=="dhisId");
 			let oCategioryComboOption={
 				id:catComboOptions.id,
 				code:relatedProduct.id,
-				
+				name:relatedProduct.name,
+				shortName:relatedProduct.name.substr(0,50),
+				displayName:relatedProduct.name,
+				categoryCombo:{id:categoryComboId},
+				categoryOptions:[{id:oIdentifier.value}]
 			}
 			listCategoryComboOptions.push(oCategioryComboOption);
 		}

@@ -9,7 +9,7 @@
     <status value="generated" />
     <div xmlns="http://www.w3.org/1999/xhtml">Define drug provided by a program to a facility</div>
   </text>
-  <url value="https://www.hl7.org/fhir/StructureDefinition/Product" />
+  <url value="https://esigl.santegovgn.org/fhir/StructureDefinition/Product" />
   <name value="Product" />
   <status value="draft" />
   <fhirVersion value="4.0.0" />
@@ -34,7 +34,7 @@
       <sliceName value="myExtension" />
       <type>
         <code value="Extension" />
-        <profile value="https://www.hl7.org/fhir/StructureDefinition/ProductDetails" />
+        <profile value="https://esigl.santegovgn.org/fhir/StructureDefinition/ProductDetails" />
       </type>
     </element>
   </differential>

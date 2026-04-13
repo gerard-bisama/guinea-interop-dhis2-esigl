@@ -1,0 +1,150 @@
+{
+    "resourceType": "StructureDefinition",
+    "id": "ProductDetails-ext",
+    "url": "https://esigl.santegovgn.org/fhir/StructureDefinition/ProductDetails-ext",
+    "version": "1.0.0",
+    "name": "ProductDetailsExtension",
+    "title": "Product Details Extension",
+    "status": "draft",
+    "experimental": false,
+    "date": "2026-03-30",
+    "publisher": "eSIGL Guinea",
+    "description": "Complex extension used to carry product details on Basic resources.",
+    "fhirVersion": "4.0.0",
+    "kind": "complex-type",
+    "abstract": false,
+    "context": [
+      {
+        "type": "element",
+        "expression": "Basic"
+      }
+    ],
+    "type": "Extension",
+    "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Extension",
+    "derivation": "constraint",
+    "differential": {
+      "element": [
+        {
+          "id": "Extension",
+          "path": "Extension",
+          "short": "Extension for product profile",
+          "definition": "Extension element for product profile"
+        },
+        {
+          "id": "Extension.url",
+          "path": "Extension.url",
+          "fixedUri": "https://esigl.santegovgn.org/fhir/StructureDefinition/ProductDetails-ext"
+        },
+        {
+          "id": "Extension.value[x]",
+          "path": "Extension.value[x]",
+          "max": "0"
+        },
+        {
+          "id": "Extension.extension",
+          "path": "Extension.extension",
+          "slicing": {
+            "discriminator": [
+              {
+                "type": "value",
+                "path": "url"
+              }
+            ],
+            "rules": "open"
+          }
+        },
+        {
+          "id": "Extension.extension:primaryName",
+          "path": "Extension.extension",
+          "sliceName": "primaryName",
+          "min": 0,
+          "max": "1"
+        },
+        {
+          "id": "Extension.extension:primaryName.url",
+          "path": "Extension.extension.url",
+          "fixedUri": "primaryName"
+        },
+        {
+          "id": "Extension.extension:primaryName.value[x]",
+          "path": "Extension.extension.value[x]",
+          "type": [
+            {
+              "code": "string"
+            }
+          ],
+          "min": 1,
+          "max": "1"
+        },
+        {
+          "id": "Extension.extension:fullName",
+          "path": "Extension.extension",
+          "sliceName": "fullName",
+          "min": 0,
+          "max": "1"
+        },
+        {
+          "id": "Extension.extension:fullName.url",
+          "path": "Extension.extension.url",
+          "fixedUri": "fullName"
+        },
+        {
+          "id": "Extension.extension:fullName.value[x]",
+          "path": "Extension.extension.value[x]",
+          "type": [
+            {
+              "code": "string"
+            }
+          ],
+          "min": 1,
+          "max": "1"
+        },
+        {
+          "id": "Extension.extension:dispensingUnit",
+          "path": "Extension.extension",
+          "sliceName": "dispensingUnit",
+          "min": 0,
+          "max": "1"
+        },
+        {
+          "id": "Extension.extension:dispensingUnit.url",
+          "path": "Extension.extension.url",
+          "fixedUri": "dispensingUnit"
+        },
+        {
+          "id": "Extension.extension:dispensingUnit.value[x]",
+          "path": "Extension.extension.value[x]",
+          "type": [
+            {
+              "code": "string"
+            }
+          ],
+          "min": 1,
+          "max": "1"
+        },
+        {
+          "id": "Extension.extension:sigleElementType",
+          "path": "Extension.extension",
+          "sliceName": "sigleElementType",
+          "min": 0,
+          "max": "1"
+        },
+        {
+          "id": "Extension.extension:sigleElementType.url",
+          "path": "Extension.extension.url",
+          "fixedUri": "sigleElementType"
+        },
+        {
+          "id": "Extension.extension:sigleElementType.value[x]",
+          "path": "Extension.extension.value[x]",
+          "type": [
+            {
+              "code": "string"
+            }
+          ],
+          "min": 1,
+          "max": "1"
+        }
+      ]
+    }
+  }

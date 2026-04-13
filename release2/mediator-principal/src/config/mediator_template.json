@@ -392,6 +392,20 @@
       "template": []
     },
     {
+      "param": "codeSystemIdentifiersType",
+      "displayName": "Url de base pour pour le system d'identifiants etendus",
+      "description": "Url de base pour pour le system d'identifiants etendus",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "codeSystemEntitiesType",
+      "displayName": "Url de base pour pour le system de coding des resources",
+      "description": "Url de base pour pour le system de coding des resources",
+      "type": "string",
+      "template": []
+    },
+    {
       "param": "extensionBaseUrlProgramDetails",
       "displayName": "Url de base pour l'extension du programme",
       "description": "Url de base pour l'extension du programme",
@@ -435,12 +449,14 @@
       "username":"",
       "password":""
     },
-  "batchSizeFacilityToSync":"200",
-  "batchSizeFacilityFromHapi":"20",
-  "extensionBaseUrlProductDetails":"https://www.hl7.org/fhir/StructureDefinition/ProductDetails",
-  "extensionBaseUrlProgramDetails":"https://www.hl7.org/fhir/StructureDefinition/ProgramDetails",
-  "program":{
-    "code":"SIGL-INTEGRE-PNLP"
-  }
+    "batchSizeFacilityToSync":"200",
+    "batchSizeFacilityFromHapi":"20",
+    "extensionBaseUrlProductDetails":"https://esigl.santegovgn.org/fhir/StructureDefinition/ProductDetails-ext",
+    "codeSystemIdentifiersType":"https://esigl.santegovgn.org/fhir/CodeSystem/esigl-identifiers-type",
+    "codeSystemEntitiesType":"https://esigl.santegovgn.org/fhir/CodeSystem/esigl-entities-type",
+    "extensionBaseUrlProgramDetails":"https://esigl.santegovgn.org/fhir/StructureDefinition/ProgramDetails-ext",
+    "program":{
+      "code":"SIGL-INTEGRE-PNLP"
+    }
   }
 }

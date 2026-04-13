@@ -1,0 +1,79 @@
+{
+    "resourceType": "StructureDefinition",
+    "id": "ProgramDetails-ext",
+    "url": "https://esigl.santegovgn.org/fhir/StructureDefinition/ProgramDetails-ext",
+    "name": "ProgramDetailsExtension",
+    "title": "Program Details Extension",
+    "status": "draft",
+    "fhirVersion": "4.0.0",
+    "kind": "complex-type",
+    "abstract": false,
+    "context": [
+      {
+        "type": "element",
+        "expression": "Organization"
+      }
+    ],
+    "type": "Extension",
+    "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Extension",
+    "derivation": "constraint",
+    "differential": {
+      "element": [
+        {
+          "id": "Extension",
+          "path": "Extension",
+          "short": "Extension for program details",
+          "definition": "Complex extension used to carry program details on Organization resources."
+        },
+        {
+          "id": "Extension.url",
+          "path": "Extension.url",
+          "fixedUri": "https://esigl.santegovgn.org/fhir/StructureDefinition/ProgramDetails-ext"
+        },
+        {
+          "id": "Extension.value[x]",
+          "path": "Extension.value[x]",
+          "max": "0"
+        },
+        {
+          "id": "Extension.extension",
+          "path": "Extension.extension",
+          "slicing": {
+            "discriminator": [
+              {
+                "type": "value",
+                "path": "url"
+              }
+            ],
+            "rules": "open"
+          }
+        },
+        {
+          "id": "Extension.extension:providedProducts",
+          "path": "Extension.extension",
+          "sliceName": "providedProducts",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "Extension.extension:providedProducts.url",
+          "path": "Extension.extension.url",
+          "fixedUri": "providedProducts"
+        },
+        {
+          "id": "Extension.extension:providedProducts.value[x]",
+          "path": "Extension.extension.value[x]",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://esigl.santegovgn.org/fhir/StructureDefinition/Product-sd"
+              ]
+            }
+          ],
+          "min": 1,
+          "max": "1"
+        }
+      ]
+    }
+  }

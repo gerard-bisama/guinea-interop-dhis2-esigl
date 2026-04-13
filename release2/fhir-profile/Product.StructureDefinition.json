@@ -1,0 +1,59 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "Product-sd",
+  "url": "https://esigl.santegovgn.org/fhir/StructureDefinition/Product-sd",
+  "name": "Product",
+  "title": "Product Profile",
+  "status": "draft",
+  "fhirVersion": "4.0.0",
+  "kind": "resource",
+  "abstract": false,
+  "type": "Basic",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Basic",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "Basic.extension",
+        "path": "Basic.extension",
+        "slicing": {
+          "discriminator": [
+            {
+              "type": "value",
+              "path": "url"
+            }
+          ],
+          "rules": "open"
+        }
+      },
+      {
+        "id": "Basic.extension:productDetails",
+        "path": "Basic.extension",
+        "sliceName": "productDetails",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "Extension",
+            "profile": [
+              "https://esigl.santegovgn.org/fhir/StructureDefinition/ProductDetails-ext"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Basic.extension:productDetails.url",
+        "path": "Basic.extension.url",
+        "fixedUri": "https://esigl.santegovgn.org/fhir/StructureDefinition/ProductDetails-ext"
+      },
+      {
+        "id": "Basic.identifier.type",
+        "path": "Basic.identifier.type",
+        "binding": {
+          "strength": "extensible",
+          "valueSet": "https://esigl.santegovgn.org/fhir/ValueSet/esigl-identifier-type"
+        }
+      }
+    ]
+  }
+}

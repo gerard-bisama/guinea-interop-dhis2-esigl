@@ -1,0 +1,27 @@
+{
+    "resourceType": "CodeSystem",
+    "id": "esigl-entities-type",
+    "url": "https://esigl.santegovgn.org/fhir/CodeSystem/esigl-entities-type",
+    "version": "1.0.0",
+    "name": "ESIGLEntitiesType",
+    "title": "eSIGL Entities Type CodeSystem",
+    "status": "active",
+    "experimental": false,
+    "date": "2023-03-27",
+    "publisher": "eSIGL Guinea",
+    "description": "Local CodeSystem type codes used by eSIGL for product and requisition identifiers.",
+    "caseSensitive": false,
+    "content": "complete",
+    "concept": [
+      {
+        "code": "product",
+        "display": "product",
+        "definition": "Business identifier used to identify a product in eSIGL."
+      },
+      {
+        "code": "requisition",
+        "display": "requisition",
+        "definition": "Business identifier used to identify a requisition in eSIGL."
+      }
+    ]
+  }

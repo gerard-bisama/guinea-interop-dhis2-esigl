@@ -1,0 +1,63 @@
+{
+    "resourceType": "CodeSystem",
+    "id": "esigl-identifiers-type",
+    "url": "https://esigl.santegovgn.org/fhir/CodeSystem/esigl-identifiers-type",
+    "version": "1.0.0",
+    "name": "ESIGLidentifiersType",
+    "title": "eSIGL Identifiers Type CodeSystem",
+    "status": "active",
+    "experimental": false,
+    "date": "2023-03-27",
+    "publisher": "eSIGL Guinea",
+    "description": "Local CodeSystem type codes used by eSIGL for entities identifiers types.",
+    "caseSensitive": false,
+    "content": "complete",
+    "concept": [
+      {
+        "code": "productId",
+        "display": "productId",
+        "definition": "System Identifier used to identify a product in eSIGL."
+      },
+      {
+        "code": "dhisId",
+        "display": "dhisId",
+        "definition": "System Identifier used to identify a Product,program in DHIS2."
+      },
+      {
+        "code": "productCode",
+        "display": "productCode",
+        "definition": "Assigned Identifier used to identify a product in eSIGL."
+      },
+      {
+        "code": "requisitionId",
+        "display": "requisitionId",
+        "definition": "System Identifier used to identify a requisition in eSIGL."
+      },
+      {
+        "code": "programId",
+        "display": "programId",
+        "definition": "System Identifier used to identify a program in eSIGL."
+      },
+      {
+        "code": "programCode",
+        "display": "programCode",
+        "definition": "Assigned Identifier used to identify a program in eSIGL."
+      },
+      {
+        "code": "siglcode",
+        "display": "siglcode",
+        "definition": "Assigned Identifier used to identify a facility in eSIGL."
+      },
+      {
+        "code": "siglid",
+        "display": "siglid",
+        "definition": "System Identifier used to identify a facility in eSIGL."
+      },
+      {
+        "code": "level",
+        "display": "level",
+        "definition": "Assigned Identifier used to identify the level of facility in DHIS2."
+      }
+
+    ]
+  }

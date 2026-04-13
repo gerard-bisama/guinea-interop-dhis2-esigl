@@ -1,0 +1,25 @@
+{
+    "resourceType": "ValueSet",
+    "id": "esigl-identifier-type",
+    "url": "https://esigl.santegovgn.org/fhir/ValueSet/esigl-identifier-type",
+    "version": "1.0.0",
+    "name": "ESIGLIdentifierTypeValueSet",
+    "title": "eSIGL Identifier Type ValueSet",
+    "status": "active",
+    "experimental": false,
+    "date": "2026-03-30",
+    "publisher": "eSIGL Guinea",
+    "description": "Identifier types allowed for eSIGL resources, including HL7 core identifier types and local eSIGL identifier types.",
+    "compose": {
+      "include": [
+        {
+          "valueSet": [
+            "http://hl7.org/fhir/ValueSet/identifier-type"
+          ]
+        },
+        {
+          "system": "https://esigl.santegovgn.org/fhir/CodeSystem/esigl-identifiers-type"
+        }
+      ]
+    }
+  }
