@@ -24,6 +24,16 @@
         "definition": "System Identifier used to identify a Product,program in DHIS2."
       },
       {
+        "code": "dhis2Id",
+        "display": "dhis2Id",
+        "definition": "System Identifier used to identify a Facilities/OrgUnit with DHIS2 ID"
+      },
+      {
+        "code": "dhis2Code",
+        "display": "dhis2Code",
+        "definition": "System Identifier used to identify a Facilities/OrgUnit with DHIS2 code"
+      },
+      {
         "code": "productCode",
         "display": "productCode",
         "definition": "Assigned Identifier used to identify a product in eSIGL."

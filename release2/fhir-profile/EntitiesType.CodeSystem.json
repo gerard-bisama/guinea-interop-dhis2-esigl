@@ -22,6 +22,11 @@
         "code": "requisition",
         "display": "requisition",
         "definition": "Business identifier used to identify a requisition in eSIGL."
+      },
+      {
+        "code": "categorie",
+        "display": "categorie",
+        "definition": "Code to identify the catagory of the facility: Centre de Sante,hopital national..."
       }
     ]
   }

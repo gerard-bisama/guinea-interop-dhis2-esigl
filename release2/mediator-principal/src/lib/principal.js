@@ -339,7 +339,8 @@ function setupApp() {
       getListDHIS2OrgUnitByFilter(dhis2Token, filterExpresion, function (listOrgUnits) {
         //return res.send(listOrgUnits);
         if (listOrgUnits.length > 0) {
-          let bundle = customLibrairy.buildLocationHierarchy(listOrgUnits);
+          let bundle = customLibrairy.buildLocationHierarchy(listOrgUnits,config.codeSystemIdentifiersType,
+            config.codeSystemEntitiesType);
           logger.log({
             level: levelType.info, operationType: typeOperation.getData, action: `/${orgUnitResource}.json`, result: typeResult.success,
             message: `${listOrgUnits.length} structures extraits de DHIS2`
@@ -408,7 +409,7 @@ function setupApp() {
       getListDHIS2OrgUnit(dhis2Token, function (listOrgUnits) {
         //return res.send(listOrgUnits);
         if (listOrgUnits.length > 0) {
-          let bundle = customLibrairy.buildLocationHierarchy(listOrgUnits);
+          let bundle = customLibrairy.buildLocationHierarchy(listOrgUnits,config.codeSystemIdentifiersType, config.codeSystemEntitiesType);
           logger.log({
             level: levelType.info, operationType: typeOperation.getData, action: `/${orgUnitResource}.json`, result: typeResult.success,
             message: `${listOrgUnits.length} structures extraits de DHIS2`

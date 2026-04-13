@@ -109,7 +109,7 @@ exports.readMappingCSVFile=function readMappingCSVFile(filePath,callback)
     })
 }
 //Return a bundle of Organization from the orgunit list
-exports.buildLocationHierarchy =function buildLocationHierarchy(orgUnitList)
+exports._buildLocationHierarchy =function buildLocationHierarchy(orgUnitList)
 {
 	var currentZFormatDate=moment().format('YYYY-MM-DDTHH:mm:ssZ');
 	var listOfEntries=[];
@@ -177,7 +177,83 @@ exports.buildLocationHierarchy =function buildLocationHierarchy(orgUnitList)
 	//console.log(JSON.stringify(oBundle));
 	return oBundle;
 }
+exports.buildLocationHierarchy =function buildLocationHierarchy(orgUnitList,codeSystemIdentifiersType,
+	codeSystemEntitiesType)
+{
+	var currentZFormatDate=moment().format('YYYY-MM-DDTHH:mm:ssZ');
+	var listOfEntries=[];
+	var fullUrl;
+	for(var i=0;i<orgUnitList.length;i++)
+	{
 
+		var oOrgUnit=orgUnitList[i];
+		var  orgUnitHref =url.parse(oOrgUnit.href);
+		/*var identifierCodingSystem=orgUnitHref.protocol+"//"+orgUnitHref.host+"/identifier-type";
+		var orgUnitTypeCodingSystem=orgUnitHref.protocol+"//"+orgUnitHref.host+"/location-type";*/
+		var identifierCodingSystem=codeSystemIdentifiersType;
+		var orgUnitTypeCodingSystem=codeSystemEntitiesType;
+		var oIdentifier=[];
+		oIdentifier.push({
+				use:"official",
+				type:{coding:[{system:identifierCodingSystem,code:"dhis2Id",display:"dhis2Id"}],text:"dhis2Id"},
+				value:oOrgUnit.id
+
+			});
+		if(oOrgUnit.code!=null)
+		{
+			oIdentifier.push(
+			{
+				use:"official",
+				type:{coding:[{system:identifierCodingSystem,code:"dhis2Code",display:"dhis2Code"}],text:"dhis2Code"},
+				value:oOrgUnit.code
+
+			}
+			);
+		}
+		var locationType=[];
+		if(oOrgUnit.level!=null)
+		{
+			locationType.push(
+			{coding:[{system:orgUnitTypeCodingSystem,code:"level",display:"level"}],text:oOrgUnit.level}
+			);
+		}
+		var isPartOf=null;
+		if(oOrgUnit.parent!=null)
+		{
+			isPartOf={"reference":"Location/"+oOrgUnit.parent.id};
+		}
+		var oLocation={
+			resourceType:"Location",
+			id:oOrgUnit.id,
+			meta:{lastUpdated:currentZFormatDate},
+			identifier:oIdentifier,
+			type:locationType,
+			name:oOrgUnit.displayName,
+			partOf:isPartOf
+
+		}
+		if(listOfEntries.length<2)
+		{
+			listOfEntries.push({
+				resource:oLocation,
+				request: {
+					method: 'PUT',
+					url: oLocation.resourceType + '/' + oLocation.id,
+				  }
+				});
+		}
+		else{
+			break;
+		}
+	}//end of for
+	let oBundle={
+		resourceType : "Bundle",
+		type: "batch",
+		entry:listOfEntries
+		};
+	//console.log(JSON.stringify(oBundle));
+	return oBundle;
+}
 exports.updateLocationFromSIGL=function updateLocationFromSIGL(listLocations,urlSIGLDomain,listSIGLFacilities)
 {
 	var listOfEntries=[];
