@@ -139,7 +139,7 @@ const mediatorConfig = mediatorConfigTemp;
 const metadataConfig = require('../config/dhismetadatadef');
 //const metadataIndicatorConfig=require('../config/dhismetadataIndicatorDef');
 const { ifError } = require('assert');
-const { S_IFREG } = require('constants');
+const { S_IFREG, SSL_OP_SSLEAY_080_CLIENT_DH_BUG } = require('constants');
 const { json } = require('express');
 //var mediatorName="mediateur_"+mediatorConfig.config.program.name;
 var mediatorName = "";
@@ -1345,12 +1345,13 @@ function setupApp() {
                           {
                             listAllBundleItemRequisitions.push(
                               customLibrairy.buildRequisitionResourceWithRegionRefEntryFromESIGL(oRequisition, config.extensionBaseUrlRequisitionDetails,
-                                config.esiglServer.url, regionId)
+                                config.codeSystemIdentifiersType,config.codeSystemEntitiesType,config.esiglServer.url, regionId)
                             )
                           }
                           operationOutcome = operationOutcome && true;
                           //callback(listAllrequisitions);
-                          //res.send(listAllBundleItemRequisitions)
+                          //console.log(JSON.stringify(listAllBundleItemRequisitions.slice(0,2)));
+                          //return res.send(listAllBundleItemRequisitions.slice(0,2));
                           //Now transform the requisition to bundle of batch type
                           let bundleRequisition = {
                             resourceType: "Bundle",
@@ -3028,7 +3029,7 @@ function setupApp() {
                   listProgramProducts, progDhisId);
                 //customLibrairy.saveFile(`${filePath}/logs/requisitionList`,"json",JSON.stringify(listCustomRequisitionObjects));
                 //return res.send(listCustomRequisitionObjects);
-                //listCustomRequisitionObjects=listCustomRequisitionObjects.slice(0,100);
+                //listCustomRequisitionObjects=listCustomRequisitionObjects.slice(0,10);
                 //return res.send(listCustomRequisitionObjects);
                 let adxRequisitionObjectLists = customLibrairy.buildADXPayloadFromRequisitionsList(listCustomRequisitionObjects,
                   metadataConfig.dataElements, config.program);

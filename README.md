@@ -145,6 +145,7 @@ $ cd guinea-interop.../release2/tools
 $ npm install #Only once for the first time when the module is used. 
 $ node load.js --server http://localhost:8080/fhir/ ../fhir-profile/ProductDetails.StructureDefinition.xml
 $ node load.js --server http://localhost:8080/fhir/ ../fhir-profile/Product.StructureDefinition.xml 
+$ node load.js --server http://localhost:8080/fhir/ ../fhir-profile/EntitiesType.CodeSystem.json 
 ```
 If loaded successfully, you should getback the result with the name of resource created + http code 201
 

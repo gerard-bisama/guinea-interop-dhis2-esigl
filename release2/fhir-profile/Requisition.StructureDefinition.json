@@ -1,0 +1,51 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "Requisition-sd",
+  "url": "https://esigl.santegovgn.org/fhir/StructureDefinition/Requisition-sd",
+  "name": "Requisition",
+  "title": "Requisition Profile",
+  "status": "draft",
+  "fhirVersion": "4.0.0",
+  "kind": "resource",
+  "abstract": false,
+  "type": "Basic",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Basic",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "Basic.extension",
+        "path": "Basic.extension",
+        "slicing": {
+          "discriminator": [
+            {
+              "type": "value",
+              "path": "url"
+            }
+          ],
+          "rules": "open"
+        }
+      },
+      {
+        "id": "Basic.extension:requisitionDetail",
+        "path": "Basic.extension",
+        "sliceName": "requisitionDetail",
+        "min": 0,
+        "max": "1",
+        "type": [
+          {
+            "code": "Extension",
+            "profile": [
+              "https://esigl.santegovgn.org/fhir/StructureDefinition/RequisitionDetail-ext"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "Basic.extension:requisitionDetail.url",
+        "path": "Basic.extension.url",
+        "fixedUri": "https://esigl.santegovgn.org/fhir/StructureDefinition/RequisitionDetail-ext"
+      }
+    ]
+  }
+}

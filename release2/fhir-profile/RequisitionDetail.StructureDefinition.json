@@ -1,0 +1,381 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "RequisitionDetail-ext",
+  "url": "https://esigl.santegovgn.org/fhir/StructureDefinition/RequisitionDetail-ext",
+  "name": "RequisitionDetailExtension",
+  "title": "Requisition Detail Extension",
+  "status": "draft",
+  "fhirVersion": "4.0.0",
+  "kind": "complex-type",
+  "abstract": false,
+  "context": [
+    {
+      "type": "element",
+      "expression": "Basic"
+    }
+  ],
+  "type": "Extension",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Extension",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "Extension",
+        "path": "Extension",
+        "short": "Extension for requisition details",
+        "definition": "Complex extension used to carry requisition detail data on Basic resources."
+      },
+      {
+        "id": "Extension.url",
+        "path": "Extension.url",
+        "fixedUri": "https://esigl.santegovgn.org/fhir/StructureDefinition/RequisitionDetail-ext"
+      },
+      {
+        "id": "Extension.value[x]",
+        "path": "Extension.value[x]",
+        "max": "0"
+      },
+      {
+        "id": "Extension.extension",
+        "path": "Extension.extension",
+        "slicing": {
+          "discriminator": [
+            {
+              "type": "value",
+              "path": "url"
+            }
+          ],
+          "rules": "open"
+        }
+      },
+
+      {
+        "id": "Extension.extension:product",
+        "path": "Extension.extension",
+        "sliceName": "product",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension:product.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "product"
+      },
+      {
+        "id": "Extension.extension:product.valueReference",
+        "path": "Extension.extension.valueReference",
+        "type": [
+          {
+            "code": "Reference",
+            "targetProfile": [
+              "https://esigl.santegovgn.org/fhir/StructureDefinition/Product-sd"
+            ]
+          }
+        ],
+        "min": 1,
+        "max": "1"
+      },
+
+      {
+        "id": "Extension.extension:program",
+        "path": "Extension.extension",
+        "sliceName": "program",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension:program.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "program"
+      },
+      {
+        "id": "Extension.extension:program.valueReference",
+        "path": "Extension.extension.valueReference",
+        "type": [
+          {
+            "code": "Reference",
+            "targetProfile": [
+              "https://esigl.santegovgn.org/fhir/StructureDefinition/Program-sd"
+            ]
+          }
+        ],
+        "min": 1,
+        "max": "1"
+      },
+
+      {
+        "id": "Extension.extension:initialStock",
+        "path": "Extension.extension",
+        "sliceName": "initialStock",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension:initialStock.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "initialStock"
+      },
+      {
+        "id": "Extension.extension:initialStock.valueDecimal",
+        "path": "Extension.extension.valueDecimal",
+        "min": 1,
+        "max": "1"
+      },
+
+      {
+        "id": "Extension.extension:receivedQuantity",
+        "path": "Extension.extension",
+        "sliceName": "receivedQuantity",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension:receivedQuantity.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "receivedQuantity"
+      },
+      {
+        "id": "Extension.extension:receivedQuantity.valueDecimal",
+        "path": "Extension.extension.valueDecimal",
+        "min": 1,
+        "max": "1"
+      },
+
+      {
+        "id": "Extension.extension:consumedQuantity",
+        "path": "Extension.extension",
+        "sliceName": "consumedQuantity",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension:consumedQuantity.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "consumedQuantity"
+      },
+      {
+        "id": "Extension.extension:consumedQuantity.valueDecimal",
+        "path": "Extension.extension.valueDecimal",
+        "min": 1,
+        "max": "1"
+      },
+
+      {
+        "id": "Extension.extension:losses",
+        "path": "Extension.extension",
+        "sliceName": "losses",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension:losses.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "losses"
+      },
+      {
+        "id": "Extension.extension:losses.valueDecimal",
+        "path": "Extension.extension.valueDecimal",
+        "min": 1,
+        "max": "1"
+      },
+
+      {
+        "id": "Extension.extension:positiveAdjustment",
+        "path": "Extension.extension",
+        "sliceName": "positiveAdjustment",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension:positiveAdjustment.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "positiveAdjustment"
+      },
+      {
+        "id": "Extension.extension:positiveAdjustment.valueDecimal",
+        "path": "Extension.extension.valueDecimal",
+        "min": 1,
+        "max": "1"
+      },
+
+      {
+        "id": "Extension.extension:negativeAdjustment",
+        "path": "Extension.extension",
+        "sliceName": "negativeAdjustment",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension:negativeAdjustment.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "negativeAdjustment"
+      },
+      {
+        "id": "Extension.extension:negativeAdjustment.valueDecimal",
+        "path": "Extension.extension.valueDecimal",
+        "min": 1,
+        "max": "1"
+      },
+
+      {
+        "id": "Extension.extension:stockOnHand",
+        "path": "Extension.extension",
+        "sliceName": "stockOnHand",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension:stockOnHand.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "stockOnHand"
+      },
+      {
+        "id": "Extension.extension:stockOnHand.valueDecimal",
+        "path": "Extension.extension.valueDecimal",
+        "min": 1,
+        "max": "1"
+      },
+
+      {
+        "id": "Extension.extension:averageMonthConsumption",
+        "path": "Extension.extension",
+        "sliceName": "averageMonthConsumption",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension:averageMonthConsumption.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "averageMonthConsumption"
+      },
+      {
+        "id": "Extension.extension:averageMonthConsumption.valueDecimal",
+        "path": "Extension.extension.valueDecimal",
+        "min": 1,
+        "max": "1"
+      },
+
+      {
+        "id": "Extension.extension:stockOutDay",
+        "path": "Extension.extension",
+        "sliceName": "stockOutDay",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension:stockOutDay.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "stockOutDay"
+      },
+      {
+        "id": "Extension.extension:stockOutDay.valueInteger",
+        "path": "Extension.extension.valueInteger",
+        "min": 1,
+        "max": "1"
+      },
+
+      {
+        "id": "Extension.extension:startDate",
+        "path": "Extension.extension",
+        "sliceName": "startDate",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension:startDate.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "startDate"
+      },
+      {
+        "id": "Extension.extension:startDate.valueDate",
+        "path": "Extension.extension.valueDate",
+        "min": 1,
+        "max": "1"
+      },
+
+      {
+        "id": "Extension.extension:endDate",
+        "path": "Extension.extension",
+        "sliceName": "endDate",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension:endDate.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "endDate"
+      },
+      {
+        "id": "Extension.extension:endDate.valueDate",
+        "path": "Extension.extension.valueDate",
+        "min": 1,
+        "max": "1"
+      },
+
+      {
+        "id": "Extension.extension:location",
+        "path": "Extension.extension",
+        "sliceName": "location",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension:location.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "location"
+      },
+      {
+        "id": "Extension.extension:location.valueReference",
+        "path": "Extension.extension.valueReference",
+        "type": [
+          {
+            "code": "Reference",
+            "targetProfile": [
+              "http://hl7.org/fhir/StructureDefinition/Location"
+            ]
+          }
+        ],
+        "min": 1,
+        "max": "1"
+      },
+
+      {
+        "id": "Extension.extension:reqElementType",
+        "path": "Extension.extension",
+        "sliceName": "reqElementType",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension:reqElementType.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "reqElementType"
+      },
+      {
+        "id": "Extension.extension:reqElementType.valueString",
+        "path": "Extension.extension.valueString",
+        "min": 1,
+        "max": "1"
+      },
+
+      {
+        "id": "Extension.extension:periodName",
+        "path": "Extension.extension",
+        "sliceName": "periodName",
+        "min": 0,
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension:periodName.url",
+        "path": "Extension.extension.url",
+        "fixedUri": "periodName"
+      },
+      {
+        "id": "Extension.extension:periodName.valueString",
+        "path": "Extension.extension.valueString",
+        "min": 1,
+        "max": "1"
+      }
+    ]
+  }
+}

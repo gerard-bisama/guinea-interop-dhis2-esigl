@@ -232,19 +232,14 @@ exports.buildLocationHierarchy =function buildLocationHierarchy(orgUnitList,code
 			partOf:isPartOf
 
 		}
-		if(listOfEntries.length<2)
-		{
-			listOfEntries.push({
-				resource:oLocation,
-				request: {
-					method: 'PUT',
-					url: oLocation.resourceType + '/' + oLocation.id,
-				  }
-				});
-		}
-		else{
-			break;
-		}
+		listOfEntries.push({
+			resource:oLocation,
+			request: {
+				method: 'PUT',
+				url: oLocation.resourceType + '/' + oLocation.id,
+				}
+			});
+		
 	}//end of for
 	let oBundle={
 		resourceType : "Bundle",
