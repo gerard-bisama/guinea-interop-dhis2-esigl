@@ -352,6 +352,20 @@
       "template": []
     },
     {
+      "param": "codeSystemIdentifiersType",
+      "displayName": "Url de base pour pour le system d'identifiants etendus",
+      "description": "Url de base pour pour le system d'identifiants etendus",
+      "type": "string",
+      "template": []
+    },
+    {
+      "param": "codeSystemEntitiesType",
+      "displayName": "Url de base pour pour le system d'identifiants etendus",
+      "description": "Url de base pour pour le system d'identifiants etendus",
+      "type": "string",
+      "template": []
+    },
+    {
       "param": "program",
       "displayName": "Parametres du mediateur du programme a synchroniser",
       "description": "Parametres du mediateur du programme a synchroniser",
@@ -424,9 +438,9 @@
   "config": {
     "logstashDirectory":"/home/server-dev/logstash-7.6",
     "dhis2Server":{
-		"url":"https://localhost/dhis/api",
-		"username":"user",
-		"password":"pwd"
+		"url":"https://localhost/api",
+		"username":"admin",
+		"password":"distriadminct"
 		},
 	"hapiServer":{
     "url":"http://localhost:8080/fhir",
@@ -435,8 +449,8 @@
 		},
 	"esiglServer":{
 		"url":"https://localhost",
-		"username":"user",
-		"password":"pwd",
+		"username":"admin",
+		"password":"admin",
 		"resourcespath":"/rest-api"
     },
   "elasticsearchServer":{
@@ -444,16 +458,18 @@
       "username":"",
       "password":""
     },
-  "extensionBaseUrlRequisitionDetails":"https://www.hl7.org/fhir/StructureDefinition/requisitionDetail",
+  "extensionBaseUrlRequisitionDetails":"https://esigl.santegovgn.org/fhir/StructureDefinition/RequisitionDetail-ext",
   "extensionBaseUrlProgramDetails":"https://www.hl7.org/fhir/StructureDefinition/ProgramDetails",
+  "codeSystemIdentifiersType":"https://esigl.santegovgn.org/fhir/CodeSystem/esigl-identifiers-type",
+  "codeSystemEntitiesType":"https://esigl.santegovgn.org/fhir/CodeSystem/esigl-entities-type",
   "program":{
     "name":"pnlp0",
     "code":"SIGL-INTEGRE-PNLP"
   },
-  "synchronizationPeriod":"2024-11",
+  "synchronizationPeriod":"2026-01",
   "maxNbRequisitions2PullPerLoop":"20",
-  "zoneGeographiqueId":"odY5MzWb1jc",
-  "extractionPeriodId":"144",
+  "zoneGeographiqueId":"zy5MQM2PlKb",
+  "extractionPeriodId":"164",
   "skipNiveauPS":"true",
   "productToSkipForSyncInDHS2":"TMP0122,TMP0123,TMP0120,TMP0121,TMP0124",
   "dhis2ResponseVersion":"2.37"
