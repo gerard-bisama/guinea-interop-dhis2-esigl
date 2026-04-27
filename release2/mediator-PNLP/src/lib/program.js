@@ -3033,23 +3033,28 @@ function setupApp() {
                 //return res.send(listCustomRequisitionObjects);
                 let adxRequisitionObjectLists = customLibrairy.buildADXPayloadFromRequisitionsList(listCustomRequisitionObjects,
                   metadataConfig.dataElements, config.program);
+                //return res.send(adxRequisitionObjectLists);
                 /* logger.log({level:levelType.info,operationType:typeOperation.getData,action:`/saveAdxData2Dhis`,result:typeResult.iniate,
                 message:`Insertion des elements  de requisitions dans DHIS2`}); */
                 logger.log({
                   level: levelType.info, operationType: typeOperation.getData, action: `/api/saveAdxData2Dhis`, result: typeResult.iniate,
                   message: `Importation des ${listCustomRequisitionObjects.length} élements des requisitions dans DHIS2`
                 });
-                console.log(`Payload size=${listCustomRequisitionObjects.length}`)
+                //console.log(`Payload size=${listCustomRequisitionObjects.length}`)
                 //return res.send(adxRequisitionObjectLists);
                 saveAdxData2Dhis(dhis2Token, adxRequisitionObjectLists, (adxSaveResults) => {
                   if (adxSaveResults) {
-                    return res.send(adxSaveResults);
+                    //return res.send(adxSaveResults);
                     //let importChildStatus=adxSaveResults.children.find(children=>children.name=="status");
                     let importChildStatus = null;
                     let importChildCount = null;
                     if (config.dhis2ResponseVersion == "2.37") {
                       importChildStatus = adxSaveResults.status;
                       importChildCount = adxSaveResults.importCount;
+                    }
+                    if (config.dhis2ResponseVersion == "2.41") {
+                      importChildStatus = adxSaveResults.response.status;
+                      importChildCount = adxSaveResults.response.importCount;
                     }
                     else {
                       importChildStatus = adxSaveResults.children.find(children => children.name == "status").value;
