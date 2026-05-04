@@ -4,7 +4,7 @@ set -u
 # ==============================
 # Configuration
 # ==============================
-FHIR_HOST="http://10.13.52.210:5022"
+#FHIR_HOST="http://10.13.52.210:5022"
 MEDIATOR_HOST="http://localhost:5022"
 
 SLEEP_BETWEEN_CALLS=180

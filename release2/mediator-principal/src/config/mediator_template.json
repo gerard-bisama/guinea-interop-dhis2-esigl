@@ -1,6 +1,6 @@
 {
   "urn": "urn:uuid:a4976a30-9364-11e9-9146-07d60medprinc",
-  "version": "0.3.13",
+  "version": "0.3.14",
   "name": "Mediateur principal",
   "description": "Extraction des donnees de base DHIS2-eSIGL et chargement dans HAPI-DHSI2",
   "defaultChannelConfig": [
