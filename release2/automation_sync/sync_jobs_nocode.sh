@@ -35,8 +35,8 @@ run_sync() {
 
   log "START region=$region periodid=$fhir_periodid periodsyn=$dhis_periodid sync2fhir "
   if [[ -z "$dhis_periodid" || "$fhir_periodid" -eq 0 ]]; then
-    URLFHIR="${MEDIATOR_HOST}/syncrequisition2fhir"
-    URLDHIS="${MEDIATOR_HOST}/syncrequisition2dhis"
+    URLFHIR="${MEDIATOR_HOST}/syncrequisition2fhir?regionid=${region}"
+    URLDHIS="${MEDIATOR_HOST}/syncrequisition2dhis?regionid=${region}"
   else
     URLFHIR="${MEDIATOR_HOST}/syncrequisition2fhir?regionid=${region}&periodid=${fhir_periodid}"
     URLDHIS="${MEDIATOR_HOST}/syncrequisition2dhis?regionid=${region}&synchronizationperiod=${dhis_periodid}"
