@@ -33,7 +33,7 @@ run_sync() {
   local URLFHIR=""
   local URLDHIS=""
 
-  log "START region=$region sync2fhir"
+  log "START region=$region periodid=$fhir_periodid periodsyn=$dhis_periodid sync2fhir "
   if [[ -z "$dhis_periodid" || "$fhir_periodid" -eq 0 ]]; then
     URLFHIR="${MEDIATOR_HOST}/syncrequisition2fhir"
     URLDHIS="${MEDIATOR_HOST}/syncrequisition2dhis"
