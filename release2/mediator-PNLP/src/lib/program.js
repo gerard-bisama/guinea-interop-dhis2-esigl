@@ -2109,12 +2109,15 @@ function setupApp() {
                 //return res.send(adxDataElementObjectLists);
                 saveAdxData2Dhis(dhis2Token, adxDataElementObjectLists, (adxSaveResults) => {
                   if (adxSaveResults) {
-                    return res.send(adxSaveResults);
+                    //return res.send(adxSaveResults);
                     let importChildStatus = null;
-                    let importChildCount = null;
                     if (config.dhis2ResponseVersion == "2.37") {
                       importChildStatus = adxSaveResults.status;
                       importChildCount = adxSaveResults.importCount;
+                    }
+                    else if (config.dhis2ResponseVersion == "2.41") {
+                      importChildStatus = adxSaveResults.response.status;
+                      importChildCount = adxSaveResults.response.importCount;
                     }
                     else {
                       importChildStatus = adxSaveResults.children.find(children => children.name == "status").value;
