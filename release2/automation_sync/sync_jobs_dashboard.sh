@@ -8,7 +8,7 @@ MEDIATOR_HOST="http://localhost:5022"
 
 SLEEP_BETWEEN_CALLS=60
 SLEEP_BETWEEN_REGIONS=60
-SYNCDHIS2_PERIOD="2025-11"
+SYNCDHIS2_PERIOD=""
 
 BASE_DIR="/opt/script_sync"
 REGION_FILE="$BASE_DIR/regions.list"
@@ -27,10 +27,16 @@ log() {
 run_sync() {
   local region="$1"
   local dhis_periodid="$2"
+  local URL=""
+  if [[ -z "$dhis_periodid" ]]; then
+    URL="${MEDIATOR_HOST}/generatedaevalues?regionid=${region}"
+  else
+    URL="${MEDIATOR_HOST}/generatedaevalues?regionid=${region}&synchronizationperiod=${dhis_periodid}
+  fi
 
   log "START region=$region generateDataValues "
   log "START codeOp=2 executed "
-  if ! curl -fsS "${MEDIATOR_HOST}/generatedaevalues?regionid=${region}&synchronizationperiod=${dhis_periodid}&codeop=2" >>"$LOG_FILE" 2>&1; then
+  if ! curl -fsS "${URL}&codeop=2" >>"$LOG_FILE" 2>&1; then
     log "ERROR codeOp=2 GenerateDatavalues FAILED"
   else
     log "SUCCESS codeOp=2 GenerateDatavalues"
@@ -39,7 +45,7 @@ run_sync() {
   sleep "$SLEEP_BETWEEN_CALLS"
 
   log "START codeOp=3 executed "
-  if ! curl -fsS "${MEDIATOR_HOST}/generatedaevalues?regionid=${region}&synchronizationperiod=${dhis_periodid}&codeop=3" >>"$LOG_FILE" 2>&1; then
+  if ! curl -fsS "${URL}&codeop=3" >>"$LOG_FILE" 2>&1; then
     log "ERROR codeOp=3 GenerateDatavalues FAILED"
   else
     log "SUCCESS codeOp=3 GenerateDatavalues"
@@ -48,7 +54,7 @@ run_sync() {
   sleep "$SLEEP_BETWEEN_CALLS"
 
   log "START codeOp=4 executed "
-  if ! curl -fsS "${MEDIATOR_HOST}/generatedaevalues?regionid=${region}&synchronizationperiod=${dhis_periodid}&codeop=4" >>"$LOG_FILE" 2>&1; then
+  if ! curl -fsS "${URL}&codeop=4" >>"$LOG_FILE" 2>&1; then
     log "ERROR codeOp=4 GenerateDatavalues FAILED"
   else
     log "SUCCESS codeOp=4 GenerateDatavalues"
@@ -64,7 +70,7 @@ while IFS= read -r region || [[ -n "$region" ]]; do
   # skip empty lines and comments
   [[ -z "$region" || "$region" =~ ^# ]] && continue
 
-  run_sync "$region" "2025-11"
+  run_sync "$region" ""
   sleep "$SLEEP_BETWEEN_REGIONS"
 
 done < "$REGION_FILE"
